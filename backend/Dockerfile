@@ -41,5 +41,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
-# Apply migrations, then serve.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*'"]
+# Fly runs two process groups from this image:
+#   app    — apply migrations, then serve the API
+#   worker — consume the Celery queue (scraping + bundle packaging).
+# Without the worker, paid customers would never receive their downloads.
+CMD ["sh", "-c", "if [ \"$FLY_PROCESS_GROUP\" = \"worker\" ]; then exec celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2; else alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*'; fi"]

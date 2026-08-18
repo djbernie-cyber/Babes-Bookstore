@@ -1,6 +1,10 @@
 app = 'babes-bookstore-api'
 primary_region = 'lhr'
 
+[processes]
+  app = ''
+  worker = ''
+
 [build]
   dockerfile = 'backend/Dockerfile'
 

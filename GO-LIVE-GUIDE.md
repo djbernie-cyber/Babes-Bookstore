@@ -1,293 +1,360 @@
-# Babe's Bookstore — Go-Live Guide
+# Babe's Bookstore — Step-by-Step Launch Guide
 
-Plain-language steps to finish launching. Written for whoever is running the
-business, not just developers.
+Everything below takes you from "code finished" to "first real sale".
+Written in plain language — no coding knowledge needed.
 
-**Time needed:** about 2–3 hours of your attention, spread over a few days
-(some steps wait on bank/identity checks).
+**Total time:** ~2 hours of your attention + a few days waiting on
+identity/bank checks. **Order matters** — each step uses something from the
+one before it.
 
 ---
 
-## Where things stand
+## Where things stand today
 
 | Part | Status |
 |---|---|
-| Website pages (design, layout) | Built |
-| Book catalogue (8 sources, ~96,000 books) | Working |
-| Login, accounts, admin panel | Working |
-| Your two admin accounts + free downloads | Built |
-| Payment code (5 methods) | Built — needs your accounts connected |
-| Automated tests (25) | Passing |
-| Live on the internet | **Not yet — needs steps 1–5 below** |
-| Legal policy pages | **Built** — /terms, /privacy, /refunds (replace the support@...example address before launch) |
+| Storefront + admin pages (incl. mobile) | ✅ Built |
+| Book catalogue — 8 legal sources, ~96,000 books | ✅ Working |
+| Payments — 5 providers, per-bundle prices | ✅ Built, needs your keys |
+| Legal pages (/terms /privacy /refunds) | ✅ Built |
+| Review queue for unclear licences | ✅ Built |
+| Automated tests | ✅ 41/41 passing |
+| Hosting, payments, storage, sign-in | ⬜ Steps 1–6 below — **only you can do these** (they need your ID, bank account and logins) |
 
-The code is on GitHub: https://github.com/djbernie-cyber/Babes-Bookstore
+Code: https://github.com/djbernie-cyber/Babes-Bookstore
+
+**Before you start, have ready:** photo ID, bank account details (for
+Stripe payouts), a card (for Fly.io verification), and your two admin
+emails (`dj.bernie@hotmail.co.uk`, `williammajanja@gmail.com`).
 
 ---
 
-## The short version
+## THE PLAN
 
-You need to create accounts on 5 services and paste some keys in. Nothing
-here requires coding. The order matters — do 1, 2, 3 first, because the
-website can't go live without them.
+| # | Step | Time | Can't continue without it because… |
+|---|---|---|---|
+| 1 | Fly.io — the engine | 30 min | everything else needs its web address |
+| 2 | Netlify — the shop front | 15 min | customers need a page to visit |
+| 3 | Cloudflare R2 — book storage | 10 min | without it, buyers get no download |
+| 4 | Google sign-in | 10 min | you need it to log in as admin |
+| 5 | Stripe — getting paid | 30 min + checks | this is how money reaches your bank |
+| 6 | Fill the shop (books + bundles) | 30 min | you can't sell an empty shop |
+| 7 | Test purchase | 15 min | proves the whole chain works |
+| 8 | Go live | 15 min | switches test payments to real |
 
-1. **Fly.io** — runs the engine (the part that stores books and takes payment)
-2. **Netlify** — runs the shop front (what customers see)
-3. **Stripe** — takes card payments, and pays you
-4. **Cloudflare R2** — stores the book files customers download
-5. **Google** — the "Sign in with Google" button
-
-Then optionally: PayPal, Square, and email receipts.
+Optional extras (PayPal, Square, email receipts) are at the end — do them
+**after** Stripe works.
 
 ---
 
 ## Step 1 — Fly.io (the engine)
 
-**What it does:** Runs the behind-the-scenes part of the shop.
-**Cost:** Free to start. Roughly £4–8/month once busy.
+**What it is:** the server that stores books, accounts and orders, and
+talks to the payment providers.
+**Cost:** ~£5–10/month (it runs two small machines: the site + a
+background worker that builds your download files).
 
-1. Sign up: https://fly.io/app/sign-in
-2. You'll need to add a card. Fly won't charge you on the free allowance,
-   but they require it to stop abuse.
-3. Hand these commands to your developer, or run them in Terminal:
+1. Create an account: https://fly.io/app/sign-in (add a card when asked —
+   you won't be charged until the machines run).
+2. Install the Fly command line (Mac: `brew install flyctl`).
+3. In Terminal, from the project folder, run these one at a time:
 
 ```bash
 fly auth login
-fly launch --no-deploy          # say NO to "tweak settings"
-fly postgres create -a babes-bookstore-api
-fly redis create
+fly launch --no-deploy        # if asked, keep the name babes-bookstore-api
+
+# The database (where books/orders live):
+fly postgres create --name babes-bookstore-db --region lhr
+fly postgres attach babes-bookstore-db --app babes-bookstore-api
+# ↑ attaching automatically sets the DATABASE_URL for you
+
+# The queue (lets the background worker pick up jobs):
+fly redis create --name babes-bookstore-redis --region lhr
+fly redis attach babes-bookstore-redis --app babes-bookstore-api
+# ↑ attaching automatically sets the REDIS_URL for you
+
+# Your security key (makes logins unforgeable):
 fly secrets set SECRET_KEY=$(openssl rand -hex 32)
+
 fly deploy
 ```
 
-4. When it finishes, note the web address it gives you. It will look like
-   `https://babes-bookstore-api.fly.dev`. **Write it down — later steps need it.**
+4. **Checkpoint:** open `https://babes-bookstore-api.fly.dev/health` —
+   you should see `{"status":"ok",...}`.
+   Also run `fly status` — you should see **two machines**: one `app`,
+   one `worker`. The worker is what actually builds customer downloads;
+   if it's missing, sales will silently never deliver.
+5. **Write down your Fly address** (e.g.
+   `https://babes-bookstore-api.fly.dev`). Every later step needs it.
 
-**How to check it worked:** open `https://babes-bookstore-api.fly.dev/health`
-in a browser. You should see `{"status":"ok"}`.
-
-> **Safety note:** the app is built to refuse to start if the security key
-> is missing or left at its default. If it won't boot, that's the reason —
-> it's protecting you, not broken.
+> **Won't boot?** The app deliberately refuses to start with a default
+> security key or SQLite in production. Run `fly logs` — the error
+> message tells you exactly which setting to fix.
 
 ---
 
 ## Step 2 — Netlify (the shop front)
 
-**What it does:** Serves the pages customers actually see.
-**Cost:** Free for your traffic level.
+**What it is:** the pages customers actually see.
+**Cost:** free at your traffic level.
 
-1. Go to https://app.netlify.com and log in **with GitHub**.
-2. Click **Add new site → Import an existing project → GitHub**.
-3. Choose the **Babes-Bookstore** repository.
-4. Leave the build settings alone — they're already in the project file.
-5. Click **Deploy**.
+1. Go to https://app.netlify.com and **log in with GitHub**.
+2. **Add new site → Import an existing project → GitHub → Babes-Bookstore.**
+3. Leave every build setting as-is (the repo's `netlify.toml` is already
+   correct) → **Deploy**.
+4. **One manual edit.** Open `frontend/_redirects` in GitHub (click the
+   pencil icon to edit) and check the first line says:
 
-Then point the shop front at the engine:
+   ```
+   /api/*  https://babes-bookstore-api.fly.dev/api/:splat  200
+   ```
 
-6. Go to **Site configuration → Environment variables**.
-7. Add one variable:
-   - Name: `API_URL`
-   - Value: your Fly address from Step 1
-8. Also open `frontend/_redirects` in GitHub and make sure the first line
-   points at your real Fly address.
-
-**Currently your Netlify site shows "Page not found."** That's because it was
-never given a proper homepage. That's now fixed in the code — redeploying
-after Step 2 will resolve it.
-
-**If the site is showing as private:** Netlify → **Site configuration →
-Access control → Visitors**, and set it to public.
+   …using **your** Fly address from Step 1. (It's the shop's forwarding
+   address for payments and searches. If your Fly name differs, fix it
+   here, then Netlify → **Deploys → Trigger deploy**.)
+5. **Checkpoint:** open your Netlify site (something like
+   `https://<your-site>.netlify.app`). You should see the Babe's
+   Bookstore homepage. **Write down this address** — Step 4 and 5 need it.
 
 ---
 
-## Step 3 — Stripe (getting paid)
+## Step 3 — Cloudflare R2 (the book files)
 
-**What it does:** Takes card payments, Apple Pay and Google Pay. This is
-the one that puts money in your account.
-
-1. Sign up: https://dashboard.stripe.com/register
-2. Complete **identity verification**. Stripe legally must check who you
-   are. Have ready:
-   - Photo ID (passport or driving licence)
-   - Your address
-   - Your bank details
-   - *If a company:* company number and registered address
-3. **This is where you set where the money goes:**
-   Dashboard → **Settings → Business → Payouts → Add bank account**
-
-   > Stripe pays out to a **bank account**, not a credit card. Debit cards
-   > are accepted in some countries but bank transfer is standard in the UK.
-   > Payouts arrive roughly every 2–7 days automatically.
-
-4. Get your keys: https://dashboard.stripe.com/apikeys
-   Copy the **Secret key** and **Publishable key**.
-5. Set up the payment confirmation link:
-   https://dashboard.stripe.com/webhooks → **Add endpoint**
-   - URL: `https://babes-bookstore-api.fly.dev/api/v1/checkout/webhook/stripe`
-   - Events: choose `checkout.session.completed` and `payment_intent.succeeded`
-   - Copy the **Signing secret** it shows you.
-
-6. Give those three values to Fly:
-
-```bash
-fly secrets set \
-  STRIPE_SECRET_KEY=sk_live_xxx \
-  STRIPE_PUBLISHABLE_KEY=pk_live_xxx \
-  STRIPE_WEBHOOK_SECRET=whsec_xxx
-```
-
-> **Test first.** Stripe gives you "test mode" keys (`sk_test_...`). Use
-> those and card number `4242 4242 4242 4242` to make a fake purchase before
-> switching to live keys. Do not skip this.
-
----
-
-## Step 4 — Cloudflare R2 (the book files)
-
-**What it does:** Stores the ZIP files customers download after buying.
-Without this, purchases succeed but customers get nothing.
-
-**Cost:** Free up to 10GB — far more than you need.
+**What it is:** storage for the ZIP files customers download.
+**Cost:** free up to 10GB.
 
 1. Sign up: https://dash.cloudflare.com/sign-up
-2. Left menu → **R2** → **Create bucket** → name it `babes-bookstore`
-3. **Manage R2 API Tokens** → **Create API token** → permission
-   **Object Read & Write**
-4. Copy the Access Key ID, Secret Access Key, and your Account ID.
+2. Left menu → **R2 Object Storage** → **Create bucket** → name it
+   exactly `babes-bookstore`.
+3. R2 menu → **Manage R2 API Tokens** → **Create API token** →
+   permission **Object Read & Write** → copy the
+   **Access Key ID**, **Secret Access Key** and your **Account ID**
+   (shown on the right side of the R2 page).
+4. Give them to Fly:
 
 ```bash
 fly secrets set \
-  R2_ACCOUNT_ID=xxx \
-  R2_ACCESS_KEY_ID=xxx \
-  R2_SECRET_ACCESS_KEY=xxx \
+  R2_ACCOUNT_ID=your_account_id \
+  R2_ACCESS_KEY_ID=your_access_key \
+  R2_SECRET_ACCESS_KEY=your_secret_key \
   R2_BUCKET_NAME=babes-bookstore
 ```
 
+5. **Checkpoint:** run `fly secrets list` — you should now see
+   DATABASE_URL, REDIS_URL, SECRET_KEY and the four R2 values.
+
 ---
 
-## Step 5 — Google sign-in
+## Step 4 — Google sign-in (and your admin logins)
+
+You need this to sign into the admin panel. (Password login also exists,
+but Google is the quickest route for your Gmail admin account.)
 
 1. Go to https://console.cloud.google.com/apis/credentials
-2. Create a project (any name).
-3. **Create credentials → OAuth client ID → Web application**
-4. Under **Authorised redirect URIs**, add exactly:
-   `https://babes-bookstore-api.fly.dev/api/v1/auth/google/callback`
-5. Copy the Client ID and Client Secret.
+2. Create a project (any name, e.g. "Babes Bookstore").
+3. **Create credentials → OAuth client ID → Web application.**
+4. **Authorised redirect URIs** — paste exactly (use your Fly address):
+
+   ```
+   https://babes-bookstore-api.fly.dev/api/v1/auth/google/callback
+   ```
+5. Copy the **Client ID** and **Client Secret**, then:
 
 ```bash
 fly secrets set \
   GOOGLE_CLIENT_ID=xxx \
   GOOGLE_CLIENT_SECRET=xxx \
-  GOOGLE_REDIRECT_URI=https://babes-bookstore-api.fly.dev/api/v1/auth/google/callback
+  GOOGLE_REDIRECT_URI=https://babes-bookstore-api.fly.dev/api/v1/auth/google/callback \
+  FRONTEND_URL=https://YOUR-NETLIFY-ADDRESS.netlify.app
 ```
 
-> Google will ask you to complete a "consent screen". Until it's verified,
-> only accounts you add as test users can sign in — add both admin emails.
+> `FRONTEND_URL` is where customers land after paying — use your Netlify
+> address from Step 2, **no trailing slash**.
+
+6. The consent screen will say "Testing" — fine for now. Under
+   **Audience → Test users**, add both admin emails so they can sign in.
+7. **Checkpoint:** on your Netlify site, open **Login → Continue with
+   Google** and sign in as `williammajanja@gmail.com`. You should land on
+   your account page. Go to `/admin` — the dashboard should show stats,
+   not "Access denied".
+
+> **Hotmail admin account:** `dj.bernie@hotmail.co.uk` has no password
+> (it was created automatically). Either link that Hotmail to a Google
+> account and use Google sign-in, or set a password once:
+>
+> ```bash
+> fly ssh console -a babes-bookstore-api
+> # then, inside the machine:
+> python -c "
+> import asyncio
+> from app.database import AsyncSessionLocal
+> from app.services.security import hash_password
+> from app.models.user import User
+> from sqlalchemy import select
+> async def go():
+>     async with AsyncSessionLocal() as db:
+>         u=(await db.execute(select(User).where(User.email=='dj.bernie@hotmail.co.uk'))).scalar_one()
+>         u.hashed_password=hash_password('CHOOSE-A-PASSWORD')
+>         await db.commit(); print('done')
+> asyncio.run(go())"
+> ```
 
 ---
 
-## Optional — more payment methods
+## Step 5 — Stripe (getting paid)
 
-Only worth doing once Stripe works. Each needs its own identity check and
-its own payout bank account.
+**What it is:** takes card, Apple Pay and Google Pay payments and pays
+out to your bank. **This is the money step — don't rush it.**
 
-**PayPal** — https://developer.paypal.com/dashboard
+1. Register: https://dashboard.stripe.com/register
+2. Complete **identity verification** (photo ID, address, bank details;
+   company number if registering as a company). Payouts can only start
+   once Stripe has finished these checks.
+3. **Where the money goes:** Dashboard → **Settings → Bank accounts and
+   payouts** → add your **bank account** (a current account, not a
+   card). Payouts arrive automatically every 2–7 days.
+4. **Start in test mode** (the toggle top-right says "Test mode"). Copy
+   the **Secret key** and **Publishable key** (both start `sk_test_` /
+   `pk_test_`) from https://dashboard.stripe.com/apikeys
+5. Add the confirmation link ("webhook"):
+   https://dashboard.stripe.com/test/webhooks → **Add endpoint**
+   - URL: `https://babes-bookstore-api.fly.dev/api/v1/checkout/webhook/stripe`
+     (your Fly address)
+   - Select events: `checkout.session.completed` **and**
+     `payment_intent.succeeded`
+   - After creating, click it → **Signing secret → Reveal** → copy
+     (`whsec_…`).
+6. Load the test keys:
+
 ```bash
-fly secrets set PAYPAL_CLIENT_ID=xxx PAYPAL_CLIENT_SECRET=xxx PAYPAL_MODE=live
+fly secrets set \
+  STRIPE_SECRET_KEY=sk_test_xxx \
+  STRIPE_PUBLISHABLE_KEY=pk_test_xxx \
+  STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
 
-**Square** — https://developer.squareup.com/apps
+> **Live keys come in Step 8** — not yet. Real money only after the
+> test purchase in Step 7 passes.
+
+---
+
+## Step 6 — Fill the shop (books + bundles)
+
+Sign in as admin on your Netlify site. Do this in order:
+
+1. **Admin Dashboard → "Scrape Popular Books"** — pulls books in from
+   all 8 sources. Wait a few minutes (the worker is fetching them).
+2. **Admin → Manage Books** — this is your review queue. Books from
+   trusted sources (Gutenberg, Standard Ebooks, Wikisource, OpenStax)
+   auto-approve. Books from academic sources (DOAB, OAPEN) arrive as
+   **pending** — the page shows each book's licence with a link.
+   For each pending book, **click the licence link** and:
+   - Licence says **CC BY**, **CC BY-SA** or **public domain** →
+     **Approve** (safe to sell; attribution travels with the file).
+   - Licence says **CC NC** (non-commercial) → **Reject** — selling
+     these is not permitted.
+   - Licence says **CC ND** (no derivatives) → **Reject** — our
+     formatting counts as a derivative.
+   - Unsure? **Reject** and move on. There are 96,000 books; err on
+     the side of caution.
+3. **Admin → Manage Bundles → New Bundle** — pick 10–20 approved books
+   around a theme, give it a name, set its price. It appears on the
+   storefront immediately.
+
+**Good first bundles:** Classic Fiction, Sherlock Holmes Complete,
+Philosophy Essentials, Victorian Gothic, Science Textbooks.
+
+> **One legal task:** the three policy pages contain the placeholder
+> email `support@babes-bookstore.example`. Search for it in
+> `frontend/legal/*.html` on GitHub and replace it with an email you
+> actually monitor (refunds and legal notices go there).
+
+---
+
+## Step 7 — Test purchase (do not skip)
+
+1. On your Netlify site (still in Stripe **test mode**), open any bundle.
+2. Click **Pay with Stripe** and check out with:
+   - Card: `4242 4242 4242 4242`
+   - Any future expiry, any CVC, any postcode
+3. **What must happen, in order:**
+   - Stripe's test checkout page appears and shows the bundle's **real
+     price** (not a random number);
+   - paying returns you to your site;
+   - within a minute or so, your account page shows the purchase and a
+     working download (a ZIP that opens, with books inside).
+4. If anything in that chain fails:
+   `fly logs -a babes-bookstore-api` and read the last 20 lines — it's
+   nearly always a mistyped key from Steps 3–5. Fix, re-run Step 7.
+
+---
+
+## Step 8 — Go live 🚀
+
+1. Stripe Dashboard → switch **Test mode → Live**.
+2. Copy the live keys (`sk_live_…`, `pk_live_…`) from
+   https://dashboard.stripe.com/apikeys.
+3. **Create the webhook again in live mode:**
+   https://dashboard.stripe.com/webhooks (no `/test` in the URL) — same
+   URL and events as before — and copy its new signing secret.
+4. Replace the keys:
+
+```bash
+fly secrets set \
+  STRIPE_SECRET_KEY=sk_live_xxx \
+  STRIPE_PUBLISHABLE_KEY=pk_live_xxx \
+  STRIPE_WEBHOOK_SECRET=whsec_live_xxx
+```
+
+5. **Final checkpoint:** buy your cheapest bundle with a real card.
+   Confirm the money shows in Stripe and the download arrives, then
+   refund yourself from the Stripe dashboard (a real refund is also a
+   test of the refund path).
+6. You are live. Tell people.
+
+---
+
+## Optional extras (after launch, in this order)
+
+Each needs its own account + identity check + payout bank account.
+
+**Email receipts (do this first — customers expect receipts):**
+https://signup.sendgrid.com → create an API key →
+
+```bash
+fly secrets set SENDGRID_API_KEY=xxx FROM_EMAIL=noreply@your-domain.com
+```
+
+**PayPal:** https://developer.paypal.com/dashboard →
+```bash
+fly secrets set PAYPAL_CLIENT_ID=xxx PAYPAL_CLIENT_SECRET=xxx PAYPAL_MODE=live PAYPAL_WEBHOOK_ID=xxx
+```
+
+**Square:** https://developer.squareup.com/apps →
 ```bash
 fly secrets set SQUARE_ACCESS_TOKEN=xxx SQUARE_LOCATION_ID=xxx SQUARE_ENVIRONMENT=production
 ```
 
-**Email receipts** — https://signup.sendgrid.com
-```bash
-fly secrets set SENDGRID_API_KEY=xxx FROM_EMAIL=noreply@yourdomain.com
-```
+Apple Pay and Google Pay need **no separate setup** — they ride on
+Stripe and appear automatically.
 
-Apple Pay and Google Pay need no separate account — they run through Stripe
-and appear automatically once Stripe is live.
-
----
-
-## Your admin accounts
-
-These two are created automatically when the app starts:
-
-- `dj.bernie@hotmail.co.uk`
-- `williammajanja@gmail.com`
-
-Both get admin access and **free downloads on every bundle**.
-
-**To sign in:** go to `/login` and use **Continue with Google**
-(`williammajanja@gmail.com` is a Google address, so this works directly).
-
-For the Hotmail address, either use Google sign-in if it's linked to a
-Google account, or set a password:
-
-```bash
-fly ssh console -a babes-bookstore-api
-# then, inside:
-python -c "
-import asyncio
-from app.database import AsyncSessionLocal
-from app.services.security import hash_password
-from app.models.user import User
-from sqlalchemy import select
-async def go():
-    async with AsyncSessionLocal() as db:
-        u=(await db.execute(select(User).where(User.email=='dj.bernie@hotmail.co.uk'))).scalar_one()
-        u.hashed_password=hash_password('CHANGE-THIS-PASSWORD')
-        await db.commit(); print('done')
-asyncio.run(go())"
-```
-
-**Admin panel:** `/admin` — stats, book approval, bundle creation.
+**A proper domain (e.g. babesbookstore.co.uk):** buy one, point it at
+Netlify (custom domains) and at Fly, then update three things: the
+`FRONTEND_URL` secret, the Google redirect URI, and the Stripe webhook
+URL. Until then, the free addresses work fine.
 
 ---
 
-## Filling the shop with books
+## Running the shop day-to-day
 
-Once live, sign in as admin and go to `/admin`:
-
-1. Click **Scrape Popular Books** — pulls in books from all 8 sources.
-2. Go to **Manage Books** — anything marked *pending* needs your decision.
-   Gutenberg, Standard Ebooks, Wikisource and OpenStax auto-approve because
-   their licences are confirmed. Academic sources (DOAB, OAPEN) come through
-   as *pending* because "open access" alone doesn't legally permit resale —
-   check the licence before approving.
-3. Go to **Manage Bundles** → **New Bundle** — group 10–20 books under a
-   theme, and it goes on sale at £10.
-
-**Sensible first bundles:** Classic Fiction, Sherlock Holmes Complete,
-Philosophy Essentials, Science Textbooks, Victorian Novels.
-
----
-
-## Still to do (not built yet)
-
-Be aware of these before taking real money:
-
-1. **Legal pages — required.** You have no Terms of Service, Privacy Policy,
-   Refund Policy or Cookie Notice. UK/EU law requires a privacy policy, and
-   Stripe requires visible terms and refund terms. Selling without them risks
-   your payment account.
-
-2. **Refund policy for digital goods.** UK consumer law gives a 14-day
-   cancellation right, but you can ask customers to waive it for instant
-   downloads — you must state this clearly at checkout.
-
-3. **Attribution for CC-BY books.** OpenStax and DOAB books are free to sell
-   *but only with credit given*. The ZIP includes a licence file, but the
-   bundle page should show it too.
-
-4. **Price is fixed at £10 in the code**, not per-bundle. Changing one bundle's
-   price needs a code change.
-
-5. **Frontend polish.** Pages work but haven't had a design pass —
-   loading states, mobile layout, and empty states are basic.
+- **New books arrive pending?** `/admin/books` → review the licence →
+  approve/reject (rules in Step 6).
+- **A customer wants a refund?** Find the payment in Stripe → Refund.
+  Also email them — see `/refunds` for what you promised.
+- **Something looks broken?** `fly logs -a babes-bookstore-api` first;
+  `fly status` to confirm both `app` and `worker` machines are running.
+- **Checklist each week:** pending review queue empty, worker machine
+  running, Stripe payouts landing.
 
 ---
 
@@ -297,10 +364,10 @@ Be aware of these before taking real money:
 |---|---|
 | Code | https://github.com/djbernie-cyber/Babes-Bookstore |
 | Engine health | `https://babes-bookstore-api.fly.dev/health` |
-| API documentation | `https://babes-bookstore-api.fly.dev/docs` |
+| API docs | `https://babes-bookstore-api.fly.dev/docs` |
 | Admin panel | `/admin` on your Netlify address |
-| See the logs | `fly logs -a babes-bookstore-api` |
-| List your keys | `fly secrets list -a babes-bookstore-api` |
-
-**If something breaks:** run `fly logs -a babes-bookstore-api` and read the
-last 20 lines. Most problems are a missing or mistyped key.
+| Review queue | `/admin/books` |
+| Policies | `/terms` · `/privacy` · `/refunds` |
+| Logs | `fly logs -a babes-bookstore-api` |
+| Your keys | `fly secrets list -a babes-bookstore-api` |
+| Machines | `fly status -a babes-bookstore-api` (app **and** worker) |
