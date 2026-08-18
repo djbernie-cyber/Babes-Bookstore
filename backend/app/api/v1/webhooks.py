@@ -18,10 +18,30 @@ from ...schemas.purchase import CheckoutRequest, CheckoutResponse
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/checkout", tags=["checkout"])
 
+#: Fallback used only when a bundle has no price of its own.
 STANDARD_PRICE = settings.STANDARD_PRICE_PENCE
 CURRENCY = settings.CURRENCY
 
 FRONTEND_URL = settings.FRONTEND_URL
+
+
+def _amount(bundle: Bundle) -> int:
+    """Authoritative charge amount, in the smallest currency unit.
+
+    Always derived from the bundle record so an admin changing a bundle's
+    price is actually reflected at checkout. Previously every provider
+    charged the global standard price, so any bundle priced above £10 was
+    undercharged and the difference was lost on every sale.
+    """
+    price = bundle.price_cents
+    if price is None or price < 0:
+        return STANDARD_PRICE
+    return price
+
+
+def _currency(bundle: Bundle) -> str:
+    """Bundle currency, falling back to the configured default."""
+    return (bundle.currency or CURRENCY).lower()
 
 
 async def _resolve_bundle(req: CheckoutRequest, db: AsyncSession) -> Bundle:
@@ -76,6 +96,8 @@ async def create_stripe_checkout(
 ):
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
+    amount = _amount(bundle)
+    currency = _currency(bundle)
 
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
@@ -86,8 +108,8 @@ async def create_stripe_checkout(
         bundle_id=bundle.id,
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
-        amount_cents=STANDARD_PRICE,
-        currency=CURRENCY,
+        amount_cents=amount,
+        currency=currency.upper(),
         download_token=secrets.token_urlsafe(32),
         status="pending",
         payment_provider="stripe",
@@ -107,12 +129,12 @@ async def create_stripe_checkout(
             line_items=[
                 {
                     "price_data": {
-                        "currency": CURRENCY,
+                        "currency": currency,
                         "product_data": {
                             "name": bundle.name,
                             "description": bundle.description or f"{len(bundle.bundle_books)} books",
                         },
-                        "unit_amount": STANDARD_PRICE,
+                        "unit_amount": amount,
                     },
                     "quantity": 1,
                 }
@@ -166,6 +188,8 @@ async def create_paypal_checkout(
 ):
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
+    amount = _amount(bundle)
+    currency = _currency(bundle)
 
     if not settings.PAYPAL_CLIENT_ID:
         raise HTTPException(status_code=500, detail="PayPal not configured")
@@ -174,8 +198,8 @@ async def create_paypal_checkout(
         bundle_id=bundle.id,
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
-        amount_cents=STANDARD_PRICE,
-        currency=CURRENCY,
+        amount_cents=amount,
+        currency=currency.upper(),
         download_token=secrets.token_urlsafe(32),
         status="pending",
         payment_provider="paypal",
@@ -196,8 +220,8 @@ async def create_paypal_checkout(
                     "purchase_units": [
                         {
                             "amount": {
-                                "currency_code": CURRENCY.upper(),
-                                "value": f"{STANDARD_PRICE / 100:.2f}",
+                                "currency_code": currency.upper(),
+                                "value": f"{amount / 100:.2f}",
                             },
                             "description": f"{bundle.name} — {len(bundle.bundle_books)} books",
                             "custom_id": str(purchase.id),
@@ -239,6 +263,8 @@ async def create_square_checkout(
 ):
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
+    amount = _amount(bundle)
+    currency = _currency(bundle)
 
     if not settings.SQUARE_ACCESS_TOKEN:
         raise HTTPException(status_code=500, detail="Square not configured")
@@ -247,8 +273,8 @@ async def create_square_checkout(
         bundle_id=bundle.id,
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
-        amount_cents=STANDARD_PRICE,
-        currency=CURRENCY,
+        amount_cents=amount,
+        currency=currency.upper(),
         download_token=secrets.token_urlsafe(32),
         status="pending",
         payment_provider="square",
@@ -281,8 +307,8 @@ async def create_square_checkout(
                                     "enabled_recurring": False,
                                 },
                                 "base_price_money": {
-                                    "amount": STANDARD_PRICE,
-                                    "currency": CURRENCY.upper(),
+                                    "amount": amount,
+                                    "currency": currency.upper(),
                                 },
                             }
                         ],
@@ -294,8 +320,8 @@ async def create_square_checkout(
                                     "description": bundle.description or f"{len(bundle.bundle_books)} books",
                                     "quantity": "1",
                                     "base_price_money": {
-                                        "amount": STANDARD_PRICE,
-                                        "currency": CURRENCY.upper(),
+                                        "amount": amount,
+                                        "currency": currency.upper(),
                                     },
                                 }
                             ],
@@ -331,6 +357,8 @@ async def create_apple_pay_session(
     """Apple Pay is handled client-side via Stripe. Return payment intent."""
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
+    amount = _amount(bundle)
+    currency = _currency(bundle)
 
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
@@ -341,8 +369,8 @@ async def create_apple_pay_session(
         bundle_id=bundle.id,
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
-        amount_cents=STANDARD_PRICE,
-        currency=CURRENCY,
+        amount_cents=amount,
+        currency=currency.upper(),
         download_token=secrets.token_urlsafe(32),
         status="pending",
         payment_provider="apple_pay",
@@ -353,8 +381,8 @@ async def create_apple_pay_session(
 
     try:
         intent = stripe.PaymentIntent.create(
-            amount=STANDARD_PRICE,
-            currency=CURRENCY,
+            amount=amount,
+            currency=currency,
             metadata={
                 "purchase_id": str(purchase.id),
                 "bundle_id": str(bundle.id),
@@ -385,6 +413,8 @@ async def create_google_pay_session(
     """Google Pay is handled client-side via Stripe. Return payment intent."""
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
+    amount = _amount(bundle)
+    currency = _currency(bundle)
 
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
@@ -395,8 +425,8 @@ async def create_google_pay_session(
         bundle_id=bundle.id,
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
-        amount_cents=STANDARD_PRICE,
-        currency=CURRENCY,
+        amount_cents=amount,
+        currency=currency.upper(),
         download_token=secrets.token_urlsafe(32),
         status="pending",
         payment_provider="google_pay",
@@ -407,8 +437,8 @@ async def create_google_pay_session(
 
     try:
         intent = stripe.PaymentIntent.create(
-            amount=STANDARD_PRICE,
-            currency=CURRENCY,
+            amount=amount,
+            currency=currency,
             metadata={
                 "purchase_id": str(purchase.id),
                 "bundle_id": str(bundle.id),
@@ -448,7 +478,7 @@ async def create_free_checkout(
         user_id=current_user.id,
         customer_email=current_user.email,
         amount_cents=0,
-        currency=CURRENCY,
+        currency=_currency(bundle).upper(),
         download_token=secrets.token_urlsafe(32),
         status="completed",
         payment_provider="free",

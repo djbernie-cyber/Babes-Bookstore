@@ -1,11 +1,8 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
 from sqlalchemy import select, func
 
 from .config import settings
@@ -115,72 +112,14 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "frontend" / "templates"))
-app.state.templates = templates
-
 app.include_router(api_router)
 
 
-@app.get("/")
-async def root(request: Request):
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "app_name": settings.APP_NAME,
-        },
-    )
-
-
-@app.get("/bundles")
-async def bundles_page(request: Request):
-    return templates.TemplateResponse("bundles/list.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/bundles/{slug}")
-async def bundle_detail_page(request: Request, slug: str):
-    return templates.TemplateResponse("bundles/detail.html", {"request": request, "app_name": settings.APP_NAME, "slug": slug})
-
-
-@app.get("/books/{book_id}")
-async def book_detail_page(request: Request, book_id: int):
-    return templates.TemplateResponse("books/detail.html", {"request": request, "app_name": settings.APP_NAME, "book_id": book_id})
-
-
-@app.get("/search")
-async def search_page(request: Request, q: str = ""):
-    return templates.TemplateResponse("books/search.html", {"request": request, "app_name": settings.APP_NAME, "query": q})
-
-
-@app.get("/login")
-async def login_page(request: Request):
-    return templates.TemplateResponse("account/login.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/register")
-async def register_page(request: Request):
-    return templates.TemplateResponse("account/register.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/account")
-async def account_page(request: Request):
-    return templates.TemplateResponse("account/purchases.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/admin")
-async def admin_dashboard(request: Request):
-    return templates.TemplateResponse("admin/dashboard.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/admin/books")
-async def admin_books(request: Request):
-    return templates.TemplateResponse("admin/books.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/admin/bundles")
-async def admin_bundles(request: Request):
-    return templates.TemplateResponse("admin/bundles.html", {"request": request, "app_name": settings.APP_NAME})
+@app.get("/", include_in_schema=False)
+async def root():
+    """The API host is not the storefront. Redirect browsers to the docs
+    so anyone reaching it directly lands on something useful."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

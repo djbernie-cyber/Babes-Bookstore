@@ -19,6 +19,7 @@ class BundleBase(BaseModel):
     description: Optional[str] = None
     long_description: Optional[str] = None
     price_cents: int = Field(..., ge=0)
+    currency: str = Field(default="GBP", min_length=2, max_length=10)
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     bundle_type: str = "curated"
@@ -36,6 +37,7 @@ class BundleUpdate(BaseModel):
     description: Optional[str] = None
     long_description: Optional[str] = None
     price_cents: Optional[int] = Field(None, ge=0)
+    currency: Optional[str] = Field(None, min_length=2, max_length=10)
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     active: Optional[bool] = None

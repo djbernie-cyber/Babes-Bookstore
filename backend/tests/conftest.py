@@ -4,6 +4,15 @@ import os
 os.environ.setdefault("DEBUG", "true")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-long-enough-000000")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+# Test-only Stripe config so checkout endpoints take the provider branch
+# rather than returning 500. The actual Stripe SDK is patched in tests.
+os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_dummy")
+os.environ.setdefault("STRIPE_PUBLISHABLE_KEY", "pk_test_dummy")
+os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_test_dummy")
+os.environ.setdefault("PAYPAL_CLIENT_ID", "paypal_test_dummy")
+os.environ.setdefault("PAYPAL_CLIENT_SECRET", "paypal_secret_dummy")
+os.environ.setdefault("SQUARE_ACCESS_TOKEN", "sq_test_dummy")
+os.environ.setdefault("SQUARE_LOCATION_ID", "L_test_dummy")
 
 import pytest
 import pytest_asyncio

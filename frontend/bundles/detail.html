@@ -117,7 +117,7 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 sticky top-24">
                         <div class="text-center mb-6">
                             <span class="text-sm text-stone-500 font-medium uppercase tracking-wide">Bundle Price</span>
-                            <p class="text-5xl font-bold text-amber-700 mt-1">£10</p>
+                            <p class="text-5xl font-bold text-amber-700 mt-1"><span id="bundle-price">£10</span></p>
                             <p class="text-stone-500 text-sm mt-1">One-time payment, no subscription</p>
                         </div>
 
@@ -262,6 +262,10 @@
             }
 
             document.getElementById('bundle-description').textContent = bundle.description || '';
+
+            const symbol = ({GBP:'£', USD:'$', EUR:'€'}[(bundle.currency || 'GBP').toUpperCase()]) || (bundle.currency || '£');
+            const amount = (bundle.price_cents ?? 1000) / 100;
+            document.getElementById('bundle-price').textContent = `${symbol}${amount.toFixed(2)}`;
 
             const books = bundle.books || [];
             document.getElementById('book-count').textContent = `(${books.length} book${books.length !== 1 ? 's' : ''})`;
