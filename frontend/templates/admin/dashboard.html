@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Babe's Bookstore{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="font-serif text-4xl font-bold mb-8">Admin Dashboard</h1>
+
+    <div id="stats" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <div class="text-3xl font-bold text-amber-700" id="stat-books">-</div>
+            <div class="text-stone-600 mt-1">Total Books</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <div class="text-3xl font-bold text-green-700" id="stat-approved">-</div>
+            <div class="text-stone-600 mt-1">Approved</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <div class="text-3xl font-bold text-yellow-700" id="stat-pending">-</div>
+            <div class="text-stone-600 mt-1">Pending</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <div class="text-3xl font-bold text-red-700" id="stat-rejected">-</div>
+            <div class="text-stone-600 mt-1">Rejected</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="font-serif text-2xl font-bold mb-4">Scraping Controls</h2>
+            <div class="space-y-3">
+                <button onclick="triggerScrape('all')" class="w-full py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">Scrape All Sources</button>
+                <button onclick="triggerScrape('gutenberg')" class="w-full py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300">Scrape Project Gutenberg</button>
+                <button onclick="triggerScrape('standard_ebooks')" class="w-full py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300">Scrape Standard Ebooks</button>
+                <button onclick="triggerScrape('doab')" class="w-full py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300">Scrape DOAB</button>
+                <button onclick="triggerLicenseVerify()" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Re-verify All Licenses</button>
+            </div>
+            <div id="scrape-status" class="mt-4 text-sm text-stone-600"></div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="font-serif text-2xl font-bold mb-4">Quick Actions</h2>
+            <div class="space-y-3">
+                <a href="/admin/books" class="block w-full py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 text-center">Manage Books</a>
+                <a href="/admin/bundles" class="block w-full py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 text-center">Manage Bundles</a>
+                <button onclick="triggerPopular()" class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Scrape Popular Books</button>
+            </div>
+            <div id="action-status" class="mt-4 text-sm text-stone-600"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const headers = {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'};
+
+    if (!token || !user || !user.is_admin) {
+        document.body.innerHTML = '<div class="text-center py-20"><h1 class="text-2xl font-bold text-stone-700">Access Denied</h1><p class="text-stone-500 mt-2">Admin access required.</p><a href="/login" class="text-amber-700 hover:underline mt-4 block">Login</a></div>';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('/api/v1/admin/stats', { headers });
+            if (res.ok) {
+                const s = await res.json();
+                document.getElementById('stat-books').textContent = s.books.total;
+                document.getElementById('stat-approved').textContent = s.books.approved;
+                document.getElementById('stat-pending').textContent = s.books.pending;
+                document.getElementById('stat-rejected').textContent = s.books.rejected;
+            }
+        } catch(e) {}
+    });
+
+    async function triggerScrape(source) {
+        const status = document.getElementById('scrape-status');
+        status.textContent = 'Starting scrape...';
+        try {
+            const url = source === 'all' ? '/api/v1/admin/scrape/all' : `/api/v1/admin/scrape/source/${source}`;
+            const res = await fetch(url, { method: 'POST', headers });
+            const data = await res.json();
+            status.textContent = `Scrape started (task: ${data.task_id || 'queued'})`;
+        } catch(e) { status.textContent = 'Failed to start scrape'; }
+    }
+
+    async function triggerLicenseVerify() {
+        const status = document.getElementById('scrape-status');
+        status.textContent = 'Verifying licenses...';
+        try {
+            const res = await fetch('/api/v1/admin/verify/licenses', { method: 'POST', headers });
+            const data = await res.json();
+            status.textContent = `License verification started (task: ${data.task_id || 'queued'})`;
+        } catch(e) { status.textContent = 'Failed'; }
+    }
+
+    async function triggerPopular() {
+        const status = document.getElementById('action-status');
+        status.textContent = 'Scraping popular books...';
+        try {
+            const res = await fetch('/api/v1/admin/scrape/popular', { method: 'POST', headers });
+            const data = await res.json();
+            status.textContent = `Started (task: ${data.task_id || 'queued'})`;
+        } catch(e) { status.textContent = 'Failed'; }
+    }
+</script>
+{% endblock %}

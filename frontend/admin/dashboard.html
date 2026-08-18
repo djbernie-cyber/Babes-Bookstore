@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 font-sans text-stone-800 min-h-screen flex flex-col">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <form action="/search" method="get" class="hidden sm:block">
+                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </form>
+                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="access-denied" class="hidden text-center py-20">
+            <h1 class="font-serif text-4xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p class="text-stone-600 mb-6">You do not have permission to view this page.</p>
+            <a href="/" class="inline-block bg-amber-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-800 transition">Go Home</a>
+        </div>
+
+        <div id="admin-content" class="hidden">
+            <h1 class="font-serif text-3xl font-bold text-stone-900 mb-8">Admin Dashboard</h1>
+
+            <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="bg-white rounded-xl border border-stone-200 p-6">
+                    <p class="text-sm text-stone-500 mb-1">Total Books</p>
+                    <p id="stat-total" class="text-3xl font-bold text-stone-900">—</p>
+                </div>
+                <div class="bg-white rounded-xl border border-stone-200 p-6">
+                    <p class="text-sm text-stone-500 mb-1">Approved</p>
+                    <p id="stat-approved" class="text-3xl font-bold text-green-600">—</p>
+                </div>
+                <div class="bg-white rounded-xl border border-stone-200 p-6">
+                    <p class="text-sm text-stone-500 mb-1">Pending</p>
+                    <p id="stat-pending" class="text-3xl font-bold text-amber-600">—</p>
+                </div>
+                <div class="bg-white rounded-xl border border-stone-200 p-6">
+                    <p class="text-sm text-stone-500 mb-1">Rejected</p>
+                    <p id="stat-rejected" class="text-3xl font-bold text-red-600">—</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white rounded-xl border border-stone-200 p-6">
+                    <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Scraping Controls</h2>
+                    <div class="space-y-3">
+                        <button onclick="scrapeAll()" class="w-full bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Scrape All Sources</button>
+                        <button onclick="scrapeSource('gutenberg')" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape Gutenberg</button>
+                        <button onclick="scrapeSource('standard_ebooks')" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape Standard Ebooks</button>
+                        <button onclick="scrapeSource('doab')" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape DOAB</button>
+                        <button onclick="reverifyAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Re-verify All Licenses</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-stone-200 p-6">
+                    <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Quick Actions</h2>
+                    <div class="space-y-3">
+                        <a href="/admin/books" class="block w-full text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Manage Books</a>
+                        <a href="/admin/bundles" class="block w-full text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Manage Bundles</a>
+                        <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape Popular Books</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toast" class="fixed bottom-6 right-6 bg-stone-900 text-white px-6 py-3 rounded-lg shadow-lg hidden transition-all"></div>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">About</h4>
+                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token || !user.is_admin) {
+            document.getElementById('access-denied').classList.remove('hidden');
+        } else {
+            document.getElementById('admin-content').classList.remove('hidden');
+            loadStats();
+        }
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
+                if (!res.ok) throw new Error('Failed to load stats');
+                const data = await res.json();
+                document.getElementById('stat-total').textContent = data.total_books ?? '—';
+                document.getElementById('stat-approved').textContent = data.approved ?? '—';
+                document.getElementById('stat-pending').textContent = data.pending ?? '—';
+                document.getElementById('stat-rejected').textContent = data.rejected ?? '—';
+            } catch (e) {
+                showToast('Error loading stats');
+            }
+        }
+
+        async function scrapeAll() {
+            showToast('Starting full scrape...');
+            await fetch('/api/v1/admin/scrape', { method: 'POST', headers: authHeaders() });
+            showToast('Scrape initiated');
+        }
+
+        async function scrapeSource(source) {
+            showToast('Scraping ' + source + '...');
+            await fetch('/api/v1/admin/scrape/' + source, { method: 'POST', headers: authHeaders() });
+            showToast('Scrape initiated for ' + source);
+        }
+
+        async function reverifyAll() {
+            showToast('Re-verifying licenses...');
+            await fetch('/api/v1/admin/reverify', { method: 'POST', headers: authHeaders() });
+            showToast('Re-verification initiated');
+        }
+
+        async function scrapePopular() {
+            showToast('Scraping popular books...');
+            await fetch('/api/v1/admin/scrape/popular', { method: 'POST', headers: authHeaders() });
+            showToast('Popular scrape initiated');
+        }
+    </script>
+</body>
+</html>

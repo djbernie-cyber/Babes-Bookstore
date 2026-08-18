@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babe's Bookstore - Curated Public Domain Book Bundles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .gradient-hero {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #fbbf24 70%, #f59e0b 100%);
+        }
+        .bundle-card:hover { transform: translateY(-4px); }
+        .bundle-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-900">
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <form action="/search" method="get" class="hidden sm:block">
+                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </form>
+                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-hero py-20 lg:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-block bg-white/80 backdrop-blur-sm rounded-full px-6 py-2 mb-6 shadow-sm">
+                <span class="font-semibold text-amber-700 text-lg">📚 Just £10 per bundle</span>
+            </div>
+            <h1 class="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-stone-900 mb-6">
+                Babe's Bookstore
+            </h1>
+            <p class="text-xl md:text-2xl text-stone-700 max-w-2xl mx-auto mb-10 leading-relaxed">
+                Curated bundles of public domain and openly-licensed books, professionally formatted and ready to read on any device.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/bundles" class="inline-block bg-stone-900 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-stone-800 transition shadow-lg">
+                    Browse Bundles
+                </a>
+                <a href="/search" class="inline-block bg-white text-stone-900 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-stone-100 transition shadow-lg border border-stone-200">
+                    Search Books
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Bundles -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">Featured Bundles</h2>
+                <p class="text-lg text-stone-600 max-w-2xl mx-auto">Hand-picked collections of great reads, each just £10.</p>
+            </div>
+            <div id="featured-bundles" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="text-center py-12 col-span-full">
+                    <div class="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-stone-500 mt-3">Loading bundles...</p>
+                </div>
+            </div>
+            <div class="text-center mt-10">
+                <a href="/bundles" class="inline-block bg-amber-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-amber-700 transition">
+                    View All Bundles
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Bar -->
+    <section class="bg-stone-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div>
+                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">£10</p>
+                    <p class="text-stone-400 text-sm">Per Bundle</p>
+                </div>
+                <div>
+                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">70,000+</p>
+                    <p class="text-stone-400 text-sm">Public Domain Books</p>
+                </div>
+                <div>
+                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">100%</p>
+                    <p class="text-stone-400 text-sm">Legally Licensed</p>
+                </div>
+                <div>
+                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">5</p>
+                    <p class="text-stone-400 text-sm">Payment Methods</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">How It Works</h2>
+                <p class="text-lg text-stone-600">Getting great books is simple.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
+                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <span class="text-3xl">1</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-bold mb-3">Choose a Bundle</h3>
+                    <p class="text-stone-600">Browse our curated collections. From classic fiction to scientific treatises, there's something for every reader.</p>
+                </div>
+                <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
+                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <span class="text-3xl">2</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-bold mb-3">Pay £10</h3>
+                    <p class="text-stone-600">One flat price, no subscriptions. Pay with Stripe, PayPal, Square, Apple Pay, or Google Pay.</p>
+                </div>
+                <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
+                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <span class="text-3xl">3</span>
+                    </div>
+                    <h3 class="font-serif text-xl font-bold mb-3">Download &amp; Read</h3>
+                    <p class="text-stone-600">Instantly download your books in EPUB or PDF format. Read on your phone, tablet, e-reader, or computer.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pay Your Way -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">Pay Your Way</h2>
+            <p class="text-lg text-stone-600 mb-10">Choose the payment method that works for you.</p>
+            <div class="flex flex-wrap justify-center gap-6">
+                <div class="flex items-center gap-3 bg-stone-50 px-6 py-4 rounded-xl border border-stone-200">
+                    <span class="text-2xl">💳</span>
+                    <span class="font-medium text-stone-700">Stripe</span>
+                </div>
+                <div class="flex items-center gap-3 bg-stone-50 px-6 py-4 rounded-xl border border-stone-200">
+                    <span class="text-2xl">🅿️</span>
+                    <span class="font-medium text-stone-700">PayPal</span>
+                </div>
+                <div class="flex items-center gap-3 bg-stone-50 px-6 py-4 rounded-xl border border-stone-200">
+                    <span class="text-2xl">◼️</span>
+                    <span class="font-medium text-stone-700">Square</span>
+                </div>
+                <div class="flex items-center gap-3 bg-stone-50 px-6 py-4 rounded-xl border border-stone-200">
+                    <span class="text-2xl">🍎</span>
+                    <span class="font-medium text-stone-700">Apple Pay</span>
+                </div>
+                <div class="flex items-center gap-3 bg-stone-50 px-6 py-4 rounded-xl border border-stone-200">
+                    <span class="text-2xl">🔵</span>
+                    <span class="font-medium text-stone-700">Google Pay</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-stone-900 text-stone-300 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">About</h4>
+                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const container = document.getElementById('featured-bundles');
+            try {
+                const response = await fetch('/api/v1/bundles?featured=true&page_size=6');
+                if (!response.ok) throw new Error('Failed to load bundles');
+                const data = await response.json();
+                const bundles = data.items || data.results || data || [];
+                if (bundles.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <p class="text-stone-500 text-lg">No featured bundles available yet. Check back soon!</p>
+                            <a href="/bundles" class="inline-block mt-4 text-amber-700 font-medium hover:text-amber-800">Browse all bundles &rarr;</a>
+                        </div>`;
+                    return;
+                }
+                container.innerHTML = bundles.map(bundle => `
+                    <a href="/bundles/${bundle.slug}" class="bundle-card block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg">
+                        <div class="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center p-6">
+                            <div class="text-center">
+                                <span class="text-4xl">📚</span>
+                                <p class="text-amber-800 font-medium mt-2">${bundle.book_count || bundle.num_books || '?'} books</p>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-serif text-xl font-bold text-stone-900 mb-2">${bundle.name}</h3>
+                            <p class="text-stone-600 text-sm line-clamp-2 mb-4">${bundle.description || 'A curated collection of great reads.'}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-amber-700 font-bold text-lg">£10</span>
+                                <span class="text-amber-600 text-sm font-medium">View Bundle &rarr;</span>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading featured bundles:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <p class="text-stone-500 text-lg">Unable to load bundles right now.</p>
+                        <a href="/bundles" class="inline-block mt-4 text-amber-700 font-medium hover:text-amber-800">Browse all bundles &rarr;</a>
+                    </div>`;
+            }
+        });
+    </script>
+</body>
+</html>

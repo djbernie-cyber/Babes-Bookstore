@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Books - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 font-sans text-stone-800 min-h-screen flex flex-col">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <form action="/search" method="get" class="hidden sm:block">
+                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </form>
+                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="access-denied" class="hidden text-center py-20">
+            <h1 class="font-serif text-4xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p class="text-stone-600 mb-6">You do not have permission to view this page.</p>
+            <a href="/" class="inline-block bg-amber-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-800 transition">Go Home</a>
+        </div>
+
+        <div id="admin-content" class="hidden">
+            <h1 class="font-serif text-3xl font-bold text-stone-900 mb-6">Manage Books</h1>
+
+            <div class="flex flex-wrap gap-4 mb-6">
+                <div>
+                    <label for="status-filter" class="block text-sm font-medium text-stone-600 mb-1">Status</label>
+                    <select id="status-filter" onchange="loadBooks(1)" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="source-filter" class="block text-sm font-medium text-stone-600 mb-1">Source</label>
+                    <select id="source-filter" onchange="loadBooks(1)" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">All</option>
+                        <option value="gutenberg">Gutenberg</option>
+                        <option value="standard_ebooks">Standard Ebooks</option>
+                        <option value="doab">DOAB</option>
+                        <option value="oapen">OAPEN</option>
+                        <option value="open_library">Open Library</option>
+                        <option value="internet_archive">Internet Archive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-stone-50 border-b border-stone-200">
+                            <tr>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Title</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Author</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Source</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">License</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Status</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-tbody" class="divide-y divide-stone-100">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="books-loading" class="py-10 text-center text-stone-500">Loading...</div>
+            </div>
+
+            <div id="pagination" class="flex justify-center items-center gap-2"></div>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">About</h4>
+                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        let currentPage = 1;
+        let totalPages = 1;
+
+        if (!token || !user.is_admin) {
+            document.getElementById('access-denied').classList.remove('hidden');
+        } else {
+            document.getElementById('admin-content').classList.remove('hidden');
+            loadBooks(1);
+        }
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        async function loadBooks(page) {
+            currentPage = page;
+            const tbody = document.getElementById('books-tbody');
+            const loading = document.getElementById('books-loading');
+            tbody.innerHTML = '';
+            loading.classList.remove('hidden');
+
+            const status = document.getElementById('status-filter').value;
+            const source = document.getElementById('source-filter').value;
+
+            let url = `/api/v1/books?page=${page}&page_size=20&approved_only=false`;
+            if (status) url += `&status=${status}`;
+            if (source) url += `&source=${source}`;
+
+            try {
+                const res = await fetch(url, { headers: authHeaders() });
+                if (!res.ok) throw new Error('Failed to load books');
+                const data = await res.json();
+
+                const books = data.items || data.books || data || [];
+                totalPages = data.total_pages || Math.ceil((data.total || books.length) / 20) || 1;
+
+                loading.classList.add('hidden');
+
+                if (books.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-stone-500">No books found.</td></tr>';
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+
+                books.forEach(book => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-stone-50 transition';
+                    const statusColor = book.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                        book.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                        'bg-amber-100 text-amber-800';
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium text-stone-900 max-w-[200px] truncate">${escapeHtml(book.title || '')}</td>
+                        <td class="px-4 py-3 text-stone-600 max-w-[150px] truncate">${escapeHtml(book.author || '')}</td>
+                        <td class="px-4 py-3 text-stone-600">${escapeHtml(book.source || '')}</td>
+                        <td class="px-4 py-3 text-stone-600 text-xs max-w-[120px] truncate">${escapeHtml(book.license || '')}</td>
+                        <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">${escapeHtml(book.status || '')}</span></td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                ${book.status !== 'approved' ? `<button onclick="approveBook('${book.id}')" class="text-green-600 hover:text-green-800 text-xs font-medium">Approve</button>` : ''}
+                                ${book.status !== 'rejected' ? `<button onclick="rejectBook('${book.id}')" class="text-red-600 hover:text-red-800 text-xs font-medium">Reject</button>` : ''}
+                                ${book.slug ? `<a href="/books/${book.slug}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>` : `<a href="/books/${book.id}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>`}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                renderPagination();
+            } catch (e) {
+                loading.textContent = 'Error loading books.';
+            }
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            if (currentPage > 1) {
+                const prev = document.createElement('button');
+                prev.textContent = '← Prev';
+                prev.className = 'px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-100 transition';
+                prev.onclick = () => loadBooks(currentPage - 1);
+                container.appendChild(prev);
+            }
+
+            const info = document.createElement('span');
+            info.textContent = `Page ${currentPage} of ${totalPages}`;
+            info.className = 'px-3 py-1.5 text-sm text-stone-600';
+            container.appendChild(info);
+
+            if (currentPage < totalPages) {
+                const next = document.createElement('button');
+                next.textContent = 'Next →';
+                next.className = 'px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-100 transition';
+                next.onclick = () => loadBooks(currentPage + 1);
+                container.appendChild(next);
+            }
+        }
+
+        async function approveBook(id) {
+            try {
+                await fetch(`/api/v1/books/${id}/approve`, { method: 'POST', headers: authHeaders() });
+                loadBooks(currentPage);
+            } catch (e) {
+                alert('Failed to approve book');
+            }
+        }
+
+        async function rejectBook(id) {
+            try {
+                await fetch(`/api/v1/books/${id}/reject`, { method: 'POST', headers: authHeaders() });
+                loadBooks(currentPage);
+            } catch (e) {
+                alert('Failed to reject book');
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

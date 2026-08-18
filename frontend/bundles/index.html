@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Bundles - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .bundle-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .bundle-card:hover { transform: translateY(-4px); }
+        .category-btn.active { background-color: #b45309; color: white; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-900">
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <form action="/search" method="get" class="hidden sm:block">
+                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </form>
+                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Page Title -->
+        <div class="text-center mb-10">
+            <h1 class="font-serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">Book Bundles</h1>
+            <p class="text-lg text-stone-600 max-w-2xl mx-auto">Curated collections of public domain and openly-licensed books. Just £10 each.</p>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="flex flex-wrap justify-center gap-3 mb-10">
+            <button onclick="filterCategory('')" class="category-btn active px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">All</button>
+            <button onclick="filterCategory('fiction')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Fiction</button>
+            <button onclick="filterCategory('non-fiction')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Non-Fiction</button>
+            <button onclick="filterCategory('science')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Science</button>
+            <button onclick="filterCategory('philosophy')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Philosophy</button>
+            <button onclick="filterCategory('history')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">History</button>
+        </div>
+
+        <!-- Bundles Grid -->
+        <div id="bundles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="text-center py-16 col-span-full">
+                <div class="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-stone-500 mt-3">Loading bundles...</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="flex justify-center items-center gap-4 mt-12"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-900 text-stone-300 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">About</h4>
+                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        let currentPage = 1;
+        let currentCategory = '';
+        const PAGE_SIZE = 12;
+
+        async function loadBundles(page, category) {
+            const grid = document.getElementById('bundles-grid');
+            grid.innerHTML = `
+                <div class="text-center py-16 col-span-full">
+                    <div class="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-stone-500 mt-3">Loading bundles...</p>
+                </div>`;
+
+            let url = `/api/v1/bundles?page=${page}&page_size=${PAGE_SIZE}`;
+            if (category) url += `&category=${encodeURIComponent(category)}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to fetch bundles');
+                const data = await response.json();
+                const bundles = data.items || data.results || data || [];
+                const total = data.total || data.count || bundles.length;
+                const totalPages = Math.ceil(total / PAGE_SIZE);
+
+                if (bundles.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-16">
+                            <span class="text-5xl mb-4 block">📚</span>
+                            <p class="text-stone-500 text-lg mb-2">No bundles found${category ? ' in this category' : ''}.</p>
+                            <p class="text-stone-400">Check back soon for new collections!</p>
+                        </div>`;
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+
+                grid.innerHTML = bundles.map(bundle => `
+                    <a href="/bundles/${bundle.slug}" class="bundle-card block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg">
+                        <div class="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center p-6">
+                            <div class="text-center">
+                                <span class="text-4xl">📚</span>
+                                <p class="text-amber-800 font-medium mt-2">${bundle.book_count || bundle.num_books || '?'} books</p>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="font-serif text-xl font-bold text-stone-900">${bundle.name}</h3>
+                                ${bundle.category ? `<span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">${bundle.category}</span>` : ''}
+                            </div>
+                            <p class="text-stone-600 text-sm line-clamp-2 mb-4">${bundle.description || 'A curated collection of great reads.'}</p>
+                            <div class="flex items-center justify-between pt-2 border-t border-stone-100">
+                                <span class="text-amber-700 font-bold text-lg">£10</span>
+                                <span class="text-amber-600 text-sm font-medium">View Bundle &rarr;</span>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+
+                renderPagination(page, totalPages);
+            } catch (error) {
+                console.error('Error loading bundles:', error);
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16">
+                        <span class="text-5xl mb-4 block">⚠️</span>
+                        <p class="text-stone-500 text-lg mb-2">Unable to load bundles.</p>
+                        <p class="text-stone-400 text-sm">Please try again later or <a href="/" class="text-amber-700 hover:underline">return home</a>.</p>
+                    </div>`;
+                document.getElementById('pagination').innerHTML = '';
+            }
+        }
+
+        function renderPagination(page, totalPages) {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+            let html = '';
+            html += `<button onclick="goToPage(${page - 1})" class="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-stone-100'}" ${page <= 1 ? 'disabled' : ''}>Previous</button>`;
+
+            const start = Math.max(1, page - 2);
+            const end = Math.min(totalPages, page + 2);
+            for (let i = start; i <= end; i++) {
+                html += `<button onclick="goToPage(${i})" class="w-10 h-10 rounded-lg text-sm font-medium ${i === page ? 'bg-amber-700 text-white' : 'border border-stone-300 hover:bg-stone-100'}">${i}</button>`;
+            }
+
+            if (end < totalPages) {
+                html += `<span class="text-stone-400 px-1">...</span>`;
+                html += `<button onclick="goToPage(${totalPages})" class="w-10 h-10 rounded-lg text-sm font-medium border border-stone-300 hover:bg-stone-100">${totalPages}</button>`;
+            }
+
+            html += `<button onclick="goToPage(${page + 1})" class="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-stone-100'}" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
+
+            container.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            if (page < 1) return;
+            currentPage = page;
+            loadBundles(currentPage, currentCategory);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function filterCategory(category) {
+            currentCategory = category;
+            currentPage = 1;
+
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-amber-700', 'text-white', 'border-amber-700');
+            });
+            const activeBtn = event.target;
+            activeBtn.classList.add('active');
+
+            loadBundles(currentPage, currentCategory);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBundles(currentPage, currentCategory);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Detail – Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 font-sans text-stone-900 min-h-screen flex flex-col">
+
+<nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                <div class="hidden md:flex ml-10 space-x-8">
+                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <form action="/search" method="get" class="hidden sm:block">
+                    <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </form>
+                <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+    <div id="loading" class="text-center py-16">
+        <div class="inline-block w-8 h-8 border-4 border-amber-200 border-t-amber-700 rounded-full animate-spin"></div>
+        <p class="mt-3 text-stone-500">Loading book details...</p>
+    </div>
+
+    <div id="error" class="hidden bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
+        <p id="error-message"></p>
+        <a href="/search" class="inline-block mt-3 text-sm font-medium text-red-800 underline hover:text-red-900">Back to Search</a>
+    </div>
+
+    <div id="book-detail" class="hidden">
+        <a href="/search" class="inline-flex items-center text-stone-500 hover:text-amber-700 text-sm font-medium mb-8 transition-colors">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Search
+        </a>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="md:flex">
+                <div id="book-cover" class="md:w-80 md:min-h-[400px] flex-shrink-0"></div>
+                <div class="flex-1 p-8">
+                    <div class="flex flex-wrap items-start gap-3 mb-4">
+                        <h1 id="book-title" class="font-serif text-3xl font-bold text-stone-900"></h1>
+                    </div>
+                    <p id="book-author" class="text-lg text-stone-600 mb-4"></p>
+
+                    <div id="book-meta" class="flex flex-wrap gap-3 mb-6"></div>
+
+                    <div id="book-description" class="prose prose-stone max-w-none mb-8">
+                        <p class="text-stone-600 leading-relaxed whitespace-pre-wrap"></p>
+                    </div>
+
+                    <div id="book-source" class="border-t border-stone-100 pt-6">
+                        <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-2">Source</h3>
+                        <div id="source-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-stone-900 text-stone-300 mt-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+            </div>
+            <div>
+                <h4 class="font-semibold text-white mb-3">Shop</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                    <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-white mb-3">Account</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                    <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                    <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-white mb-3">About</h4>
+                <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+            </div>
+        </div>
+        <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+            <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    const gradients = [
+        'from-amber-400 to-orange-500',
+        'from-rose-400 to-pink-500',
+        'from-emerald-400 to-teal-500',
+        'from-blue-400 to-indigo-500',
+        'from-violet-400 to-purple-500',
+        'from-amber-500 to-red-500',
+        'from-cyan-400 to-blue-500',
+        'from-lime-400 to-green-500',
+    ];
+
+    function getGradient(id) {
+        const index = (typeof id === 'number' ? id : 0) % gradients.length;
+        return gradients[Math.abs(index)];
+    }
+
+    function renderLicenseBadge(license) {
+        if (!license) return '';
+        const isPublicDomain = license.toLowerCase().includes('public domain') || license.toLowerCase().includes('cc0');
+        const colors = isPublicDomain
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+            : 'bg-blue-100 text-blue-800 border-blue-200';
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${colors}">${license}</span>`;
+    }
+
+    function renderCategoryBadge(category) {
+        if (!category) return '';
+        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-700 border border-stone-200">${category}</span>`;
+    }
+
+    async function loadBook() {
+        const bookId = window.location.pathname.split('/').pop();
+        const loadingEl = document.getElementById('loading');
+        const errorEl = document.getElementById('error');
+        const detailEl = document.getElementById('book-detail');
+
+        if (!bookId) {
+            loadingEl.classList.add('hidden');
+            document.getElementById('error-message').textContent = 'No book ID provided.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/v1/books/${bookId}`);
+            if (!response.ok) throw new Error(`Book not found (${response.status})`);
+            const book = await response.json();
+
+            loadingEl.classList.add('hidden');
+            document.title = `${book.title} – Babe's Bookstore`;
+
+            if (book.cover_image_url) {
+                document.getElementById('book-cover').innerHTML =
+                    `<img src="${book.cover_image_url}" alt="${book.title}" class="w-full h-full object-cover md:h-full min-h-[300px]">`;
+            } else {
+                document.getElementById('book-cover').innerHTML =
+                    `<div class="w-full min-h-[300px] md:min-h-[400px] bg-gradient-to-br ${getGradient(book.id)} flex items-center justify-center">
+                        <span class="text-white text-7xl font-serif font-bold opacity-60">${book.title.charAt(0)}</span>
+                    </div>`;
+            }
+
+            document.getElementById('book-title').textContent = book.title;
+            document.getElementById('book-author').textContent = `by ${book.author || 'Unknown author'}`;
+
+            let metaHtml = '';
+            if (book.license) metaHtml += renderLicenseBadge(book.license);
+            if (book.category) metaHtml += renderCategoryBadge(book.category);
+            if (book.publication_year) {
+                metaHtml += `<span class="text-sm text-stone-500">${book.publication_year}</span>`;
+            }
+            document.getElementById('book-meta').innerHTML = metaHtml;
+
+            const descEl = document.getElementById('book-description');
+            if (book.description) {
+                descEl.innerHTML = `<p class="text-stone-600 leading-relaxed whitespace-pre-wrap">${book.description}</p>`;
+            } else {
+                descEl.innerHTML = '<p class="text-stone-400 italic">No description available.</p>';
+            }
+
+            const sourceEl = document.getElementById('source-content');
+            let sourceHtml = '';
+            if (book.source_url) {
+                sourceHtml = `<p class="text-sm text-stone-600">Sourced from: <a href="${book.source_url}" target="_blank" rel="noopener noreferrer" class="text-amber-700 hover:text-amber-800 underline">${book.source_url}</a></p>`;
+            }
+            if (book.source_name) {
+                sourceHtml += `<p class="text-sm text-stone-500 mt-1">${book.source_name}</p>`;
+            }
+            if (!sourceHtml) {
+                sourceHtml = '<p class="text-sm text-stone-400 italic">Source information not available.</p>';
+            }
+            sourceEl.innerHTML = sourceHtml;
+
+            detailEl.classList.remove('hidden');
+        } catch (err) {
+            loadingEl.classList.add('hidden');
+            document.getElementById('error-message').textContent = `Could not load book: ${err.message}`;
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadBook);
+</script>
+
+</body>
+</html>

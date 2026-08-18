@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Bundles - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 font-sans text-stone-800 min-h-screen flex flex-col">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <form action="/search" method="get" class="hidden sm:block">
+                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </form>
+                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="access-denied" class="hidden text-center py-20">
+            <h1 class="font-serif text-4xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p class="text-stone-600 mb-6">You do not have permission to view this page.</p>
+            <a href="/" class="inline-block bg-amber-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-800 transition">Go Home</a>
+        </div>
+
+        <div id="admin-content" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="font-serif text-3xl font-bold text-stone-900">Manage Bundles</h1>
+                <button onclick="toggleCreateForm()" id="new-bundle-btn" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">+ New Bundle</button>
+            </div>
+
+            <div id="create-form" class="hidden bg-white rounded-xl border border-stone-200 p-6 mb-8">
+                <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Create New Bundle</h2>
+                <form onsubmit="createBundle(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Name</label>
+                            <input type="text" id="bundle-name" required class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Slug</label>
+                            <input type="text" id="bundle-slug" required class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Description</label>
+                            <textarea id="bundle-description" rows="3" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Price (cents)</label>
+                            <input type="number" id="bundle-price" required min="0" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Category</label>
+                            <input type="text" id="bundle-category" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Book IDs (comma-separated)</label>
+                            <input type="text" id="bundle-book-ids" placeholder="e.g. abc123,def456,ghi789" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Create Bundle</button>
+                        <button type="button" onclick="toggleCreateForm()" class="bg-stone-100 text-stone-700 px-5 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl border border-stone-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-stone-50 border-b border-stone-200">
+                            <tr>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Name</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Books</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Price</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Active</th>
+                                <th class="text-left px-4 py-3 font-medium text-stone-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bundles-tbody" class="divide-y divide-stone-100"></tbody>
+                    </table>
+                </div>
+                <div id="bundles-loading" class="py-10 text-center text-stone-500">Loading...</div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">About</h4>
+                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token || !user.is_admin) {
+            document.getElementById('access-denied').classList.remove('hidden');
+        } else {
+            document.getElementById('admin-content').classList.remove('hidden');
+            loadBundles();
+        }
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function toggleCreateForm() {
+            const form = document.getElementById('create-form');
+            const btn = document.getElementById('new-bundle-btn');
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+                btn.classList.add('hidden');
+            } else {
+                form.classList.add('hidden');
+                btn.classList.remove('hidden');
+            }
+        }
+
+        async function loadBundles() {
+            const tbody = document.getElementById('bundles-tbody');
+            const loading = document.getElementById('bundles-loading');
+            tbody.innerHTML = '';
+            loading.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/v1/bundles', { headers: authHeaders() });
+                if (!res.ok) throw new Error('Failed to load bundles');
+                const data = await res.json();
+
+                const bundles = data.items || data.bundles || data || [];
+                loading.classList.add('hidden');
+
+                if (bundles.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-stone-500">No bundles found.</td></tr>';
+                    return;
+                }
+
+                bundles.forEach(bundle => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-stone-50 transition';
+                    const bookCount = (bundle.book_ids || bundle.books || []).length;
+                    const priceDollars = ((bundle.price_cents || bundle.price || 0) / 100).toFixed(2);
+                    const activeDot = bundle.active ? '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>Active' : '<span class="inline-block w-2 h-2 rounded-full bg-stone-300 mr-1.5"></span>Inactive';
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium text-stone-900">${escapeHtml(bundle.name || '')}</td>
+                        <td class="px-4 py-3 text-stone-600">${bookCount}</td>
+                        <td class="px-4 py-3 text-stone-600">$${priceDollars}</td>
+                        <td class="px-4 py-3 text-sm text-stone-600">${activeDot}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                ${bundle.slug ? `<a href="/bundles/${bundle.slug}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>` : `<a href="/bundles/${bundle.id}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>`}
+                                <button onclick="toggleBundle('${bundle.id}', ${!bundle.active})" class="text-xs font-medium ${bundle.active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'}">${bundle.active ? 'Deactivate' : 'Activate'}</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                loading.textContent = 'Error loading bundles.';
+            }
+        }
+
+        async function createBundle(e) {
+            e.preventDefault();
+            const bookIdsRaw = document.getElementById('bundle-book-ids').value.trim();
+            const bookIds = bookIdsRaw ? bookIdsRaw.split(',').map(id => id.trim()).filter(id => id) : [];
+
+            const body = {
+                name: document.getElementById('bundle-name').value,
+                slug: document.getElementById('bundle-slug').value,
+                description: document.getElementById('bundle-description').value,
+                price_cents: parseInt(document.getElementById('bundle-price').value, 10),
+                category: document.getElementById('bundle-category').value || null,
+                book_ids: bookIds,
+            };
+
+            try {
+                const res = await fetch('/api/v1/bundles', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('Failed to create bundle');
+                toggleCreateForm();
+                document.getElementById('create-form').querySelector('form').reset();
+                loadBundles();
+            } catch (e) {
+                alert('Failed to create bundle');
+            }
+        }
+
+        async function toggleBundle(id, active) {
+            try {
+                await fetch(`/api/v1/bundles/${id}`, {
+                    method: 'PATCH',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ active })
+                });
+                loadBundles();
+            } catch (e) {
+                alert('Failed to update bundle');
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

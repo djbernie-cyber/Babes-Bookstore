@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Books – Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-stone-50 font-sans text-stone-900 min-h-screen flex flex-col">
+
+<nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                <div class="hidden md:flex ml-10 space-x-8">
+                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <form action="/search" method="get" class="hidden sm:block">
+                    <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </form>
+                <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+    <h1 class="font-serif text-3xl font-bold text-stone-900 mb-8">Search Books</h1>
+
+    <form id="searchForm" class="flex gap-3 max-w-2xl mb-10" onsubmit="return false;">
+        <input
+            type="search"
+            id="searchInput"
+            name="q"
+            placeholder="Search by title, author, or keyword..."
+            class="flex-1 px-4 py-3 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+        >
+        <button
+            type="button"
+            onclick="performSearch()"
+            class="px-6 py-3 bg-amber-700 text-white rounded-lg font-medium hover:bg-amber-800 transition-colors"
+        >
+            Search
+        </button>
+    </form>
+
+    <div id="loading" class="hidden text-center py-12">
+        <div class="inline-block w-8 h-8 border-4 border-amber-200 border-t-amber-700 rounded-full animate-spin"></div>
+        <p class="mt-3 text-stone-500">Searching...</p>
+    </div>
+
+    <div id="error" class="hidden bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6"></div>
+
+    <div id="results-info" class="hidden mb-6 text-sm text-stone-500"></div>
+
+    <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+
+    <div id="no-results" class="hidden text-center py-16">
+        <p class="text-stone-500 text-lg">No books found. Try a different search term.</p>
+    </div>
+</main>
+
+<footer class="bg-stone-900 text-stone-300 mt-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+            </div>
+            <div>
+                <h4 class="font-semibold text-white mb-3">Shop</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                    <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-white mb-3">Account</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                    <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                    <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-white mb-3">About</h4>
+                <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+            </div>
+        </div>
+        <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+            <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    const gradients = [
+        'from-amber-400 to-orange-500',
+        'from-rose-400 to-pink-500',
+        'from-emerald-400 to-teal-500',
+        'from-blue-400 to-indigo-500',
+        'from-violet-400 to-purple-500',
+        'from-amber-500 to-red-500',
+        'from-cyan-400 to-blue-500',
+        'from-lime-400 to-green-500',
+    ];
+
+    function getGradient(id) {
+        const index = (typeof id === 'number' ? id : 0) % gradients.length;
+        return gradients[Math.abs(index)];
+    }
+
+    function renderBookCard(book) {
+        const coverHtml = book.cover_image_url
+            ? `<img src="${book.cover_image_url}" alt="${book.title}" class="w-full h-56 object-cover rounded-t-lg">`
+            : `<div class="w-full h-56 rounded-t-lg bg-gradient-to-br ${getGradient(book.id)} flex items-center justify-center">
+                <span class="text-white text-4xl font-serif font-bold">${book.title.charAt(0)}</span>
+               </div>`;
+
+        return `
+            <a href="/books/${book.id}" class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
+                ${coverHtml}
+                <div class="p-4">
+                    <h3 class="font-serif font-bold text-stone-900 group-hover:text-amber-700 transition-colors line-clamp-2 mb-1">${book.title}</h3>
+                    <p class="text-stone-500 text-sm">${book.author || 'Unknown author'}</p>
+                    ${book.publication_year ? `<p class="text-stone-400 text-xs mt-1">${book.publication_year}</p>` : ''}
+                </div>
+            </a>
+        `;
+    }
+
+    async function performSearch() {
+        const query = document.getElementById('searchInput').value.trim();
+        if (!query) return;
+
+        const loadingEl = document.getElementById('loading');
+        const errorEl = document.getElementById('error');
+        const resultsEl = document.getElementById('results');
+        const noResultsEl = document.getElementById('no-results');
+        const resultsInfoEl = document.getElementById('results-info');
+
+        loadingEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        resultsEl.innerHTML = '';
+        noResultsEl.classList.add('hidden');
+        resultsInfoEl.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/api/v1/search?q=${encodeURIComponent(query)}&page_size=40`);
+            if (!response.ok) throw new Error(`Search failed (${response.status})`);
+            const data = await response.json();
+            const books = data.results || data;
+
+            loadingEl.classList.add('hidden');
+
+            if (books.length === 0) {
+                noResultsEl.classList.remove('hidden');
+                return;
+            }
+
+            resultsInfoEl.textContent = `Showing ${books.length} result${books.length !== 1 ? 's' : ''} for "${query}"`;
+            resultsInfoEl.classList.remove('hidden');
+            resultsEl.innerHTML = books.map(renderBookCard).join('');
+        } catch (err) {
+            loadingEl.classList.add('hidden');
+            errorEl.textContent = `Error: ${err.message}`;
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const query = new URLSearchParams(window.location.search).get('q');
+        if (query) {
+            document.getElementById('searchInput').value = query;
+            performSearch();
+        }
+
+        document.getElementById('searchInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

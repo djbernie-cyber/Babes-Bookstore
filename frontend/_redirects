@@ -1,0 +1,11 @@
+/api/*  https://babes-bookstore-api.fly.dev/api/:splat  200
+/login  /account/login.html  200
+/register  /account/register.html  200
+/account  /account/purchases.html  200
+/search  /books/search.html  200
+/admin/books  /admin/books.html  200
+/admin/bundles  /admin/bundles.html  200
+/admin  /admin/dashboard.html  200
+/bundles/*  /bundles/detail.html  200
+/books/*  /books/detail.html  200
+/bundles  /bundles/index.html  200
