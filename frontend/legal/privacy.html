@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; } .font-serif { font-family: 'Playfair Display', serif; }</style>
+</head>
+<body class="bg-stone-50 text-stone-900">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                <div class="hidden md:flex ml-10 space-x-8">
+                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+            </div>
+            <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+        </div>
+    
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="font-serif text-4xl font-bold text-stone-900 mb-4">Privacy Policy</h1>
+        <p class="text-stone-500 text-sm mb-10">Last updated: 18 August 2026</p>
+
+        <div class="space-y-8 text-stone-700 leading-relaxed">
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">The short version</h2>
+                <p>We collect as little as possible: the email address on your account and a record of what you bought. We never see your card details — payment providers handle those. We don't run advertising trackers or sell data to anyone.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">1. Who we are</h2>
+                <p>Babe's Bookstore is the data controller for the personal data described here. If you have questions about your data, contact <span class="text-amber-700">support@babes-bookstore.example</span>.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">2. What we collect</h2>
+                <ul class="list-disc pl-6 space-y-2 mt-2">
+                    <li><strong>Account data</strong> — your email address and, if you register with a password, a salted hash of it (we cannot read your password). If you use "Sign in with Google", we receive your Google account email and name.</li>
+                    <li><strong>Purchase records</strong> — what you bought, when, the amount, and your download history. We keep these so you can re-download your bundles and so we can meet tax obligations.</li>
+                    <li><strong>Card data — never.</strong> Payments run through Stripe, PayPal and Square. Card numbers never touch our servers.</li>
+                    <li><strong>Server logs</strong> — routine request logs (IP address, timestamps) kept briefly for security and troubleshooting.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">3. Why we hold it (lawful bases)</h2>
+                <ul class="list-disc pl-6 space-y-2 mt-2">
+                    <li><strong>Contract</strong> — to run your account, deliver your purchases and provide re-downloads.</li>
+                    <li><strong>Legal obligation</strong> — keeping records of sales for tax purposes.</li>
+                    <li><strong>Legitimate interests</strong> — keeping the site secure and diagnosing faults.</li>
+                </ul>
+                <p class="mt-3">We do not use your data for profiling or automated decisions, and we do not send marketing email unless you explicitly ask.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">4. Who else sees it</h2>
+                <p>Only processors we need to run the shop: our hosting provider (application hosting and database), our file storage provider (your downloads), our email provider (transactional receipts and support replies), and the payment providers (who are independent controllers of the payment data they collect). None of them may use your data for their own marketing.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">5. Cookies and local storage</h2>
+                <p>We don't use advertising or analytics cookies. The site stores a sign-in token in your browser's local storage so you stay logged in — clear it by logging out. Fonts are loaded from Google Fonts, which means Google receives your IP address as part of that request; if you prefer to avoid this, a browser extension such as uBlock Origin will block it.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">6. How long we keep it</h2>
+                <p>Account and purchase records are kept while your account is active, plus up to 6 years for tax-related records. Server logs are deleted within weeks. Download links expire much sooner — the window is shown at checkout.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">7. Your rights</h2>
+                <p>Under UK GDPR you can ask us to: <strong>access</strong> your data, <strong>correct</strong> it, <strong>delete</strong> it ("right to be forgotten"), <strong>restrict or object</strong> to processing, and get a <strong>copy</strong> of it (portability). Email us and we will respond within one month. Deleting your account removes your sign-in data; purchase records we must legally keep are reduced to the minimum required. You can also complain to the Information Commissioner's Office at <a href="https://ico.org.uk" class="text-amber-700 underline hover:text-amber-900" rel="noopener">ico.org.uk</a>.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">8. Children</h2>
+                <p>The shop is not directed at children under 13 and we do not knowingly collect their data.</p>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

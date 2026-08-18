@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
 from typing import List, Optional
 
-from .deps import get_db, require_admin
+from .deps import get_db, require_admin, get_current_user
 from ...models.book import Book, BookStatus
 from ...schemas.book import BookResponse, BookListResponse, BookUpdate
+from ...models.user import User
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -21,13 +22,27 @@ async def list_books(
     status_filter: Optional[BookStatus] = Query(None, alias="status"),
     search: Optional[str] = None,
     approved_only: bool = True,
+    current_user: Optional[User] = Depends(get_current_user),
 ):
+    """List books.
+
+    The public catalogue only ever sees approved, licence-verified books.
+    Viewing unapproved material (approved_only=false, or any explicit
+    status filter) is an admin-only capability — previously anyone could
+    enumerate pending and rejected books.
+    """
+    wants_unapproved = (approved_only is False) or (status_filter is not None)
+    if wants_unapproved and (not current_user or not current_user.is_admin):
+        raise HTTPException(status_code=403, detail="Admin required to list unapproved books")
+
     stmt = select(Book)
 
-    if approved_only:
-        stmt = stmt.where(Book.status == BookStatus.APPROVED, Book.license_verified == True)
-    elif status_filter:
+    # An explicit status filter wins over the approved_only default —
+    # otherwise "?status=pending" would silently mean "approved only".
+    if status_filter is not None:
         stmt = stmt.where(Book.status == status_filter)
+    elif approved_only:
+        stmt = stmt.where(Book.status == BookStatus.APPROVED, Book.license_verified == True)
 
     if category:
         stmt = stmt.where(Book.category == category)

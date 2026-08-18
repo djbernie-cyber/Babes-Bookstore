@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Policy - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; } .font-serif { font-family: 'Playfair Display', serif; }</style>
+</head>
+<body class="bg-stone-50 text-stone-900">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                <div class="hidden md:flex ml-10 space-x-8">
+                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+            </div>
+            <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+        </div>
+    
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="font-serif text-4xl font-bold text-stone-900 mb-4">Refund Policy</h1>
+        <p class="text-stone-500 text-sm mb-10">Last updated: 18 August 2026</p>
+
+        <div class="space-y-8 text-stone-700 leading-relaxed">
+            <section class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">The short version</h2>
+                <p>If a download doesn't work or the bundle isn't as described, we'll fix it or refund you — no fuss. Because our products are instant digital downloads, the standard 14-day cancellation right ends once your download begins; you agree to this at checkout.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">1. Your statutory rights</h2>
+                <p>Nothing in this policy affects your rights under the Consumer Contracts Regulations 2013 or the Consumer Rights Act 2015. This policy explains how those rights apply to digital downloads and is <em>in addition to</em>, not instead of, the law.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">2. The 14-day rule and digital downloads</h2>
+                <p>Normally you can cancel an online purchase within 14 days for any reason. For digital content, that right ends <strong>once downloading begins</strong>, provided we told you so and you expressly consented. At checkout you confirm that:</p>
+                <ul class="list-disc pl-6 space-y-2 mt-2">
+                    <li>you want the download to start immediately, and</li>
+                    <li>you understand your 14-day right to cancel is lost once it does.</li>
+                </ul>
+                <p class="mt-3">If you <strong>bought but never downloaded</strong>, the 14-day cancellation right still applies — email us and we will refund in full, no questions asked.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">3. When we always make it right</h2>
+                <p>Whatever the 14-day rule says, we will repair, replace, or refund a purchase at any time when:</p>
+                <ul class="list-disc pl-6 space-y-2 mt-2">
+                    <li>the download is corrupt, incomplete, or missing files;</li>
+                    <li>a file won't open on a standard reader (EPUB/PDF);</li>
+                    <li>the bundle contents materially differ from its description.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">4. How to ask</h2>
+                <!-- TODO: replace with your real support address before launch -->
+                <p>Email <span class="text-amber-700">support@babes-bookstore.example</span> with your order reference and one or two sentences about what went wrong. We aim to reply within 2 working days. Approved refunds are returned to your original payment method — typically within 5–10 working days, depending on your bank or payment provider.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">5. Chargebacks</h2>
+                <p>Please talk to us before contacting your bank — it's faster for you and cheaper for a small shop. We will never dispute a legitimate refund request.</p>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

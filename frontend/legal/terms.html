@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; } .font-serif { font-family: 'Playfair Display', serif; }</style>
+</head>
+<body class="bg-stone-50 text-stone-900">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                <div class="hidden md:flex ml-10 space-x-8">
+                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+            </div>
+            <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+        </div>
+    
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="font-serif text-4xl font-bold text-stone-900 mb-4">Terms of Service</h1>
+        <p class="text-stone-500 text-sm mb-10">Last updated: 18 August 2026</p>
+
+        <div class="space-y-8 text-stone-700 leading-relaxed">
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">1. About these terms</h2>
+                <p>These terms govern your use of Babe's Bookstore ("we", "us") and the purchase of book bundles from this website. By creating an account or making a purchase you agree to them. If you don't agree, please don't use the site.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">2. What we sell</h2>
+                <p>We sell curated bundles of electronic books. Every book we sell is either in the <strong>public domain</strong> or carries an <strong>open licence</strong> (such as Creative Commons) that permits redistribution. We do not sell — and never will sell — copyrighted books without permission.</p>
+                <p class="mt-3">You are buying the <em>bundle</em>: our curation, formatting and convenience. The books themselves remain under their original licences, which travel with your download. Some licences (for example CC BY) require <strong>attribution</strong> — a licence and credits file is included in every download, and those requirements pass to you if you share the books onward.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">3. Your account</h2>
+                <p>You may browse without an account, but need one to purchase and re-download. You are responsible for keeping your credentials safe. Tell us promptly if you think someone else has accessed your account. We may suspend accounts used for abuse, such as reselling our bundles or automating bulk downloads.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">4. Payments</h2>
+                <p>Payments are processed by third-party providers (Stripe, PayPal, Square, Apple Pay, Google Pay). We never see or store your card details. Your payment is subject to the provider's own terms as well as these terms. Prices are shown on each bundle page and include any applicable VAT.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">5. Downloads</h2>
+                <p>After payment you receive a download link for the bundle, usable a limited number of times within a generous window (shown at checkout). Downloads are for your personal use. You may keep copies forever and share individual books in accordance with their licences, but you may not resell our bundles.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">6. Refunds</h2>
+                <p>Because our products are instant digital downloads, your 14-day cancellation right under the Consumer Contracts Regulations 2013 ends once downloading begins — you acknowledge this at checkout. If a file is faulty or not as described, we will repair or replace it, or refund you. See our <a href="/refunds" class="text-amber-700 underline hover:text-amber-900">Refund Policy</a> for the full detail.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">7. Availability and changes</h2>
+                <p>We aim to keep the site available but cannot guarantee uninterrupted service. We may add, change or retire bundles at any time; this never affects purchases you have already made. We may update these terms — the "last updated" date above will change and material updates will be flagged on the site.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">8. Liability</h2>
+                <p>We take reasonable care in preparing our bundles, but books are provided "as is". Nothing in these terms limits your statutory rights as a consumer. Our liability for any claim is limited to the amount you paid for the bundle concerned.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">9. Governing law</h2>
+                <p>These terms are governed by the laws of England and Wales. If a court finds any term unenforceable, the rest remain in force.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">10. Contact</h2>
+                <!-- TODO: replace with your real support address before launch -->
+                <p>Questions about these terms: <span class="text-amber-700">support@babes-bookstore.example</span></p>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
+                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Shop</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
+                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Account</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
+                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
+                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-3">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

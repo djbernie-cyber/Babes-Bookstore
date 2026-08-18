@@ -19,7 +19,7 @@ business, not just developers.
 | Payment code (5 methods) | Built — needs your accounts connected |
 | Automated tests (25) | Passing |
 | Live on the internet | **Not yet — needs steps 1–5 below** |
-| Legal policy pages | **Not written yet** |
+| Legal policy pages | **Built** — /terms, /privacy, /refunds (replace the support@...example address before launch) |
 
 The code is on GitHub: https://github.com/djbernie-cyber/Babes-Bookstore
 

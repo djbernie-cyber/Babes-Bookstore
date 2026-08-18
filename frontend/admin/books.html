@@ -46,6 +46,9 @@
                         <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
                         <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
                     </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
                 </div>
                 <div class="flex items-center space-x-4">
                     <form action="/search" method="get" class="hidden sm:block">
@@ -54,6 +57,12 @@
                     <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
                 </div>
             </div>
+        </div>
+    
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
         </div>
     </nav>
 
@@ -65,14 +74,20 @@
         </div>
 
         <div id="admin-content" class="hidden">
-            <h1 class="font-serif text-3xl font-bold text-stone-900 mb-6">Manage Books</h1>
+            <h1 class="font-serif text-3xl font-bold text-stone-900 mb-2">Manage Books</h1>
+            <p class="text-stone-600 mb-6">Books from sources with unclear licences (DOAB, OAPEN, Internet Archive) arrive here for review. <strong>Check the licence link before approving</strong> — approval means you are satisfied the book may legally be sold.</p>
+
+            <div id="review-banner" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+                <p class="text-amber-800"><span id="pending-count" class="font-bold">0</span> book(s) waiting for review.</p>
+                <button onclick="showPending()" class="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 transition">Review now →</button>
+            </div>
 
             <div class="flex flex-wrap gap-4 mb-6">
                 <div>
                     <label for="status-filter" class="block text-sm font-medium text-stone-600 mb-1">Status</label>
                     <select id="status-filter" onchange="loadBooks(1)" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         <option value="">All</option>
-                        <option value="pending">Pending</option>
+                        <option value="pending" selected>Pending</option>
                         <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
                     </select>
@@ -83,11 +98,16 @@
                         <option value="">All</option>
                         <option value="gutenberg">Gutenberg</option>
                         <option value="standard_ebooks">Standard Ebooks</option>
+                        <option value="wikisource">Wikisource</option>
+                        <option value="openstax">OpenStax</option>
+                        <option value="internet_archive">Internet Archive</option>
                         <option value="doab">DOAB</option>
                         <option value="oapen">OAPEN</option>
                         <option value="open_library">Open Library</option>
-                        <option value="internet_archive">Internet Archive</option>
                     </select>
+                </div>
+                <div class="flex items-end">
+                    <input type="search" id="search-input" placeholder="Search title or author…" onkeydown="if(event.key==='Enter')loadBooks(1)" class="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                 </div>
             </div>
 
@@ -140,6 +160,11 @@
                 <div>
                     <h4 class="font-semibold text-white mb-3">About</h4>
                     <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                    <ul class="space-y-2 text-sm mt-3">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
@@ -159,6 +184,7 @@
         } else {
             document.getElementById('admin-content').classList.remove('hidden');
             loadBooks(1);
+            loadPendingCount();
         }
 
         function authHeaders() {
@@ -168,22 +194,45 @@
             };
         }
 
+        async function loadPendingCount() {
+            try {
+                const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
+                if (!res.ok) return;
+                const stats = await res.json();
+                const pending = stats.books?.pending || 0;
+                document.getElementById('pending-count').textContent = pending;
+                document.getElementById('review-banner').classList.toggle('hidden', pending === 0);
+            } catch (e) { /* banner is non-essential */ }
+        }
+
+        function showPending() {
+            document.getElementById('status-filter').value = 'pending';
+            loadBooks(1);
+        }
+
         async function loadBooks(page) {
             currentPage = page;
             const tbody = document.getElementById('books-tbody');
             const loading = document.getElementById('books-loading');
             tbody.innerHTML = '';
+            loading.textContent = 'Loading...';
             loading.classList.remove('hidden');
 
             const status = document.getElementById('status-filter').value;
             const source = document.getElementById('source-filter').value;
+            const search = document.getElementById('search-input')?.value.trim() || '';
 
             let url = `/api/v1/books?page=${page}&page_size=20&approved_only=false`;
             if (status) url += `&status=${status}`;
             if (source) url += `&source=${source}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
 
             try {
                 const res = await fetch(url, { headers: authHeaders() });
+                if (res.status === 403) {
+                    loading.textContent = 'Your session expired. Please log in again.';
+                    return;
+                }
                 if (!res.ok) throw new Error('Failed to load books');
                 const data = await res.json();
 
@@ -193,7 +242,11 @@
                 loading.classList.add('hidden');
 
                 if (books.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-stone-500">No books found.</td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-10 text-center text-stone-500">
+                        ${status === 'pending'
+                            ? '🎉 Nothing waiting for review. Run a scrape from the Dashboard to bring in more books.'
+                            : 'No books match these filters.'}
+                    </td></tr>`;
                     document.getElementById('pagination').innerHTML = '';
                     return;
                 }
@@ -204,11 +257,18 @@
                     const statusColor = book.status === 'approved' ? 'bg-green-100 text-green-800' :
                                         book.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                         'bg-amber-100 text-amber-800';
+                    const licence = escapeHtml(book.license_type || 'unknown');
+                    const licenceLink = book.license_url
+                        ? `<a href="${escapeHtml(book.license_url)}" target="_blank" rel="noopener" class="text-amber-700 hover:text-amber-900 underline" title="Check before approving">${licence} ↗</a>`
+                        : licence;
+                    const sourceLink = book.source_url
+                        ? `<a href="${escapeHtml(book.source_url)}" target="_blank" rel="noopener" class="hover:text-amber-700 underline" title="View at source">${escapeHtml(book.source || '')} ↗</a>`
+                        : escapeHtml(book.source || '');
                     tr.innerHTML = `
                         <td class="px-4 py-3 font-medium text-stone-900 max-w-[200px] truncate">${escapeHtml(book.title || '')}</td>
                         <td class="px-4 py-3 text-stone-600 max-w-[150px] truncate">${escapeHtml(book.author || '')}</td>
-                        <td class="px-4 py-3 text-stone-600">${escapeHtml(book.source || '')}</td>
-                        <td class="px-4 py-3 text-stone-600 text-xs max-w-[120px] truncate">${escapeHtml(book.license || '')}</td>
+                        <td class="px-4 py-3 text-stone-600 text-xs">${sourceLink}</td>
+                        <td class="px-4 py-3 text-stone-600 text-xs max-w-[140px] truncate">${licenceLink}</td>
                         <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">${escapeHtml(book.status || '')}</span></td>
                         <td class="px-4 py-3">
                             <div class="flex gap-2">
@@ -256,17 +316,22 @@
 
         async function approveBook(id) {
             try {
-                await fetch(`/api/v1/books/${id}/approve`, { method: 'POST', headers: authHeaders() });
+                const res = await fetch(`/api/v1/books/${id}/approve`, { method: 'POST', headers: authHeaders() });
+                if (!res.ok) throw new Error();
                 loadBooks(currentPage);
+                loadPendingCount();
             } catch (e) {
                 alert('Failed to approve book');
             }
         }
 
         async function rejectBook(id) {
+            if (!confirm('Reject this book? It will be hidden from the catalogue and from bundle building.')) return;
             try {
-                await fetch(`/api/v1/books/${id}/reject`, { method: 'POST', headers: authHeaders() });
+                const res = await fetch(`/api/v1/books/${id}/reject`, { method: 'POST', headers: authHeaders() });
+                if (!res.ok) throw new Error();
                 loadBooks(currentPage);
+                loadPendingCount();
             } catch (e) {
                 alert('Failed to reject book');
             }

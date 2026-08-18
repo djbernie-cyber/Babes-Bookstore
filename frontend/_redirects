@@ -1,3 +1,6 @@
+/terms  /legal/terms.html  200
+/privacy  /legal/privacy.html  200
+/refunds  /legal/refunds.html  200
 /api/*  https://babes-bookstore-api.fly.dev/api/:splat  200
 /login  /account/login.html  200
 /register  /account/register.html  200

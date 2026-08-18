@@ -54,6 +54,9 @@
                         <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
                         <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
                     </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
                 </div>
                 <div class="flex items-center space-x-4">
                     <form action="/search" method="get" class="hidden sm:block">
@@ -63,13 +66,19 @@
                 </div>
             </div>
         </div>
+    
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
+        </div>
     </nav>
 
     <!-- Hero Section -->
     <section class="gradient-hero py-20 lg:py-28">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="inline-block bg-white/80 backdrop-blur-sm rounded-full px-6 py-2 mb-6 shadow-sm">
-                <span class="font-semibold text-amber-700 text-lg">📚 Just £10 per bundle</span>
+                <span id="hero-price" class="font-semibold text-amber-700 text-lg">📚 Curated book bundles</span>
             </div>
             <h1 class="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-stone-900 mb-6">
                 Babe's Bookstore
@@ -93,12 +102,32 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">Featured Bundles</h2>
-                <p class="text-lg text-stone-600 max-w-2xl mx-auto">Hand-picked collections of great reads, each just £10.</p>
+                <p class="text-lg text-stone-600 max-w-2xl mx-auto">Hand-picked collections of great reads, one simple price each.</p>
             </div>
             <div id="featured-bundles" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="text-center py-12 col-span-full">
-                    <div class="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-stone-500 mt-3">Loading bundles...</p>
+                <div class="bg-white rounded-2xl border border-stone-100 overflow-hidden animate-pulse">
+                    <div class="h-48 bg-stone-200"></div>
+                    <div class="p-6 space-y-3">
+                        <div class="h-5 bg-stone-200 rounded w-3/4"></div>
+                        <div class="h-3 bg-stone-100 rounded w-full"></div>
+                        <div class="h-3 bg-stone-100 rounded w-2/3"></div>
+                    </div>
+                </div>
+                <div class="hidden sm:block bg-white rounded-2xl border border-stone-100 overflow-hidden animate-pulse">
+                    <div class="h-48 bg-stone-200"></div>
+                    <div class="p-6 space-y-3">
+                        <div class="h-5 bg-stone-200 rounded w-2/3"></div>
+                        <div class="h-3 bg-stone-100 rounded w-full"></div>
+                        <div class="h-3 bg-stone-100 rounded w-1/2"></div>
+                    </div>
+                </div>
+                <div class="hidden lg:block bg-white rounded-2xl border border-stone-100 overflow-hidden animate-pulse">
+                    <div class="h-48 bg-stone-200"></div>
+                    <div class="p-6 space-y-3">
+                        <div class="h-5 bg-stone-200 rounded w-1/2"></div>
+                        <div class="h-3 bg-stone-100 rounded w-full"></div>
+                        <div class="h-3 bg-stone-100 rounded w-2/3"></div>
+                    </div>
                 </div>
             </div>
             <div class="text-center mt-10">
@@ -114,8 +143,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
-                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">£10</p>
-                    <p class="text-stone-400 text-sm">Per Bundle</p>
+                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">1 Price</p>
+                    <p class="text-stone-400 text-sm">Per Bundle, No Subscription</p>
                 </div>
                 <div>
                     <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">70,000+</p>
@@ -152,7 +181,7 @@
                     <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
                         <span class="text-3xl">2</span>
                     </div>
-                    <h3 class="font-serif text-xl font-bold mb-3">Pay £10</h3>
+                    <h3 class="font-serif text-xl font-bold mb-3">Pay Once</h3>
                     <p class="text-stone-600">One flat price, no subscriptions. Pay with Stripe, PayPal, Square, Apple Pay, or Google Pay.</p>
                 </div>
                 <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
@@ -222,6 +251,11 @@
                 <div>
                     <h4 class="font-semibold text-white mb-3">About</h4>
                     <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                    <ul class="space-y-2 text-sm mt-3">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
@@ -247,7 +281,10 @@
                         </div>`;
                     return;
                 }
-                container.innerHTML = bundles.map(bundle => `
+                container.innerHTML = bundles.map(bundle => {
+                    const symbol = ({GBP:'£', USD:'$', EUR:'€'}[(bundle.currency || 'GBP').toUpperCase()]) || (bundle.currency || '£');
+                    const amount = ((bundle.price_cents ?? 1000) / 100).toFixed(2);
+                    return `
                     <a href="/bundles/${bundle.slug}" class="bundle-card block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg">
                         <div class="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center p-6">
                             <div class="text-center">
@@ -259,18 +296,28 @@
                             <h3 class="font-serif text-xl font-bold text-stone-900 mb-2">${bundle.name}</h3>
                             <p class="text-stone-600 text-sm line-clamp-2 mb-4">${bundle.description || 'A curated collection of great reads.'}</p>
                             <div class="flex items-center justify-between">
-                                <span class="text-amber-700 font-bold text-lg">£10</span>
+                                <span class="text-amber-700 font-bold text-lg">${symbol}${amount}</span>
                                 <span class="text-amber-600 text-sm font-medium">View Bundle &rarr;</span>
                             </div>
                         </div>
-                    </a>
-                `).join('');
+                    </a>`;
+                }).join('');
+
+                // Keep the hero claim honest: show the cheapest bundle's price.
+                const priced = bundles.map(b => ({ cents: b.price_cents ?? b.price, currency: b.currency || 'GBP' })).filter(p => typeof p.cents === 'number');
+                if (priced.length) {
+                    const cheapest = priced.reduce((a, b) => (a.cents <= b.cents ? a : b));
+                    const symbol = ({GBP:'£', USD:'$', EUR:'€'}[cheapest.currency.toUpperCase()]) || cheapest.currency;
+                    const el = document.getElementById('hero-price');
+                    if (el) el.textContent = `📚 Bundles from ${symbol}${(cheapest.cents / 100).toFixed(2)}`;
+                }
             } catch (error) {
                 console.error('Error loading featured bundles:', error);
                 container.innerHTML = `
-                    <div class="col-span-full text-center py-12">
-                        <p class="text-stone-500 text-lg">Unable to load bundles right now.</p>
-                        <a href="/bundles" class="inline-block mt-4 text-amber-700 font-medium hover:text-amber-800">Browse all bundles &rarr;</a>
+                    <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-stone-100">
+                        <span class="text-4xl">📚</span>
+                        <p class="text-stone-500 text-lg mt-3">Unable to load bundles right now.</p>
+                        <button onclick="location.reload()" class="mt-4 bg-amber-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-amber-700 transition">Try again</button>
                     </div>`;
             }
         });

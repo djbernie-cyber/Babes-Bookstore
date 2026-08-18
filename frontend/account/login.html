@@ -47,6 +47,9 @@
                     <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
                     <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
                 </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
             </div>
             <div class="flex items-center space-x-4">
                 <form action="/search" method="get" class="hidden sm:block">
@@ -56,7 +59,13 @@
             </div>
         </div>
     </div>
-</nav>
+
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
+        </div>
+    </nav>
 
 <main class="flex-1 flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
@@ -159,6 +168,11 @@
             <div>
                 <h4 class="font-semibold text-white mb-3">About</h4>
                 <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                    <ul class="space-y-2 text-sm mt-3">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
             </div>
         </div>
         <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">

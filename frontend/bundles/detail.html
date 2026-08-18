@@ -53,6 +53,9 @@
                         <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
                         <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
                     </div>
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
                 </div>
                 <div class="flex items-center space-x-4">
                     <form action="/search" method="get" class="hidden sm:block">
@@ -61,6 +64,12 @@
                     <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
                 </div>
             </div>
+        </div>
+    
+        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
+            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
+            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
+            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
         </div>
     </nav>
 
@@ -148,6 +157,7 @@
                                     <button onclick="payWith('google_pay')" class="payment-btn w-full flex items-center justify-center gap-3 bg-white text-stone-800 py-3 px-4 rounded-xl font-medium border border-stone-300 hover:bg-stone-50">
                                         <span>🔵</span> Pay with Google Pay
                                     </button>
+                                    <p class="text-xs text-stone-500 leading-relaxed mt-2">By paying you consent to the download starting immediately and understand that your 14-day right to cancel ends once it begins. Faulty files are always repaired or refunded — see our <a href="/refunds" class="text-amber-700 underline hover:text-amber-900">Refund Policy</a>.</p>
                                 </div>
                             </div>
                         </div>
@@ -209,6 +219,11 @@
                 <div>
                     <h4 class="font-semibold text-white mb-3">About</h4>
                     <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
+                    <ul class="space-y-2 text-sm mt-3">
+                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
+                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
