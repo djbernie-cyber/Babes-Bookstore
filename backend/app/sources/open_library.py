@@ -1,7 +1,10 @@
 from typing import List, Optional
 import asyncio
+import logging
 
 from .base import BaseSource, BookMetadata
+
+logger = logging.getLogger(__name__)
 
 
 class OpenLibrarySource(BaseSource):
@@ -19,14 +22,15 @@ class OpenLibrarySource(BaseSource):
     async def search(self, query: str, limit: int = 20) -> List[BookMetadata]:
         params = {
             "q": query,
-            "limit": limit,
-            "fields": "key,title,author_name,first_publish_year,ia,edition_count,public_scan_b,ebook_count_i",
+            "limit": min(max(limit * 3, 30), 100),
+            "fields": "key,title,author_name,first_publish_year,ia,edition_count,public_scan_b,ebook_access",
         }
         try:
             response = await self.client.get(self.SEARCH_URL, params=params)
             response.raise_for_status()
             data = response.json()
         except Exception:
+            logger.warning("Open Library search failed", exc_info=True)
             return []
 
         books: List[BookMetadata] = []
@@ -48,12 +52,12 @@ class OpenLibrarySource(BaseSource):
                     source=self.name,
                     source_id=work_key,
                     source_url=f"https://openlibrary.org/works/{work_key}",
-                    license_type="verify_per_item",
+                    license_type=self._licence(doc),
                     publication_year=doc.get("first_publish_year"),
                 )
             )
 
-        return books
+        return books[:limit]
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
         await asyncio.sleep(self.rate_limit)
@@ -85,17 +89,21 @@ class OpenLibrarySource(BaseSource):
         return None
 
     async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+        # `q=*` is not valid Solr syntax here and returns nothing. Restrict to
+        # items with a public scan so results are actually redistributable, and
+        # over-fetch because many hits are filtered out below.
         params = {
-            "q": "*",
-            "sort": "readinglog_count",
-            "limit": limit,
-            "fields": "key,title,author_name,first_publish_year,public_scan_b",
+            "q": "public_scan_b:true",
+            "sort": "readinglog",
+            "limit": min(max(limit * 3, 30), 100),
+            "fields": "key,title,author_name,first_publish_year,public_scan_b,ia,ebook_access",
         }
         try:
             response = await self.client.get(self.SEARCH_URL, params=params)
             response.raise_for_status()
             data = response.json()
         except Exception:
+            logger.warning("Open Library popular fetch failed", exc_info=True)
             return []
 
         books: List[BookMetadata] = []
@@ -113,8 +121,20 @@ class OpenLibrarySource(BaseSource):
                     source=self.name,
                     source_id=work_key,
                     source_url=f"https://openlibrary.org/works/{work_key}",
-                    license_type="verify_per_item",
+                    license_type=self._licence(doc),
                     publication_year=doc.get("first_publish_year"),
                 )
             )
-        return books
+        return books[:limit]
+
+    @staticmethod
+    def _licence(doc: dict) -> str:
+        """Public scans of pre-1929 works are public domain in the US.
+
+        Anything newer stays "verify_per_item" so the licence verifier holds
+        it for manual review rather than auto-publishing it.
+        """
+        year = doc.get("first_publish_year")
+        if doc.get("public_scan_b") and isinstance(year, int) and year < 1929:
+            return "public_domain"
+        return "verify_per_item"

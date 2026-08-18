@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import Optional, List
 
-from ..deps import get_db, require_admin
+from .deps import get_db, require_admin
 from ...models.bundle import Bundle, BundleBook
 from ...models.book import Book, BookStatus
 from ...schemas.bundle import (
@@ -11,7 +12,22 @@ from ...schemas.bundle import (
     BundleUpdate,
     BundleResponse,
     BundleListResponse,
+    BundleBookResponse,
 )
+
+
+def _serialize_books(bundle: Bundle) -> list[BundleBookResponse]:
+    """Map a bundle's ordered books to response models."""
+    return [
+        BundleBookResponse(
+            id=bb.book.id,
+            title=bb.book.title,
+            author=bb.book.author,
+            cover_path=bb.book.cover_path,
+        )
+        for bb in bundle.bundle_books
+        if bb.book is not None
+    ]
 
 router = APIRouter(prefix="/bundles", tags=["bundles"])
 
@@ -25,34 +41,33 @@ async def list_bundles(
     featured: Optional[bool] = None,
     active_only: bool = True,
 ):
-    stmt = select(Bundle)
+    filters = []
     if active_only:
-        stmt = stmt.where(Bundle.active == True)
+        filters.append(Bundle.active == True)
     if category:
-        stmt = stmt.where(Bundle.category == category)
+        filters.append(Bundle.category == category)
     if featured is not None:
-        stmt = stmt.where(Bundle.featured == featured)
+        filters.append(Bundle.featured == featured)
 
-    total_stmt = select(func.count()).select_from(stmt.subquery())
-    total = (await db.execute(total_stmt)).scalar() or 0
+    count_stmt = select(func.count(Bundle.id))
+    if filters:
+        count_stmt = count_stmt.where(*filters)
+    total = (await db.execute(count_stmt)).scalar() or 0
 
+    stmt = select(Bundle).options(
+        selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
+    )
+    if filters:
+        stmt = stmt.where(*filters)
     stmt = stmt.order_by(Bundle.created_at.desc())
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(stmt)
-    bundles = result.scalars().all()
+    bundles = result.scalars().unique().all()
 
     items = []
     for b in bundles:
         b_data = BundleResponse.model_validate(b)
-        b_data.books = [
-            {
-                "id": bb.book.id,
-                "title": bb.book.title,
-                "author": bb.book.author,
-                "cover_path": bb.book.cover_path,
-            }
-            for bb in b.bundle_books
-        ]
+        b_data.books = _serialize_books(b)
         items.append(b_data)
 
     return BundleListResponse(
@@ -65,23 +80,26 @@ async def list_bundles(
 
 @router.get("/{bundle_id_or_slug}", response_model=BundleResponse)
 async def get_bundle(bundle_id_or_slug: str, db: AsyncSession = Depends(get_db)):
-    stmt = select(Bundle).where(
-        (Bundle.id == int(bundle_id_or_slug)) if bundle_id_or_slug.isdigit() else (Bundle.slug == bundle_id_or_slug)
-    )
-    bundle = (await db.execute(stmt)).scalar_one_or_none()
+    ref = bundle_id_or_slug.strip()
+    if ref.isdigit():
+        # Guard against values outside a signed 64-bit integer, which would
+        # otherwise raise an OverflowError inside the database driver.
+        value = int(ref)
+        if value > 2**63 - 1:
+            raise HTTPException(status_code=404, detail="Bundle not found")
+        criterion = Bundle.id == value
+    else:
+        criterion = Bundle.slug == ref
+
+    stmt = select(Bundle).options(
+        selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
+    ).where(criterion)
+    bundle = (await db.execute(stmt)).unique().scalar_one_or_none()
     if not bundle:
         raise HTTPException(status_code=404, detail="Bundle not found")
 
     b_data = BundleResponse.model_validate(bundle)
-    b_data.books = [
-        {
-            "id": bb.book.id,
-            "title": bb.book.title,
-            "author": bb.book.author,
-            "cover_path": bb.book.cover_path,
-        }
-        for bb in bundle.bundle_books
-    ]
+    b_data.books = _serialize_books(bundle)
     return b_data
 
 
@@ -119,18 +137,16 @@ async def create_bundle(
         db.add(bb)
 
     await db.commit()
-    await db.refresh(bundle)
+    await db.refresh(bundle, ["bundle_books"])
 
-    b_data = BundleResponse.model_validate(bundle)
-    b_data.books = [
-        {
-            "id": bb.book.id,
-            "title": bb.book.title,
-            "author": bb.book.author,
-            "cover_path": bb.book.cover_path,
-        }
-        for bb in bundle.bundle_books
-    ]
+    reloaded = (await db.execute(
+        select(Bundle).options(
+            selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
+        ).where(Bundle.id == bundle.id)
+    )).unique().scalar_one()
+
+    b_data = BundleResponse.model_validate(reloaded)
+    b_data.books = _serialize_books(reloaded)
     return b_data
 
 
@@ -141,7 +157,9 @@ async def update_bundle(
     db: AsyncSession = Depends(get_db),
     _admin=Depends(require_admin),
 ):
-    bundle = await db.get(Bundle, bundle_id)
+    bundle = (await db.execute(
+        select(Bundle).options(selectinload(Bundle.bundle_books)).where(Bundle.id == bundle_id)
+    )).unique().scalar_one_or_none()
     if not bundle:
         raise HTTPException(status_code=404, detail="Bundle not found")
 
@@ -152,7 +170,7 @@ async def update_bundle(
         setattr(bundle, k, v)
 
     if book_ids is not None:
-        for bb in bundle.bundle_books:
+        for bb in list(bundle.bundle_books):
             await db.delete(bb)
         await db.flush()
         for i, book_id in enumerate(book_ids):
@@ -160,18 +178,15 @@ async def update_bundle(
             db.add(bb)
 
     await db.commit()
-    await db.refresh(bundle)
 
-    b_data = BundleResponse.model_validate(bundle)
-    b_data.books = [
-        {
-            "id": bb.book.id,
-            "title": bb.book.title,
-            "author": bb.book.author,
-            "cover_path": bb.book.cover_path,
-        }
-        for bb in bundle.bundle_books
-    ]
+    reloaded = (await db.execute(
+        select(Bundle).options(
+            selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
+        ).where(Bundle.id == bundle_id)
+    )).unique().scalar_one()
+
+    b_data = BundleResponse.model_validate(reloaded)
+    b_data.books = _serialize_books(reloaded)
     return b_data
 
 

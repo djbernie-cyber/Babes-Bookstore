@@ -8,7 +8,7 @@ from typing import Optional
 import stripe
 import httpx
 
-from ..deps import get_db, get_current_user, require_admin
+from .deps import get_db, get_current_user, require_admin
 from ...models.bundle import Bundle
 from ...models.purchase import Purchase
 from ...models.user import User
@@ -20,6 +20,34 @@ router = APIRouter(prefix="/checkout", tags=["checkout"])
 
 STANDARD_PRICE = settings.STANDARD_PRICE_PENCE
 CURRENCY = settings.CURRENCY
+
+FRONTEND_URL = settings.FRONTEND_URL
+
+
+async def _resolve_bundle(req: CheckoutRequest, db: AsyncSession) -> Bundle:
+    """Resolve a bundle by id or slug, with books eagerly loaded."""
+    from sqlalchemy.orm import selectinload
+    from ...models.bundle import BundleBook
+
+    stmt = select(Bundle).options(
+        selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
+    )
+    if req.bundle_id is not None:
+        stmt = stmt.where(Bundle.id == req.bundle_id)
+    else:
+        stmt = stmt.where(Bundle.slug == req.bundle_slug)
+
+    bundle = (await db.execute(stmt)).unique().scalar_one_or_none()
+    if not bundle or not bundle.active:
+        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    return bundle
+
+
+def _urls(req: CheckoutRequest) -> tuple[str, str]:
+    """Resolve success/cancel URLs with sensible defaults."""
+    success = req.success_url or f"{FRONTEND_URL}/account"
+    cancel = req.cancel_url or f"{FRONTEND_URL}/bundles"
+    return success, cancel
 
 
 @router.get("/config")
@@ -46,9 +74,8 @@ async def create_stripe_checkout(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
-    bundle = await db.get(Bundle, req.bundle_id)
-    if not bundle or not bundle.active:
-        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    bundle = await _resolve_bundle(req, db)
+    _s, _c = _urls(req)
 
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
@@ -92,8 +119,8 @@ async def create_stripe_checkout(
             ],
             customer_email=req.email,
             mode="payment",
-            success_url=f"{req.success_url}?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=req.cancel_url,
+            success_url=f"{_s}?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=_c,
             payment_intent_data={
                 "metadata": {
                     "purchase_id": str(purchase.id),
@@ -137,9 +164,8 @@ async def create_paypal_checkout(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
-    bundle = await db.get(Bundle, req.bundle_id)
-    if not bundle or not bundle.active:
-        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    bundle = await _resolve_bundle(req, db)
+    _s, _c = _urls(req)
 
     if not settings.PAYPAL_CLIENT_ID:
         raise HTTPException(status_code=500, detail="PayPal not configured")
@@ -178,8 +204,8 @@ async def create_paypal_checkout(
                         }
                     ],
                     "application_context": {
-                        "return_url": f"{req.success_url}?payment=paypal&purchase_id={purchase.id}",
-                        "cancel_url": req.cancel_url,
+                        "return_url": f"{_s}?payment=paypal&purchase_id={purchase.id}",
+                        "cancel_url": _c,
                     },
                 },
             )
@@ -211,9 +237,8 @@ async def create_square_checkout(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
-    bundle = await db.get(Bundle, req.bundle_id)
-    if not bundle or not bundle.active:
-        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    bundle = await _resolve_bundle(req, db)
+    _s, _c = _urls(req)
 
     if not settings.SQUARE_ACCESS_TOKEN:
         raise HTTPException(status_code=500, detail="Square not configured")
@@ -276,7 +301,7 @@ async def create_square_checkout(
                             ],
                             "pricing_options": {"auto_apply_taxes": True},
                         },
-                        "redirect_url": f"{req.success_url}?payment=square&purchase_id={purchase.id}",
+                        "redirect_url": f"{_s}?payment=square&purchase_id={purchase.id}",
                         "ask_for_shipping_address": False,
                     },
                 },
@@ -304,9 +329,8 @@ async def create_apple_pay_session(
     current_user: Optional[User] = Depends(get_current_user),
 ):
     """Apple Pay is handled client-side via Stripe. Return payment intent."""
-    bundle = await db.get(Bundle, req.bundle_id)
-    if not bundle or not bundle.active:
-        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    bundle = await _resolve_bundle(req, db)
+    _s, _c = _urls(req)
 
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
@@ -359,9 +383,8 @@ async def create_google_pay_session(
     current_user: Optional[User] = Depends(get_current_user),
 ):
     """Google Pay is handled client-side via Stripe. Return payment intent."""
-    bundle = await db.get(Bundle, req.bundle_id)
-    if not bundle or not bundle.active:
-        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    bundle = await _resolve_bundle(req, db)
+    _s, _c = _urls(req)
 
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe not configured")
@@ -417,9 +440,8 @@ async def create_free_checkout(
     if not current_user or not (current_user.is_admin and current_user.free_downloads):
         raise HTTPException(status_code=403, detail="Free downloads not available for your account")
 
-    bundle = await db.get(Bundle, req.bundle_id)
-    if not bundle or not bundle.active:
-        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    bundle = await _resolve_bundle(req, db)
+    _s, _c = _urls(req)
 
     purchase = Purchase(
         bundle_id=bundle.id,

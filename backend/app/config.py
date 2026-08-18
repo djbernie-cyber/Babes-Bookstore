@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
     PRODUCTION_URL: str = "https://babes-bookstore-api.fly.dev"
+    FRONTEND_URL: str = "https://babes-bookstore.netlify.app"
+    CORS_ORIGINS: list[str] = [
+        "https://babes-bookstore.netlify.app",
+        "http://localhost:8000",
+        "http://localhost:8888",
+        "http://127.0.0.1:8000",
+    ]
 
     # Cloudflare R2
     R2_ACCOUNT_ID: Optional[str] = None

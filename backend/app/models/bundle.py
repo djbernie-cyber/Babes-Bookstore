@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    JSON,
     Column,
     String,
     Text,
@@ -7,7 +8,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
 )
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -27,7 +27,7 @@ class Bundle(Base):
     cover_image_path = Column(String(500), nullable=True)
 
     category = Column(String(100), nullable=True, index=True)
-    tags = Column(ARRAY(String), nullable=True)
+    tags = Column(JSON, nullable=True)
 
     meta_title = Column(String(200), nullable=True)
     meta_description = Column(String(500), nullable=True)

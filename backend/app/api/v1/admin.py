@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional
 
-from ..deps import get_db, require_admin
+from .deps import get_db, require_admin
 from ...models.book import Book, BookStatus
 from ...models.bundle import Bundle
 from ...models.purchase import Purchase
@@ -99,12 +99,5 @@ async def trigger_license_verification(_admin=Depends(require_admin)):
 
 @router.get("/sources")
 async def list_sources(_admin=Depends(require_admin)):
-    sources = source_registry.all()
-    return {
-        name: {
-            "description": source.description,
-            "license_type": source.license_type,
-            "rate_limit": source.rate_limit,
-        }
-        for name, source in sources.items()
-    }
+    """Describe every registered source without opening HTTP clients."""
+    return source_registry.describe()

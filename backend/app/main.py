@@ -19,12 +19,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def _seed_admin_users():
-    """Create admin accounts from ADMIN_EMAILS config if they don't exist."""
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+async def _seed_admin_users(session_factory=None):
+    """Ensure every address in ADMIN_EMAILS is an admin with free downloads.
 
-    async with AsyncSessionLocal() as db:
+    Idempotent: creates missing accounts and promotes existing ones.
+    `session_factory` is injectable so tests can supply their own database.
+    """
+    if session_factory is None:
+        import app.database as _db
+        session_factory = _db.AsyncSessionLocal
+
+    async with session_factory() as db:
         for email in settings.ADMIN_EMAILS:
             stmt = select(User).where(User.email == email)
             user = (await db.execute(stmt)).scalar_one_or_none()
@@ -51,9 +56,40 @@ async def _seed_admin_users():
         await db.commit()
 
 
+_INSECURE_KEYS = {
+    "change-me-in-production-please-use-openssl-rand-hex-32",
+    "change-me-use-openssl-rand-hex-32",
+}
+
+
+def _validate_production_config():
+    """Fail fast on insecure or incomplete production configuration."""
+    if settings.DEBUG:
+        return
+
+    errors = []
+    if settings.SECRET_KEY in _INSECURE_KEYS or len(settings.SECRET_KEY) < 32:
+        errors.append("SECRET_KEY must be a unique value of at least 32 chars (openssl rand -hex 32)")
+    if settings.DATABASE_URL.startswith("sqlite"):
+        errors.append("SQLite is not supported in production; use PostgreSQL")
+    if errors:
+        raise RuntimeError(
+            "Refusing to start with insecure production config:\n  - " + "\n  - ".join(errors)
+        )
+
+    for name, value in [
+        ("STRIPE_SECRET_KEY", settings.STRIPE_SECRET_KEY),
+        ("R2_ACCESS_KEY_ID", settings.R2_ACCESS_KEY_ID),
+        ("GOOGLE_CLIENT_ID", settings.GOOGLE_CLIENT_ID),
+    ]:
+        if not value:
+            logger.warning(f"{name} is not configured — related features will be unavailable")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    _validate_production_config()
     await init_db()
     await _seed_admin_users()
     yield
@@ -66,12 +102,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_origins = list(settings.CORS_ORIGINS)
+if settings.FRONTEND_URL and settings.FRONTEND_URL not in _origins:
+    _origins.append(settings.FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
+    allow_origin_regex=r"https://.*\.netlify\.app|https://deploy-preview-\d+--.*\.netlify\.app",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent

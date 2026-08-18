@@ -1,12 +1,30 @@
-from typing import List, Optional
-import xml.etree.ElementTree as ET
+"""Directory of Open Access Books (DOAB) adapter.
+
+Fixes applied:
+- Dropped `set=open_access`, which the OAI endpoint answers with
+  `noRecordsMatch` (this made the source return zero books).
+- Added resumption-token paging so more than one page is reachable.
+- Licence detection now reads dc:rights *and* dc:license, and maps
+  NonCommercial/NoDerivatives correctly so they get rejected upstream.
+"""
 import asyncio
+import logging
+import xml.etree.ElementTree as ET
+from typing import List, Optional
 
 from .base import BaseSource, BookMetadata
 
+logger = logging.getLogger(__name__)
+
+NS = {
+    "oai": "http://www.openarchives.org/OAI/2.0/",
+    "oai_dc": "http://www.openarchives.org/OAI/2.0/oai_dc/",
+    "dc": "http://purl.org/dc/elements/1.1/",
+}
+
 
 class DOABSource(BaseSource):
-    """Directory of Open Access Books — verified CC licenses."""
+    """Directory of Open Access Books — CC-licensed academic books."""
 
     name = "doab"
     description = "Directory of Open Access Books (CC-licensed academic books)"
@@ -15,115 +33,163 @@ class DOABSource(BaseSource):
 
     OAI_URL = "https://directory.doabooks.org/oai/request"
 
-    NAMESPACES = {
-        "oai": "http://www.openarchives.org/OAI/2.0/",
-        "oai_dc": "http://www.openarchives.org/OAI/2.0/oai_dc/",
-        "dc": "http://purl.org/dc/elements/1.1/",
-    }
-
     async def search(self, query: str, limit: int = 20) -> List[BookMetadata]:
-        params = {
-            "verb": "ListRecords",
-            "metadataPrefix": "oai_dc",
-            "set": "open_access",
-        }
-        try:
-            response = await self.client.get(self.OAI_URL, params=params)
-            response.raise_for_status()
-        except Exception:
-            return []
-        return self._parse_oai(response.text, limit, query)
-
-    async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
-        params = {
-            "verb": "GetRecord",
-            "metadataPrefix": "oai_dc",
-            "identifier": source_id,
-        }
-        try:
-            response = await self.client.get(self.OAI_URL, params=params)
-            response.raise_for_status()
-        except Exception:
-            return None
-        books = self._parse_oai(response.text, 1, "")
-        return books[0] if books else None
-
-    async def download(self, metadata: BookMetadata) -> Optional[bytes]:
-        return None
+        # OAI-PMH has no free-text search; fetch a window and filter locally.
+        books = await self._harvest(limit if not query else max(limit * 8, 200))
+        if not query:
+            return books[:limit]
+        q = query.lower()
+        return [
+            b for b in books
+            if q in b.title.lower()
+            or q in (b.author or "").lower()
+            or q in (b.description or "").lower()
+        ][:limit]
 
     async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
-        return await self.search("", limit)
+        return await self._harvest(limit)
 
-    def _parse_oai(self, text: str, limit: int, query: str) -> List[BookMetadata]:
+    async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
+        try:
+            response = await self.client.get(self.OAI_URL, params={
+                "verb": "GetRecord", "metadataPrefix": "oai_dc", "identifier": source_id,
+            }, follow_redirects=True)
+            response.raise_for_status()
+        except Exception:
+            logger.warning("DOAB GetRecord failed for %s", source_id, exc_info=True)
+            return None
+        records, _ = self._parse(response.text)
+        return records[0] if records else None
+
+    async def download(self, metadata: BookMetadata) -> Optional[bytes]:
+        if not metadata.pdf_url:
+            return None
+        try:
+            await asyncio.sleep(self.rate_limit)
+            response = await self.client.get(metadata.pdf_url, follow_redirects=True)
+            if response.status_code == 200 and response.content[:4] == b"%PDF":
+                return response.content
+        except Exception:
+            logger.debug("DOAB download failed: %s", metadata.pdf_url, exc_info=True)
+        return None
+
+    async def _harvest(self, limit: int) -> List[BookMetadata]:
+        """Harvest records, following resumption tokens until `limit` is met."""
+        books: List[BookMetadata] = []
+        params = {"verb": "ListRecords", "metadataPrefix": "oai_dc"}
+
+        while len(books) < limit:
+            try:
+                response = await self.client.get(self.OAI_URL, params=params, follow_redirects=True)
+                response.raise_for_status()
+            except Exception:
+                logger.warning("DOAB harvest failed", exc_info=True)
+                break
+
+            batch, token = self._parse(response.text)
+            if not batch and not token:
+                break
+            books.extend(batch)
+
+            if not token:
+                break
+            # Per the spec, resumptionToken must be sent alone.
+            params = {"verb": "ListRecords", "resumptionToken": token}
+            await asyncio.sleep(self.rate_limit)
+
+        return books[:limit]
+
+    def _parse(self, xml: str) -> tuple[List[BookMetadata], Optional[str]]:
         books: List[BookMetadata] = []
         try:
-            root = ET.fromstring(text)
-            records = root.findall(".//oai:record", self.NAMESPACES)
-
-            for record in records:
-                header = record.find("oai:header", self.NAMESPACES)
-                if header is not None and header.find("oai:deleted", self.NAMESPACES) is not None:
-                    continue
-
-                identifier_el = header.find("oai:identifier", self.NAMESPACES) if header is not None else None
-                identifier = identifier_el.text if identifier_el is not None else None
-
-                metadata_el = record.find("oai:metadata", self.NAMESPACES)
-                if metadata_el is None:
-                    continue
-
-                dc_el = metadata_el.find("oai_dc:dc", self.NAMESPACES)
-                if dc_el is None:
-                    continue
-
-                title = self._get_text(dc_el, "dc:title")
-                creator = self._get_text(dc_el, "dc:creator")
-                description = self._get_text(dc_el, "dc:description")
-                date = self._get_text(dc_el, "dc:date")
-                rights = self._get_text(dc_el, "dc:rights")
-                identifier_dc = self._get_text(dc_el, "dc:identifier")
-
-                if query and query.lower() not in title.lower():
-                    continue
-
-                license_type = self._parse_license(rights)
-
-                books.append(
-                    BookMetadata(
-                        title=title or "Unknown",
-                        author=creator,
-                        description=description,
-                        source=self.name,
-                        source_id=identifier,
-                        source_url=identifier_dc,
-                        license_type=license_type,
-                        license_url=rights,
-                        publication_year=int(date[:4]) if date and len(date) >= 4 else None,
-                    )
-                )
-
-                if len(books) >= limit:
-                    break
+            root = ET.fromstring(xml)
         except ET.ParseError:
-            pass
-        return books
+            logger.warning("DOAB returned malformed XML")
+            return books, None
 
-    def _get_text(self, parent, tag: str) -> Optional[str]:
-        el = parent.find(tag, self.NAMESPACES)
-        return el.text if el is not None and el.text else None
+        error = root.find(".//oai:error", NS)
+        if error is not None:
+            logger.warning("DOAB OAI error: %s", (error.text or error.get("code")))
+            return books, None
 
-    def _parse_license(self, rights: Optional[str]) -> str:
-        if not rights:
-            return "unknown"
-        r = rights.lower()
-        if "public domain" in r or "publicdomain" in r:
-            return "public_domain"
-        if "cc by-sa" in r or "cc-by-sa" in r:
-            return "cc_by_sa_4.0"
-        if "cc by" in r or "cc-by" in r:
-            if "nc" in r:
-                return "cc_by_nc"
-            return "cc_by_4.0"
-        if "cc0" in r:
-            return "cc0_1.0"
-        return "unknown"
+        for record in root.findall(".//oai:record", NS):
+            header = record.find("oai:header", NS)
+            if header is None or header.get("status") == "deleted":
+                continue
+
+            dc = record.find(".//oai_dc:dc", NS)
+            if dc is None:
+                continue
+
+            title = self._text(dc, "dc:title")
+            identifier = self._text(header, "oai:identifier")
+            if not title or not identifier:
+                continue
+
+            rights = [e.text for e in dc.findall("dc:rights", NS) if e.text]
+            rights += [e.text for e in dc.findall("dc:license", NS) if e.text]
+            urls = [e.text for e in dc.findall("dc:identifier", NS) if e.text]
+            authors = [e.text for e in dc.findall("dc:creator", NS) if e.text]
+            subjects = [e.text for e in dc.findall("dc:subject", NS) if e.text]
+            date = self._text(dc, "dc:date")
+
+            licence, licence_url = self._licence(rights)
+
+            books.append(BookMetadata(
+                title=title.strip()[:500],
+                author=", ".join(authors[:3]) or None,
+                description=self._text(dc, "dc:description"),
+                source=self.name,
+                source_id=identifier,
+                source_url=next((u for u in urls if u.startswith("http")), None),
+                source_metadata={"publisher": self._text(dc, "dc:publisher")},
+                license_type=licence,
+                license_url=licence_url,
+                pdf_url=next((u for u in urls if u.lower().endswith(".pdf")), None),
+                tags=subjects[:5],
+                language=self._text(dc, "dc:language") or "en",
+                publication_year=self._year(date),
+            ))
+
+        token_el = root.find(".//oai:resumptionToken", NS)
+        token = token_el.text.strip() if token_el is not None and token_el.text else None
+        return books, token
+
+    @staticmethod
+    def _text(parent, tag: str) -> Optional[str]:
+        if parent is None:
+            return None
+        el = parent.find(tag, NS)
+        return el.text.strip() if el is not None and el.text else None
+
+    @staticmethod
+    def _year(value: Optional[str]) -> Optional[int]:
+        if not value or len(value) < 4 or not value[:4].isdigit():
+            return None
+        year = int(value[:4])
+        return year if 1000 <= year <= 2100 else None
+
+    @staticmethod
+    def _licence(values: List[str]) -> tuple[str, Optional[str]]:
+        """Map dc:rights/dc:license text onto a canonical licence id."""
+        url = next((v for v in values if v and v.startswith("http")), None)
+        blob = " ".join(v.lower() for v in values if v)
+
+        if not blob:
+            return "unknown", url
+        if "publicdomain" in blob or "public domain" in blob or "cc0" in blob:
+            return ("cc0_1.0" if "cc0" in blob else "public_domain"), url
+        if "by-nc-nd" in blob or ("nc" in blob and "nd" in blob):
+            return "cc_by_nc_nd", url
+        if "by-nc-sa" in blob:
+            return "cc_by_nc_sa", url
+        if "by-nc" in blob or "noncommercial" in blob or "non-commercial" in blob:
+            return "cc_by_nc", url
+        if "by-nd" in blob or "noderiv" in blob:
+            return "cc_by_nd", url
+        if "by-sa" in blob or "sharealike" in blob:
+            return "cc_by_sa_4.0", url
+        if "cc-by" in blob or "cc by" in blob or "creativecommons.org/licenses/by/" in blob:
+            return "cc_by_4.0", url
+        # "open access" alone is not a redistribution licence -> manual review.
+        return "unknown", url

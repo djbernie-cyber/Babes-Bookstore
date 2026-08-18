@@ -9,7 +9,6 @@ from sqlalchemy import (
     Enum as SQLEnum,
     Index,
 )
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.sql import func
 from datetime import datetime
 import enum
@@ -53,7 +52,7 @@ class Book(Base):
     cover_path = Column(String(500), nullable=True)
 
     category = Column(String(100), nullable=True, index=True)
-    tags = Column(ARRAY(String), nullable=True)
+    tags = Column(JSON, nullable=True)
     language = Column(String(10), default="en")
     page_count = Column(Integer, nullable=True)
     publication_year = Column(Integer, nullable=True)
@@ -69,8 +68,10 @@ class Book(Base):
 
     __table_args__ = (
         Index("ix_books_source_source_id", "source", "source_id", unique=True),
-        Index("ix_books_title_trgm", "title"),
     )
+    # Note: `title` is indexed via Column(index=True) above. The Postgres
+    # trigram (GIN) indexes for fuzzy title/author search are created in the
+    # initial Alembic migration, since pg_trgm is Postgres-only.
 
     def __repr__(self):
         return f"<Book {self.id}: {self.title[:50]}>"

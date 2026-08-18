@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
 from typing import List, Optional
 
-from ..deps import get_db, require_admin
+from .deps import get_db, require_admin
 from ...models.book import Book, BookStatus
 from ...schemas.book import BookResponse, BookListResponse, BookUpdate
 

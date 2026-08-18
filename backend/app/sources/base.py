@@ -40,10 +40,23 @@ class BaseSource(ABC):
     rate_limit: float = 1.0  # seconds between requests
     requires_api_key: bool = False
 
+    #: Some providers (Gutenberg, Standard Ebooks) reject unfamiliar agents
+    #: with 403/401, so present a conventional UA plus a contact URL.
+    USER_AGENT = (
+        "Mozilla/5.0 (compatible; BabesBookstore/1.0; "
+        "+https://babes-bookstore.netlify.app) public-domain-aggregator"
+    )
+
     def __init__(self):
         self.client = httpx.AsyncClient(
-            timeout=30.0,
-            headers={"User-Agent": "Babe's Bookstore / 1.0 (legal public domain aggregator)"},
+            timeout=httpx.Timeout(30.0, connect=10.0),
+            follow_redirects=True,
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+            headers={
+                "User-Agent": self.USER_AGENT,
+                "Accept": "application/json, application/xml, text/xml, text/html;q=0.9, */*;q=0.8",
+                "Accept-Language": "en-GB,en;q=0.9",
+            },
         )
 
     async def close(self):

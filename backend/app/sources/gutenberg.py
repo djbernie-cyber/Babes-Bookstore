@@ -1,176 +1,141 @@
-import xml.etree.ElementTree as ET
-from typing import List, Optional
+"""Project Gutenberg adapter.
+
+Uses Gutendex (https://gutendex.com), the maintained JSON API over the
+Gutenberg catalogue. The legacy `/ebooks/search.opds` endpoint now returns
+403 to automated clients, which previously made this source return zero
+books.
+
+Everything on Gutenberg is public domain in the US.
+"""
 import asyncio
+import logging
+from typing import Any, Dict, List, Optional
 
 from .base import BaseSource, BookMetadata
 
+logger = logging.getLogger(__name__)
+
+LICENSE_URL = "https://www.gutenberg.org/policy/license.html"
+
 
 class GutenbergSource(BaseSource):
-    """Project Gutenberg — public domain ebooks (70,000+)."""
+    """Project Gutenberg — ~79,000 public domain ebooks."""
 
     name = "gutenberg"
     description = "Project Gutenberg — public domain ebooks"
     license_type = "public_domain"
-    rate_limit = 0.5
+    rate_limit = 0.3
 
-    CATALOG_URL = "https://www.gutenberg.org/cache/epub/feeds/today/books.rdf"
-    OPENSEARCH_URL = "https://www.gutenberg.org/ebooks/search.opds"
-    FILES_URL = "https://www.gutenberg.org/files/{id}/{id}-{file}.pdf"
-    META_URL = "https://www.gutenberg.org/ebooks/{id}"
+    API_URL = "https://gutendex.com/books"
+    PAGE_SIZE = 32  # Gutendex fixed page size
 
     async def search(self, query: str, limit: int = 20) -> List[BookMetadata]:
-        params = {"query": query}
-        response = await self.client.get(self.OPENSEARCH_URL, params=params)
-        response.raise_for_status()
-        return self._parse_opds(response.text, limit)
+        return await self._collect({"search": query} if query else {}, limit)
+
+    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+        # Gutendex sorts by download count by default.
+        return await self._collect({"sort": "popular"}, limit)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
-        await asyncio.sleep(self.rate_limit)
-        url = f"https://www.gutenberg.org/ebooks/{source_id}.rdf"
         try:
-            response = await self.client.get(url)
+            response = await self.client.get(f"{self.API_URL}/{source_id}")
             if response.status_code != 200:
                 return None
-            return self._parse_rdf(response.text, source_id)
+            return self._parse(response.json())
         except Exception:
+            logger.warning("Gutenberg metadata fetch failed for %s", source_id, exc_info=True)
             return None
 
     async def download(self, metadata: BookMetadata) -> Optional[bytes]:
-        if not metadata.source_id:
-            return None
-        url = f"https://www.gutenberg.org/files/{metadata.source_id}/{metadata.source_id}-pdf.pdf"
-        try:
-            await asyncio.sleep(self.rate_limit)
-            response = await self.client.get(url, follow_redirects=True)
-            if response.status_code == 200 and "pdf" in response.headers.get("content-type", ""):
-                return response.content
-        except Exception:
-            pass
+        """Fetch the best available file, preferring EPUB then PDF then text."""
+        candidates = [metadata.epub_url, metadata.pdf_url]
+        candidates += [metadata.source_metadata.get("text_url")]
+
+        for url in [u for u in candidates if u]:
+            try:
+                await asyncio.sleep(self.rate_limit)
+                response = await self.client.get(url, follow_redirects=True)
+                if response.status_code == 200 and response.content:
+                    return response.content
+            except Exception:
+                logger.debug("Gutenberg download failed: %s", url, exc_info=True)
         return None
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
-        try:
-            response = await self.client.get(self.CATALOG_URL)
-            response.raise_for_status()
-        except Exception:
-            return []
-        return self._parse_rdf_catalog(response.text, limit)
-
-    def _parse_opds(self, text: str, limit: int) -> List[BookMetadata]:
+    async def _collect(self, params: Dict[str, Any], limit: int) -> List[BookMetadata]:
+        """Page through the API until `limit` books are gathered."""
         books: List[BookMetadata] = []
-        try:
-            root = ET.fromstring(text)
-            ns = {"atom": "http://www.w3.org/2005/Atom"}
-            for entry in root.findall("atom:entry", ns)[:limit]:
-                title_el = entry.find("atom:title", ns)
-                title = title_el.text if title_el is not None else "Unknown"
-                id_el = entry.find("atom:id", ns)
-                source_id = id_el.text.split("/")[-1] if id_el is not None and id_el.text else None
+        url: Optional[str] = self.API_URL
+        query: Optional[Dict[str, Any]] = {**params, "copyright": "false"}
 
-                author = "Unknown"
-                for author_el in entry.findall("atom:author", ns):
-                    name_el = author_el.find("atom:name", ns)
-                    if name_el is not None and name_el.text:
-                        author = name_el.text
+        while url and len(books) < limit:
+            try:
+                response = await self.client.get(url, params=query, follow_redirects=True)
+                response.raise_for_status()
+                payload = response.json()
+            except Exception:
+                logger.warning("Gutenberg fetch failed (%s)", url, exc_info=True)
+                break
+
+            for raw in payload.get("results", []):
+                book = self._parse(raw)
+                if book:
+                    books.append(book)
+                    if len(books) >= limit:
                         break
 
-                if source_id and source_id.isdigit():
-                    books.append(
-                        BookMetadata(
-                            title=title,
-                            author=author,
-                            source=self.name,
-                            source_id=source_id,
-                            source_url=f"https://www.gutenberg.org/ebooks/{source_id}",
-                            license_type="public_domain",
-                            license_url="https://www.gutenberg.org/policy/license.html",
-                        )
-                    )
-        except ET.ParseError:
-            pass
-        return books
+            url = payload.get("next")
+            query = None  # `next` already carries the querystring
+            if url:
+                await asyncio.sleep(self.rate_limit)
 
-    def _parse_rdf(self, text: str, source_id: str) -> Optional[BookMetadata]:
-        try:
-            root = ET.fromstring(text)
-            ns = {
-                "dcterms": "http://purl.org/dc/terms/",
-                "pg": "http://www.gutenberg.org/2009/pgterms/",
-                "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-            }
+        return books[:limit]
 
-            title = "Unknown"
-            title_el = root.find(".//dcterms:title", ns)
-            if title_el is not None:
-                title = title_el.text or title
-
-            author = "Unknown"
-            creator_el = root.find(".//dcterms:creator", ns)
-            if creator_el is not None:
-                name_el = creator_el.find("pg:name", ns)
-                if name_el is not None:
-                    author = name_el.text or author
-
-            description_el = root.find(".//dcterms:description", ns)
-            description = description_el.text if description_el is not None else None
-
-            year_el = root.find(".//dcterms:issued", ns)
-            year = int(year_el.text[:4]) if year_el is not None and year_el.text else None
-
-            language_el = root.find(".//dcterms:language", ns)
-            language = "en"
-            if language_el is not None:
-                lang_value = language_el.find("rdf:value", ns)
-                if lang_value is not None and lang_value.text:
-                    language = lang_value.text.split("/")[-1].lower()
-
-            return BookMetadata(
-                title=title,
-                author=author,
-                description=description,
-                source=self.name,
-                source_id=source_id,
-                source_url=f"https://www.gutenberg.org/ebooks/{source_id}",
-                license_type="public_domain",
-                license_url="https://www.gutenberg.org/policy/license.html",
-                pdf_url=f"https://www.gutenberg.org/files/{source_id}/{source_id}-pdf.pdf",
-                language=language,
-                publication_year=year,
-            )
-        except ET.ParseError:
+    def _parse(self, raw: Dict[str, Any]) -> Optional[BookMetadata]:
+        book_id = raw.get("id")
+        title = (raw.get("title") or "").strip()
+        if not book_id or not title:
             return None
 
-    def _parse_rdf_catalog(self, text: str, limit: int) -> List[BookMetadata]:
-        books: List[BookMetadata] = []
-        try:
-            root = ET.fromstring(text)
-            ns = {
-                "dcterms": "http://purl.org/dc/terms/",
-                "pg": "http://www.gutenberg.org/2009/pgterms/",
-            }
-            for book_el in root.findall(".//pg:book", ns)[:limit]:
-                ebook_id = book_el.get("rdf:about", "").rsplit("/", 1)[-1]
-                title_el = book_el.find("dcterms:title", ns)
-                title = title_el.text if title_el is not None and title_el.text else "Unknown"
+        # Gutendex exposes `copyright: true` for the rare restricted item.
+        if raw.get("copyright") is True:
+            return None
 
-                creator_el = book_el.find("dcterms:creator", ns)
-                author = None
-                if creator_el is not None:
-                    author_el = creator_el.find("pg:name", ns)
-                    if author_el is not None and author_el.text:
-                        author = author_el.text
+        authors = [a.get("name") for a in raw.get("authors", []) if a.get("name")]
+        formats: Dict[str, str] = raw.get("formats", {}) or {}
 
-                if ebook_id and ebook_id.isdigit():
-                    books.append(
-                        BookMetadata(
-                            title=title,
-                            author=author,
-                            source=self.name,
-                            source_id=ebook_id,
-                            source_url=f"https://www.gutenberg.org/ebooks/{ebook_id}",
-                            license_type="public_domain",
-                        )
-                    )
-        except ET.ParseError:
-            pass
-        return books
+        def pick(*needles: str) -> Optional[str]:
+            for mime, href in formats.items():
+                if any(n in mime for n in needles) and not href.endswith(".zip"):
+                    return href
+            return None
+
+        year = None
+        for author in raw.get("authors", []):
+            if author.get("death_year"):
+                year = author["death_year"]
+                break
+
+        languages = raw.get("languages") or ["en"]
+
+        return BookMetadata(
+            title=title[:500],
+            author=", ".join(authors[:3]) or None,
+            description=(raw.get("summaries") or [None])[0],
+            source=self.name,
+            source_id=str(book_id),
+            source_url=f"https://www.gutenberg.org/ebooks/{book_id}",
+            source_metadata={
+                "download_count": raw.get("download_count"),
+                "subjects": (raw.get("subjects") or [])[:8],
+                "text_url": pick("text/plain"),
+            },
+            license_type="public_domain",
+            license_url=LICENSE_URL,
+            epub_url=pick("application/epub"),
+            pdf_url=pick("application/pdf"),
+            cover_url=pick("image/jpeg"),
+            category=(raw.get("bookshelves") or [None])[0],
+            tags=[s for s in (raw.get("subjects") or [])[:5]],
+            language=languages[0],
+            publication_year=year,
+        )

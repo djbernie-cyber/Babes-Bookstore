@@ -11,3 +11,7 @@ node_modules/
 celerybeat-schedule
 *.db
 *.sqlite3
+
+.venv/
+*.db
+backend/.venv/

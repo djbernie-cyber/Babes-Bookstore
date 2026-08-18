@@ -8,6 +8,10 @@ from alembic import context
 from app.database import Base
 from app.config import settings
 
+# Import every model module so Base.metadata is fully populated for
+# --autogenerate. Without these imports Alembic would emit empty migrations.
+from app.models import book, bundle, user, purchase, audit  # noqa: F401
+
 config = context.config
 
 if config.config_file_name is not None:
@@ -15,18 +19,31 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-config.set_main_option("sqlalchemy.url", settings.SYNC_DATABASE_URL)
+# Use the async driver URL here because we run migrations through
+# async_engine_from_config below.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 
 def run_migrations_offline():
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
+    """Emit SQL to stdout without connecting (uses the sync URL)."""
+    context.configure(
+        url=settings.SYNC_DATABASE_URL,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
+        compare_server_default=True,
+    )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        compare_server_default=True,
+    )
     with context.begin_transaction():
         context.run_migrations()
 
@@ -37,7 +54,6 @@ async def run_async_migrations():
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()

@@ -1,13 +1,20 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 from typing import Optional
 from datetime import datetime
 
 
 class CheckoutRequest(BaseModel):
-    bundle_id: int
+    bundle_id: Optional[int] = None
+    bundle_slug: Optional[str] = None
     email: EmailStr
-    success_url: str
-    cancel_url: str
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+
+    @model_validator(mode="after")
+    def check_bundle_ref(self):
+        if self.bundle_id is None and not self.bundle_slug:
+            raise ValueError("Either bundle_id or bundle_slug is required")
+        return self
 
 
 class CheckoutResponse(BaseModel):

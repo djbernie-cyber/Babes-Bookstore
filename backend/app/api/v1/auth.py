@@ -4,23 +4,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
-from pydantic import BaseModel, EmailStr
-from passlib.context import CryptContext
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
 import httpx
 
-from ..deps import get_db, get_current_user
+from .deps import get_db, get_current_user
 from ...models.user import User
 from ...config import settings
+from ...services.security import hash_password, verify_password, MIN_PASSWORD_LENGTH
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str
-    name: str = None
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH, max_length=256)
+    name: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -179,7 +179,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     user = User(
         email=req.email,
         name=req.name,
-        hashed_password=pwd_context.hash(req.password),
+        hashed_password=hash_password(req.password),
     )
     db.add(user)
     await db.commit()
@@ -197,7 +197,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     stmt = select(User).where(User.email == req.email)
     user = (await db.execute(stmt)).scalar_one_or_none()
 
-    if not user or not pwd_context.verify(req.password, user.hashed_password or ""):
+    if not user or not verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token(user.id)

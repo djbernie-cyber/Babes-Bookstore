@@ -1,175 +1,184 @@
+"""Celery tasks for ingesting books from external sources.
+
+Design notes:
+- Each task wraps a single `asyncio.run(...)` call. Mixing `await` into a
+  synchronous Celery task raises SyntaxError/RuntimeError at runtime.
+- Ingestion is idempotent and keyed on (source, source_id).
+- Books whose licence is on the allow-list are auto-approved so they are
+  immediately visible in the storefront; anything uncertain stays PENDING
+  for manual review, and blocked licences are never stored.
+"""
 import asyncio
 import logging
-from typing import List
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import List, Sequence
+
+from sqlalchemy import select
 
 from ..celery_app import celery_app
+from ..database import AsyncSessionLocal
+from ..models.book import Book, BookStatus
+from ..services.license_verifier import license_verifier, LicenseStatus
 from ..sources import source_registry
 from ..sources.base import BookMetadata
-from ..services.license_verifier import license_verifier, LicenseStatus
-from ..models.book import Book, BookStatus
-from ..database import AsyncSessionLocal
-from ..services.storage import storage
-from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
 
-async def _scrape_source_async(source_name: str, query: str, limit: int) -> dict:
-    source = source_registry.get(source_name)
-    try:
-        results: List[BookMetadata] = await source.search(query, limit=limit)
-        new_count = 0
-        updated_count = 0
-        rejected_count = 0
-        pending_count = 0
+@dataclass
+class IngestReport:
+    source: str
+    found: int = 0
+    created: int = 0
+    updated: int = 0
+    approved: int = 0
+    pending: int = 0
+    rejected: int = 0
+    errors: List[str] = field(default_factory=list)
 
-        async with AsyncSessionLocal() as session:
-            for metadata in results:
-                license_result = license_verifier.verify(
-                    metadata.license_type,
-                    metadata.license_url,
-                )
-
-                stmt = select(Book).where(
-                    Book.source == source_name,
-                    Book.source_id == metadata.source_id,
-                )
-                existing = (await session.execute(stmt)).scalar_one_or_none()
-
-                status = BookStatus.REJECTED
-                if license_result.status == LicenseStatus.APPROVED:
-                    status = BookStatus.PENDING
-                elif license_result.status == LicenseStatus.PENDING:
-                    status = BookStatus.PENDING
-
-                if license_result.status == LicenseStatus.REJECTED:
-                    rejected_count += 1
-                    continue
-                elif license_result.status == LicenseStatus.PENDING:
-                    pending_count += 1
-                else:
-                    pass
-
-                book_data = {
-                    "title": metadata.title,
-                    "author": metadata.author,
-                    "description": metadata.description,
-                    "source": metadata.source,
-                    "source_id": metadata.source_id,
-                    "source_url": metadata.source_url,
-                    "source_metadata": metadata.source_metadata,
-                    "license_type": metadata.license_type,
-                    "license_url": metadata.license_url,
-                    "category": metadata.category,
-                    "tags": metadata.tags or [],
-                    "language": metadata.language,
-                    "publication_year": metadata.publication_year,
-                    "status": status,
-                    "license_verified": license_result.status == LicenseStatus.APPROVED,
-                }
-
-                if existing:
-                    for k, v in book_data.items():
-                        setattr(existing, k, v)
-                    existing.verified_at = datetime.utcnow()
-                    updated_count += 1
-                else:
-                    book = Book(**book_data, verified_at=datetime.utcnow())
-                    session.add(book)
-                    new_count += 1
-
-            await session.commit()
-
+    def as_dict(self) -> dict:
         return {
-            "source": source_name,
-            "query": query,
-            "found": len(results),
-            "new": new_count,
-            "updated": updated_count,
-            "rejected": rejected_count,
-            "pending": pending_count,
+            "source": self.source,
+            "found": self.found,
+            "created": self.created,
+            "updated": self.updated,
+            "approved": self.approved,
+            "pending": self.pending,
+            "rejected": self.rejected,
+            "errors": self.errors[:5],
         }
+
+
+def _status_for(result) -> BookStatus:
+    """Map a licence verdict onto a moderation status."""
+    if result.status == LicenseStatus.APPROVED:
+        return BookStatus.APPROVED
+    return BookStatus.PENDING
+
+
+async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestReport:
+    """Upsert scraped metadata, enforcing licence rules. Idempotent."""
+    report = IngestReport(source=source_name, found=len(items))
+    if not items:
+        return report
+
+    async with AsyncSessionLocal() as session:
+        for metadata in items:
+            if not metadata.source_id or not metadata.title:
+                report.errors.append("skipped record missing source_id/title")
+                continue
+
+            verdict = license_verifier.verify(metadata.license_type, metadata.license_url)
+            if verdict.status == LicenseStatus.REJECTED:
+                report.rejected += 1
+                continue
+
+            status = _status_for(verdict)
+            approved = status == BookStatus.APPROVED
+            if approved:
+                report.approved += 1
+            else:
+                report.pending += 1
+
+            payload = {
+                "title": metadata.title[:500],
+                "author": metadata.author,
+                "description": metadata.description,
+                "source": source_name,
+                "source_id": str(metadata.source_id),
+                "source_url": metadata.source_url,
+                "source_metadata": metadata.source_metadata,
+                "license_type": metadata.license_type,
+                "license_url": metadata.license_url,
+                "category": metadata.category,
+                "tags": metadata.tags or [],
+                "language": metadata.language or "en",
+                "publication_year": metadata.publication_year,
+                "status": status,
+                "license_verified": approved,
+            }
+
+            existing = (await session.execute(
+                select(Book).where(
+                    Book.source == source_name,
+                    Book.source_id == str(metadata.source_id),
+                )
+            )).scalar_one_or_none()
+
+            if existing:
+                for key, value in payload.items():
+                    # Never overwrite good data with nulls from a partial record.
+                    if value is not None or key in ("description", "author"):
+                        setattr(existing, key, value)
+                existing.verified_at = datetime.utcnow()
+                report.updated += 1
+            else:
+                session.add(Book(**payload, verified_at=datetime.utcnow()))
+                report.created += 1
+
+        try:
+            await session.commit()
+        except Exception as exc:
+            await session.rollback()
+            logger.exception("Failed to commit ingest for %s", source_name)
+            report.errors.append(f"commit failed: {exc}")
+
+    return report
+
+
+async def _scrape_source(source_name: str, query: str, limit: int) -> dict:
+    try:
+        source = source_registry.get(source_name)
+    except KeyError:
+        return IngestReport(source=source_name, errors=[f"unknown source '{source_name}'"]).as_dict()
+
+    try:
+        items = await source.search(query, limit=limit) if query else await source.list_popular(limit)
+    except Exception as exc:
+        logger.exception("Fetch failed for %s", source_name)
+        return IngestReport(source=source_name, errors=[f"fetch failed: {exc}"]).as_dict()
     finally:
         await source.close()
+
+    report = await _ingest(source_name, items)
+    return report.as_dict()
+
+
+async def _scrape_many(source_names: Sequence[str], query: str, limit: int) -> List[dict]:
+    """Fetch sources concurrently; a failure in one never aborts the rest."""
+    results = await asyncio.gather(
+        *(_scrape_source(name, query, limit) for name in source_names),
+        return_exceptions=True,
+    )
+    out: List[dict] = []
+    for name, result in zip(source_names, results):
+        if isinstance(result, BaseException):
+            logger.exception("Scrape task failed for %s", name)
+            out.append(IngestReport(source=name, errors=[str(result)]).as_dict())
+        else:
+            out.append(result)
+    return out
 
 
 @celery_app.task(name="scrape.source")
 def scrape_source_task(source_name: str, query: str = "", limit: int = 20) -> dict:
-    """Scrape a single source for books matching query."""
-    logger.info(f"Scraping {source_name} for '{query}'")
-    result = asyncio.run(_scrape_source_async(source_name, query, limit))
-    logger.info(f"Scrape complete: {result}")
+    logger.info("Scraping %s (query=%r, limit=%s)", source_name, query, limit)
+    result = asyncio.run(_scrape_source(source_name, query, limit))
+    logger.info("Scrape finished: %s", result)
     return result
 
 
 @celery_app.task(name="scrape.all_sources")
 def scrape_all_sources_task(query: str = "", limit_per_source: int = 50) -> List[dict]:
-    """Scrape all registered sources."""
-    results = []
-    for name in source_registry.list_names():
-        try:
-            result = scrape_source_task(name, query, limit_per_source)
-            results.append(result)
-        except Exception as e:
-            logger.error(f"Failed to scrape {name}: {e}")
-            results.append({"source": name, "error": str(e)})
-    return results
+    names = source_registry.list_names()
+    logger.info("Scraping %d sources (query=%r)", len(names), query)
+    return asyncio.run(_scrape_many(names, query, limit_per_source))
 
 
 @celery_app.task(name="scrape.popular")
 def scrape_popular_task(limit_per_source: int = 50) -> List[dict]:
-    """Scrape popular/recent books from all sources."""
-    results = []
-    for name in source_registry.list_names():
-        try:
-            source = source_registry.get(name)
-            popular = asyncio.run(source.list_popular(limit_per_source))
-            asyncio.run(source.close())
-
-            new_count = 0
-            async with AsyncSessionLocal() as session:
-                for metadata in popular:
-                    license_result = license_verifier.verify(metadata.license_type, metadata.license_url)
-                    if license_result.status == LicenseStatus.REJECTED:
-                        continue
-
-                    stmt = select(Book).where(
-                        Book.source == name,
-                        Book.source_id == metadata.source_id,
-                    )
-                    existing = (await session.execute(stmt)).scalar_one_or_none()
-
-                    status = BookStatus.PENDING if license_result.status == LicenseStatus.APPROVED else BookStatus.PENDING
-
-                    if existing:
-                        existing.title = metadata.title
-                        existing.author = metadata.author
-                        existing.license_type = metadata.license_type
-                        existing.license_url = metadata.license_url
-                        existing.license_verified = license_result.status == LicenseStatus.APPROVED
-                        existing.verified_at = datetime.utcnow()
-                        existing.status = status
-                    else:
-                        book = Book(
-                            title=metadata.title,
-                            author=metadata.author,
-                            source=name,
-                            source_id=metadata.source_id,
-                            source_url=metadata.source_url,
-                            license_type=metadata.license_type,
-                            license_url=metadata.license_url,
-                            status=status,
-                            license_verified=license_result.status == LicenseStatus.APPROVED,
-                            verified_at=datetime.utcnow(),
-                        )
-                        session.add(book)
-                        new_count += 1
-
-                await session.commit()
-
-            results.append({"source": name, "popular_count": len(popular), "new": new_count})
-        except Exception as e:
-            logger.error(f"Failed popular scrape for {name}: {e}")
-            results.append({"source": name, "error": str(e)})
-    return results
+    """Populate the catalogue with each source's popular/recent titles."""
+    names = source_registry.list_names()
+    logger.info("Scraping popular titles from %d sources", len(names))
+    return asyncio.run(_scrape_many(names, "", limit_per_source))
