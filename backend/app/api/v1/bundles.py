@@ -119,6 +119,7 @@ async def create_bundle(
         description=bundle_in.description,
         long_description=bundle_in.long_description,
         price_cents=bundle_in.price_cents,
+        currency=bundle_in.currency,
         cover_image_path=bundle_in.cover_image_path,
         category=bundle_in.category,
         tags=bundle_in.tags,

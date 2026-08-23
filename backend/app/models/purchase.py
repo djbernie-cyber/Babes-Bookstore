@@ -11,6 +11,24 @@ from sqlalchemy.sql import func
 from ..database import Base
 
 
+class PurchaseStatus:
+    """Single source of truth for purchase status values (stored as strings)."""
+
+    PENDING = "pending"
+    PAID = "paid"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class PaymentProvider:
+    STRIPE = "stripe"
+    PAYPAL = "paypal"
+    SQUARE = "square"
+    APPLE_PAY = "apple_pay"
+    GOOGLE_PAY = "google_pay"
+    FREE = "free"
+
+
 class Purchase(Base):
     __tablename__ = "purchases"
 
@@ -19,7 +37,7 @@ class Purchase(Base):
     bundle_id = Column(Integer, ForeignKey("bundles.id"), nullable=False)
 
     # Payment provider info
-    payment_provider = Column(String(20), default="stripe")
+    payment_provider = Column(String(20), default=PaymentProvider.STRIPE)
 
     # Stripe
     stripe_session_id = Column(String(200), nullable=True, index=True)
@@ -42,7 +60,7 @@ class Purchase(Base):
     download_count = Column(Integer, default=0)
     max_downloads = Column(Integer, default=5)
 
-    status = Column(String(20), default="pending")
+    status = Column(String(20), default=PurchaseStatus.PENDING)
     zip_path = Column(String(500), nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())

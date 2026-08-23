@@ -96,7 +96,7 @@
                             <textarea id="bundle-description" rows="3" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-stone-600 mb-1">Price (cents)</label>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Price (pence/cents, e.g. 1000 = &pound;10.00)</label>
                             <input type="number" id="bundle-price" required min="0" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         </div>
                         <div>
@@ -105,7 +105,7 @@
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-stone-600 mb-1">Book IDs (comma-separated)</label>
-                            <input type="text" id="bundle-book-ids" placeholder="e.g. abc123,def456,ghi789" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <input type="text" id="bundle-book-ids" placeholder="e.g. 12,34,56 (numeric book IDs from Manage Books)" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         </div>
                     </div>
                     <div class="flex gap-3">
@@ -168,7 +168,7 @@
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
             </div>
         </div>
     </footer>
@@ -225,13 +225,13 @@
                 bundles.forEach(bundle => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-stone-50 transition';
-                    const bookCount = (bundle.book_ids || bundle.books || []).length;
-                    const priceDollars = ((bundle.price_cents || bundle.price || 0) / 100).toFixed(2);
+                    const bookCount = Array.isArray(bundle.books) ? bundle.books.length : 0;
+                    const priceDisplay = formatPrice(bundle.price_cents, bundle.currency);
                     const activeDot = bundle.active ? '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>Active' : '<span class="inline-block w-2 h-2 rounded-full bg-stone-300 mr-1.5"></span>Inactive';
                     tr.innerHTML = `
                         <td class="px-4 py-3 font-medium text-stone-900">${escapeHtml(bundle.name || '')}</td>
                         <td class="px-4 py-3 text-stone-600">${bookCount}</td>
-                        <td class="px-4 py-3 text-stone-600">$${priceDollars}</td>
+                        <td class="px-4 py-3 text-stone-600">${priceDisplay}</td>
                         <td class="px-4 py-3 text-sm text-stone-600">${activeDot}</td>
                         <td class="px-4 py-3">
                             <div class="flex gap-2">
@@ -295,5 +295,6 @@
             return div.innerHTML;
         }
     </script>
+    <script src="/js/store.js"></script>
 </body>
 </html>

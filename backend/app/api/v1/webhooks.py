@@ -10,7 +10,7 @@ import httpx
 
 from .deps import get_db, get_current_user, require_admin
 from ...models.bundle import Bundle
-from ...models.purchase import Purchase
+from ...models.purchase import Purchase, PurchaseStatus, PaymentProvider
 from ...models.user import User
 from ...config import settings
 from ...schemas.purchase import CheckoutRequest, CheckoutResponse
@@ -23,6 +23,25 @@ STANDARD_PRICE = settings.STANDARD_PRICE_PENCE
 CURRENCY = settings.CURRENCY
 
 FRONTEND_URL = settings.FRONTEND_URL
+
+PAYPAL_API_BASE = {
+    "sandbox": "https://api-m.sandbox.paypal.com",
+    "live": "https://api-m.paypal.com",
+}
+SQUARE_API_BASE = {
+    "sandbox": "https://connect.squareupsandbox.com",
+    "production": "https://connect.squareup.com",
+}
+
+
+def _paypal_base() -> str:
+    mode = settings.PAYPAL_MODE if settings.PAYPAL_MODE in PAYPAL_API_BASE else "sandbox"
+    return PAYPAL_API_BASE[mode]
+
+
+def _square_base() -> str:
+    env = settings.SQUARE_ENVIRONMENT if settings.SQUARE_ENVIRONMENT in SQUARE_API_BASE else "sandbox"
+    return SQUARE_API_BASE[env]
 
 
 def _amount(bundle: Bundle) -> int:
@@ -109,10 +128,10 @@ async def create_stripe_checkout(
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
         amount_cents=amount,
-        currency=currency.upper(),
+        currency=currency,
         download_token=secrets.token_urlsafe(32),
-        status="pending",
-        payment_provider="stripe",
+        status=PurchaseStatus.PENDING,
+        payment_provider=PaymentProvider.STRIPE,
     )
     db.add(purchase)
     await db.commit()
@@ -173,7 +192,7 @@ async def create_stripe_checkout(
 
 async def _get_paypal_access_token() -> str:
     auth = (settings.PAYPAL_CLIENT_ID, settings.PAYPAL_CLIENT_SECRET)
-    base = "https://api-m.sandbox.paypal.com" if settings.PAYPAL_MODE == "sandbox" else "https://api-m.paypal.com"
+    base = _paypal_base()
     async with httpx.AsyncClient() as client:
         resp = await client.post(f"{base}/v1/oauth2/token", auth=auth, data={"grant_type": "client_credentials"})
         resp.raise_for_status()
@@ -199,10 +218,10 @@ async def create_paypal_checkout(
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
         amount_cents=amount,
-        currency=currency.upper(),
+        currency=currency,
         download_token=secrets.token_urlsafe(32),
-        status="pending",
-        payment_provider="paypal",
+        status=PurchaseStatus.PENDING,
+        payment_provider=PaymentProvider.PAYPAL,
     )
     db.add(purchase)
     await db.commit()
@@ -210,7 +229,7 @@ async def create_paypal_checkout(
 
     try:
         access_token = await _get_paypal_access_token()
-        base = "https://api-m.sandbox.paypal.com" if settings.PAYPAL_MODE == "sandbox" else "https://api-m.paypal.com"
+        base = _paypal_base()
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 f"{base}/v2/checkout/orders",
@@ -274,16 +293,16 @@ async def create_square_checkout(
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
         amount_cents=amount,
-        currency=currency.upper(),
+        currency=currency,
         download_token=secrets.token_urlsafe(32),
-        status="pending",
-        payment_provider="square",
+        status=PurchaseStatus.PENDING,
+        payment_provider=PaymentProvider.SQUARE,
     )
     db.add(purchase)
     await db.commit()
     await db.refresh(purchase)
 
-    base_url = "https://connect.squareupsandbox.com" if settings.SQUARE_ENVIRONMENT == "sandbox" else "https://connect.squareup.com"
+    base_url = _square_base()
 
     try:
         async with httpx.AsyncClient() as client:
@@ -325,7 +344,7 @@ async def create_square_checkout(
                                     },
                                 }
                             ],
-                            "pricing_options": {"auto_apply_taxes": True},
+                            "pricing_options": {"auto_apply_taxes": False},
                         },
                         "redirect_url": f"{_s}?payment=square&purchase_id={purchase.id}",
                         "ask_for_shipping_address": False,
@@ -370,10 +389,10 @@ async def create_apple_pay_session(
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
         amount_cents=amount,
-        currency=currency.upper(),
+        currency=currency,
         download_token=secrets.token_urlsafe(32),
-        status="pending",
-        payment_provider="apple_pay",
+        status=PurchaseStatus.PENDING,
+        payment_provider=PaymentProvider.APPLE_PAY,
     )
     db.add(purchase)
     await db.commit()
@@ -426,10 +445,10 @@ async def create_google_pay_session(
         user_id=current_user.id if current_user else None,
         customer_email=req.email,
         amount_cents=amount,
-        currency=currency.upper(),
+        currency=currency,
         download_token=secrets.token_urlsafe(32),
-        status="pending",
-        payment_provider="google_pay",
+        status=PurchaseStatus.PENDING,
+        payment_provider=PaymentProvider.GOOGLE_PAY,
     )
     db.add(purchase)
     await db.commit()
@@ -478,10 +497,10 @@ async def create_free_checkout(
         user_id=current_user.id,
         customer_email=current_user.email,
         amount_cents=0,
-        currency=_currency(bundle).upper(),
+        currency=_currency(bundle),
         download_token=secrets.token_urlsafe(32),
-        status="completed",
-        payment_provider="free",
+        status=PurchaseStatus.COMPLETED,
+        payment_provider=PaymentProvider.FREE,
     )
     db.add(purchase)
     await db.commit()
@@ -526,9 +545,9 @@ async def stripe_webhook(
 
         if purchase_id:
             purchase = await db.get(Purchase, int(purchase_id))
-            if purchase and purchase.status != "completed":
+            if purchase and purchase.status != PurchaseStatus.COMPLETED:
                 purchase.stripe_payment_intent = obj.get("id")
-                purchase.status = "paid"
+                purchase.status = PurchaseStatus.PAID
                 await db.commit()
                 from ...tasks.package_bundle import package_bundle_task
                 package_bundle_task.delay(purchase.id)
@@ -552,8 +571,8 @@ async def paypal_webhook(
         order_id = resource.get("id")
         stmt = select(Purchase).where(Purchase.paypal_order_id == order_id)
         purchase = (await db.execute(stmt)).scalar_one_or_none()
-        if purchase and purchase.status != "completed":
-            purchase.status = "paid"
+        if purchase and purchase.status != PurchaseStatus.COMPLETED:
+            purchase.status = PurchaseStatus.PAID
             await db.commit()
             from ...tasks.package_bundle import package_bundle_task
             package_bundle_task.delay(purchase.id)
@@ -574,8 +593,8 @@ async def square_webhook(
         if order_id:
             stmt = select(Purchase).where(Purchase.square_order_id == order_id)
             purchase = (await db.execute(stmt)).scalar_one_or_none()
-            if purchase and purchase.status != "completed":
-                purchase.status = "paid"
+            if purchase and purchase.status != PurchaseStatus.COMPLETED:
+                purchase.status = PurchaseStatus.PAID
                 await db.commit()
                 from ...tasks.package_bundle import package_bundle_task
                 package_bundle_task.delay(purchase.id)

@@ -76,7 +76,7 @@ async def test_stripe_checkout_uses_bundle_price(client, db, seeded):
     purchases = (await db.execute(select(Purchase))).scalars().all()
     assert len(purchases) == 1
     assert purchases[0].amount_cents == 2500
-    assert purchases[0].currency == "GBP"
+    assert purchases[0].currency == "gbp"
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,7 @@
 from typing import List, Optional
 import asyncio
 
-from .base import BaseSource, BookMetadata
+from .base import BaseSource, BookMetadata, LICENSE_VERIFY_PER_ITEM
 
 
 class InternetArchiveSource(BaseSource):
@@ -9,7 +9,7 @@ class InternetArchiveSource(BaseSource):
 
     name = "internet_archive"
     description = "Internet Archive (license-verified public domain only)"
-    license_type = "verified_per_item"
+    license_type = LICENSE_VERIFY_PER_ITEM
     rate_limit = 1.0
 
     SEARCH_URL = "https://archive.org/advancedsearch.php"

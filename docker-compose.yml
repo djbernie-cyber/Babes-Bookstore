@@ -1,5 +1,11 @@
 version: '3.8'
 
+x-app-environment: &app_environment
+  DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/babes_bookstore
+  SYNC_DATABASE_URL: postgresql://postgres:postgres@db:5432/babes_bookstore
+  REDIS_URL: redis://redis:6379/0
+  DEBUG: "true"
+
 services:
   db:
     image: postgres:16-alpine
@@ -22,10 +28,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/babes_bookstore
-      SYNC_DATABASE_URL: postgresql://postgres:postgres@db:5432/babes_bookstore
-      REDIS_URL: redis://redis:6379/0
-      DEBUG: "true"
+      <<: *app_environment
     depends_on:
       - db
       - redis
@@ -36,9 +39,7 @@ services:
     build: ./backend
     command: celery -A app.celery_app worker -l info
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/babes_bookstore
-      SYNC_DATABASE_URL: postgresql://postgres:postgres@db:5432/babes_bookstore
-      REDIS_URL: redis://redis:6379/0
+      <<: *app_environment
     depends_on:
       - db
       - redis
@@ -49,9 +50,7 @@ services:
     build: ./backend
     command: celery -A app.celery_app beat -l info
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/babes_bookstore
-      SYNC_DATABASE_URL: postgresql://postgres:postgres@db:5432/babes_bookstore
-      REDIS_URL: redis://redis:6379/0
+      <<: *app_environment
     depends_on:
       - db
       - redis

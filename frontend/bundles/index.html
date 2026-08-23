@@ -77,7 +77,7 @@
         <!-- Page Title -->
         <div class="text-center mb-10">
             <h1 class="font-serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">Book Bundles</h1>
-            <p class="text-lg text-stone-600 max-w-2xl mx-auto">Curated collections of public domain and openly-licensed books. Just £10 each.</p>
+            <p class="text-lg text-stone-600 max-w-2xl mx-auto">Curated collections of public domain and openly-licensed books. Pay once, keep forever.</p>
         </div>
 
         <!-- Category Filters -->
@@ -144,7 +144,7 @@
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
             </div>
         </div>
     </footer>
@@ -186,14 +186,14 @@
                 }
 
                 const cards = bundles.map(bundle => {
-                    const symbol = ({GBP:'£', USD:'$', EUR:'€'}[(bundle.currency || 'GBP').toUpperCase()]) || (bundle.currency || '£');
-                    const amount = ((bundle.price_cents ?? 1000) / 100).toFixed(2);
+                    const amount = formatPrice(bundle.price_cents, bundle.currency);
+                    const bookCount = Array.isArray(bundle.books) ? bundle.books.length : '?';
                     return `
                     <a href="/bundles/${bundle.slug}" class="bundle-card block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg">
                         <div class="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center p-6">
                             <div class="text-center">
                                 <span class="text-4xl">📚</span>
-                                <p class="text-amber-800 font-medium mt-2">${bundle.book_count || bundle.num_books || '?'} books</p>
+                                <p class="text-amber-800 font-medium mt-2">${bookCount} books</p>
                             </div>
                         </div>
                         <div class="p-6">
@@ -203,7 +203,7 @@
                             </div>
                             <p class="text-stone-600 text-sm line-clamp-2 mb-4">${bundle.description || 'A curated collection of great reads.'}</p>
                             <div class="flex items-center justify-between pt-2 border-t border-stone-100">
-                                <span class="text-amber-700 font-bold text-lg">${symbol}${amount}</span>
+                                <span class="text-amber-700 font-bold text-lg">${amount}</span>
                                 <span class="text-amber-600 text-sm font-medium">View Bundle &rarr;</span>
                             </div>
                         </div>
@@ -271,5 +271,6 @@
             loadBundles(currentPage, currentCategory);
         });
     </script>
+    <script src="/js/store.js"></script>
 </body>
 </html>

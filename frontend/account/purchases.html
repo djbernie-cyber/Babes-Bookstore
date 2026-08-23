@@ -150,7 +150,7 @@
             </div>
         </div>
         <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-            <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
         </div>
     </div>
 </footer>
@@ -182,21 +182,65 @@
         document.getElementById('user-email').textContent = user.email || '';
         document.getElementById('user-initial').textContent = name.charAt(0).toUpperCase();
 
-        if (user.purchases && user.purchases.length > 0) {
+        loadPurchases(token);
+    }
+
+    async function loadPurchases(token) {
+        try {
+            const response = await fetch('/api/v1/purchases', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (!response.ok) throw new Error('Failed to load purchases');
+            const purchases = await response.json();
+
+            if (!Array.isArray(purchases) || purchases.length === 0) return;
+
             document.getElementById('purchases-empty').classList.add('hidden');
             const listEl = document.getElementById('purchases-list');
             listEl.classList.remove('hidden');
-            listEl.innerHTML = user.purchases.map(p => `
+            listEl.innerHTML = purchases.map(p => {
+                const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
+                const statusLabel = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+                const statusClass = p.status === 'completed' ? 'bg-green-100 text-green-700'
+                    : p.status === 'failed' ? 'bg-red-100 text-red-700'
+                    : 'bg-amber-100 text-amber-700';
+                const downloadBtn = p.download_available
+                    ? `<button onclick="downloadPurchase(${p.id}, '${p.download_token || ''}')" class="mt-3 w-full bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 transition">Download</button>`
+                    : '';
+                return `
                 <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
-                    <h3 class="font-serif font-bold text-stone-900">${p.title || p.bundle_name || 'Purchase'}</h3>
-                    <p class="text-stone-500 text-sm mt-1">${p.date || p.purchased_at || ''}</p>
+                    <h3 class="font-serif font-bold text-stone-900">${p.bundle_name || 'Purchase'}</h3>
+                    <div class="flex items-center justify-between mt-1">
+                        <p class="text-stone-500 text-sm">${date}</p>
+                        <span class="text-xs font-medium px-2 py-0.5 rounded-full ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <p class="text-stone-700 text-sm mt-2 font-medium">${formatPrice(p.amount_cents, p.currency)}</p>
+                    ${downloadBtn}
                 </div>
-            `).join('');
+            `;
+            }).join('');
+        } catch (err) {
+            console.error('Error loading purchases:', err);
+        }
+    }
+
+    async function downloadPurchase(purchaseId, dlToken) {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`/api/v1/purchases/${purchaseId}/download?token=${encodeURIComponent(dlToken || '')}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || 'Download not available');
+            if (data.url) window.location.href = data.url;
+        } catch (err) {
+            alert(err.message);
         }
     }
 
     document.addEventListener('DOMContentLoaded', checkAuth);
 </script>
 
+    <script src="/js/store.js"></script>
 </body>
 </html>

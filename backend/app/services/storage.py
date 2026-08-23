@@ -60,7 +60,7 @@ class StorageService:
 
     def get_signed_url(self, key: str, expires_in: int = 3600) -> Optional[str]:
         if not self.client:
-            return f"/local/{key}"
+            return None
         try:
             url = self.client.generate_presigned_url(
                 "get_object",

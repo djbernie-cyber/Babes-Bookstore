@@ -2,7 +2,7 @@ from typing import List, Optional
 import asyncio
 import logging
 
-from .base import BaseSource, BookMetadata
+from .base import BaseSource, BookMetadata, LICENSE_VERIFY_PER_ITEM
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class OpenLibrarySource(BaseSource):
 
     name = "open_library"
     description = "Open Library (license-verified items only)"
-    license_type = "verified_per_item"
+    license_type = LICENSE_VERIFY_PER_ITEM
     rate_limit = 0.5
 
     SEARCH_URL = "https://openlibrary.org/search.json"
@@ -80,7 +80,7 @@ class OpenLibrarySource(BaseSource):
                 source=self.name,
                 source_id=source_id,
                 source_url=f"https://openlibrary.org/works/{source_id}",
-                license_type="verify_per_item",
+                license_type=LICENSE_VERIFY_PER_ITEM,
             )
         except Exception:
             return None
@@ -131,10 +131,10 @@ class OpenLibrarySource(BaseSource):
     def _licence(doc: dict) -> str:
         """Public scans of pre-1929 works are public domain in the US.
 
-        Anything newer stays "verify_per_item" so the licence verifier holds
+        Anything newer stays LICENSE_VERIFY_PER_ITEM so the licence verifier holds
         it for manual review rather than auto-publishing it.
         """
         year = doc.get("first_publish_year")
         if doc.get("public_scan_b") and isinstance(year, int) and year < 1929:
             return "public_domain"
-        return "verify_per_item"
+        return LICENSE_VERIFY_PER_ITEM

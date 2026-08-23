@@ -142,7 +142,7 @@
             </div>
         </div>
         <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-            <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+            <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
         </div>
     </div>
 </footer>
@@ -199,9 +199,9 @@
             loadingEl.classList.add('hidden');
             document.title = `${book.title} – Babe's Bookstore`;
 
-            if (book.cover_image_url) {
+            if (book.cover_path && /^https?:\/\//.test(book.cover_path)) {
                 document.getElementById('book-cover').innerHTML =
-                    `<img src="${book.cover_image_url}" alt="${book.title}" class="w-full h-full object-cover md:h-full min-h-[300px]">`;
+                    `<img src="${book.cover_path}" alt="${book.title}" class="w-full h-full object-cover md:h-full min-h-[300px]">`;
             } else {
                 document.getElementById('book-cover').innerHTML =
                     `<div class="w-full min-h-[300px] md:min-h-[400px] bg-gradient-to-br ${getGradient(book.id)} flex items-center justify-center">
@@ -213,7 +213,7 @@
             document.getElementById('book-author').textContent = `by ${book.author || 'Unknown author'}`;
 
             let metaHtml = '';
-            if (book.license) metaHtml += renderLicenseBadge(book.license);
+            if (book.license_type) metaHtml += renderLicenseBadge(book.license_type);
             if (book.category) metaHtml += renderCategoryBadge(book.category);
             if (book.publication_year) {
                 metaHtml += `<span class="text-sm text-stone-500">${book.publication_year}</span>`;
@@ -232,8 +232,8 @@
             if (book.source_url) {
                 sourceHtml = `<p class="text-sm text-stone-600">Sourced from: <a href="${book.source_url}" target="_blank" rel="noopener noreferrer" class="text-amber-700 hover:text-amber-800 underline">${book.source_url}</a></p>`;
             }
-            if (book.source_name) {
-                sourceHtml += `<p class="text-sm text-stone-500 mt-1">${book.source_name}</p>`;
+            if (book.source) {
+                sourceHtml += `<p class="text-sm text-stone-500 mt-1">${book.source}</p>`;
             }
             if (!sourceHtml) {
                 sourceHtml = '<p class="text-sm text-stone-400 italic">Source information not available.</p>';
@@ -251,5 +251,6 @@
     document.addEventListener('DOMContentLoaded', loadBook);
 </script>
 
+    <script src="/js/store.js"></script>
 </body>
 </html>

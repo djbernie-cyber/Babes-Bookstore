@@ -3,10 +3,11 @@ import logging
 from datetime import datetime, timedelta
 
 from ..celery_app import celery_app
+from ..config import settings
 from ..database import AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..models.bundle import Bundle
-from ..models.purchase import Purchase
+from ..models.purchase import Purchase, PurchaseStatus
 from ..services.packaging import packaging
 from sqlalchemy import select
 
@@ -34,14 +35,14 @@ async def _package_bundle_async(purchase_id: int) -> dict:
         try:
             zip_key = packaging.create_bundle_zip(bundle, books)
             purchase.zip_path = zip_key
-            purchase.status = "completed"
-            purchase.download_expires_at = datetime.utcnow() + timedelta(hours=24)
+            purchase.status = PurchaseStatus.COMPLETED
+            purchase.download_expires_at = datetime.utcnow() + timedelta(hours=settings.DOWNLOAD_WINDOW_HOURS)
             await session.commit()
 
             from ..services.email_service import email_service
             from ..services.storage import storage
 
-            signed_url = storage.get_signed_url(zip_key, expires_in=86400)
+            signed_url = storage.get_signed_url(zip_key, expires_in=settings.DOWNLOAD_WINDOW_HOURS * 3600)
             if purchase.customer_email and signed_url:
                 email_service.send_purchase_confirmation(
                     to_email=purchase.customer_email,
@@ -53,10 +54,10 @@ async def _package_bundle_async(purchase_id: int) -> dict:
                 "purchase_id": purchase_id,
                 "zip_path": zip_key,
                 "book_count": len(books),
-                "status": "completed",
+                "status": PurchaseStatus.COMPLETED,
             }
         except Exception as e:
             logger.error(f"Packaging failed for purchase {purchase_id}: {e}")
-            purchase.status = "failed"
+            purchase.status = PurchaseStatus.FAILED
             await session.commit()
             return {"error": str(e)}

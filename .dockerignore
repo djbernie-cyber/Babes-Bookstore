@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.example
+*.md
+docker-compose.yml
+netlify.toml
+fly.toml
+frontend
+backend/.venv
+backend/.pytest_cache
+backend/tests
+**/__pycache__
+**/*.pyc
+.DS_Store

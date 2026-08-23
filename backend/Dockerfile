@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip wheel --wheel-dir /wheels -r requirements.txt
 
 # Runtime stage
@@ -25,11 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /wheels /wheels
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-index --find-links=/wheels -r requirements.txt \
     && rm -rf /wheels
 
-COPY . .
+COPY backend/ .
 
 # Run as an unprivileged user
 RUN useradd --create-home --shell /usr/sbin/nologin appuser \
@@ -44,5 +44,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 # Fly runs two process groups from this image:
 #   app    — apply migrations, then serve the API
 #   worker — consume the Celery queue (scraping + bundle packaging).
+# Redis lives in a separate app (babes-bookstore-redis).
 # Without the worker, paid customers would never receive their downloads.
-CMD ["sh", "-c", "if [ \"$FLY_PROCESS_GROUP\" = \"worker\" ]; then exec celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2; else alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*'; fi"]
+CMD ["sh", "-c", "if [ \"$FLY_PROCESS_GROUP\" = \"worker\" ]; then exec celery -A app.celery_app:celery_app worker --loglevel=info --concurrency=2; else python -m alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*'; fi"]

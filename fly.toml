@@ -1,4 +1,4 @@
-app = 'babes-bookstore-api'
+app = 'babes-bookstore'
 primary_region = 'lhr'
 
 [processes]

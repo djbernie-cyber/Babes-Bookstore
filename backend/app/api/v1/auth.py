@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from urllib.parse import urlencode
 import httpx
 
 from .deps import get_db, get_current_user
@@ -81,44 +82,53 @@ def verify_google_token(token: str) -> dict:
         return None
 
 
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_CALLBACK_PATH = "/api/v1/auth/google/callback"
+
+
+def _google_redirect_uri() -> str:
+    """Single source of truth for the OAuth redirect URI.
+
+    GOOGLE_REDIRECT_URI is authoritative when it points at a real host.
+    When it is still the localhost default and we are running in
+    production, derive the callback from PRODUCTION_URL so the deployed
+    app does not send Google a localhost redirect.
+    """
+    uri = settings.GOOGLE_REDIRECT_URI
+    if not settings.DEBUG and settings.PRODUCTION_URL and (
+        "localhost" in uri or "127.0.0.1" in uri
+    ):
+        return f"{settings.PRODUCTION_URL.rstrip('/')}{GOOGLE_CALLBACK_PATH}"
+    return uri
+
+
 @router.get("/google/login")
 async def google_login():
     """Redirect to Google OAuth consent screen."""
-    redirect_uri = settings.GOOGLE_REDIRECT_URI
-    if settings.PRODUCTION_URL and "localhost" not in settings.GOOGLE_REDIRECT_URI:
-        redirect_uri = f"{settings.PRODUCTION_URL}/api/v1/auth/google/callback"
-    elif settings.PRODUCTION_URL:
-        redirect_uri = settings.GOOGLE_REDIRECT_URI.replace("localhost:8000", settings.PRODUCTION_URL.replace("https://", ""))
-
     params = {
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": redirect_uri,
+        "client_id": settings.GOOGLE_CLIENT_ID or "",
+        "redirect_uri": _google_redirect_uri(),
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "consent",
     }
-    query = "&".join(f"{k}={v}" for k, v in params.items())
-    return RedirectResponse(url=f"https://accounts.google.com/o/oauth2/v2/auth?{query}")
+    query = urlencode(params)
+    return RedirectResponse(url=f"{GOOGLE_AUTH_URL}?{query}")
 
 
 @router.get("/google/callback")
 async def google_callback(code: str, state: str = None, db: AsyncSession = Depends(get_db)):
     """Handle Google OAuth callback — exchange code for tokens, create/find user, return JWT."""
-    redirect_uri = settings.GOOGLE_REDIRECT_URI
-    if settings.PRODUCTION_URL and "localhost" not in settings.GOOGLE_REDIRECT_URI:
-        redirect_uri = f"{settings.PRODUCTION_URL}/api/v1/auth/google/callback"
-    elif settings.PRODUCTION_URL:
-        redirect_uri = settings.GOOGLE_REDIRECT_URI.replace("localhost:8000", settings.PRODUCTION_URL.replace("https://", ""))
-
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
+            GOOGLE_TOKEN_URL,
             data={
                 "code": code,
                 "client_id": settings.GOOGLE_CLIENT_ID,
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": redirect_uri,
+                "redirect_uri": _google_redirect_uri(),
                 "grant_type": "authorization_code",
             },
         )

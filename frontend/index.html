@@ -259,7 +259,7 @@
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
             </div>
         </div>
     </footer>
@@ -282,21 +282,21 @@
                     return;
                 }
                 container.innerHTML = bundles.map(bundle => {
-                    const symbol = ({GBP:'£', USD:'$', EUR:'€'}[(bundle.currency || 'GBP').toUpperCase()]) || (bundle.currency || '£');
-                    const amount = ((bundle.price_cents ?? 1000) / 100).toFixed(2);
+                    const amount = formatPrice(bundle.price_cents, bundle.currency);
+                    const bookCount = Array.isArray(bundle.books) ? bundle.books.length : '?';
                     return `
                     <a href="/bundles/${bundle.slug}" class="bundle-card block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg">
                         <div class="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center p-6">
                             <div class="text-center">
                                 <span class="text-4xl">📚</span>
-                                <p class="text-amber-800 font-medium mt-2">${bundle.book_count || bundle.num_books || '?'} books</p>
+                                <p class="text-amber-800 font-medium mt-2">${bookCount} books</p>
                             </div>
                         </div>
                         <div class="p-6">
                             <h3 class="font-serif text-xl font-bold text-stone-900 mb-2">${bundle.name}</h3>
                             <p class="text-stone-600 text-sm line-clamp-2 mb-4">${bundle.description || 'A curated collection of great reads.'}</p>
                             <div class="flex items-center justify-between">
-                                <span class="text-amber-700 font-bold text-lg">${symbol}${amount}</span>
+                                <span class="text-amber-700 font-bold text-lg">${amount}</span>
                                 <span class="text-amber-600 text-sm font-medium">View Bundle &rarr;</span>
                             </div>
                         </div>
@@ -304,12 +304,11 @@
                 }).join('');
 
                 // Keep the hero claim honest: show the cheapest bundle's price.
-                const priced = bundles.map(b => ({ cents: b.price_cents ?? b.price, currency: b.currency || 'GBP' })).filter(p => typeof p.cents === 'number');
+                const priced = bundles.filter(b => typeof b.price_cents === 'number');
                 if (priced.length) {
-                    const cheapest = priced.reduce((a, b) => (a.cents <= b.cents ? a : b));
-                    const symbol = ({GBP:'£', USD:'$', EUR:'€'}[cheapest.currency.toUpperCase()]) || cheapest.currency;
+                    const cheapest = priced.reduce((a, b) => (a.price_cents <= b.price_cents ? a : b));
                     const el = document.getElementById('hero-price');
-                    if (el) el.textContent = `📚 Bundles from ${symbol}${(cheapest.cents / 100).toFixed(2)}`;
+                    if (el) el.textContent = `📚 Bundles from ${formatPrice(cheapest.price_cents, cheapest.currency)}`;
                 }
             } catch (error) {
                 console.error('Error loading featured bundles:', error);
@@ -322,5 +321,6 @@
             }
         });
     </script>
+    <script src="/js/store.js"></script>
 </body>
 </html>

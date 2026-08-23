@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
+    PORT: int = 8000
+
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/babes_bookstore"
     SYNC_DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/babes_bookstore"
 
@@ -22,13 +24,18 @@ class Settings(BaseSettings):
     CURRENCY: str = "gbp"
     CURRENCY_SYMBOL: str = "£"
 
+    # How long purchase download links stay valid
+    DOWNLOAD_WINDOW_HOURS: int = 24
+
     # Google OAuth
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
-    PRODUCTION_URL: str = "https://babes-bookstore-api.fly.dev"
-    FRONTEND_URL: str = "https://babes-bookstore.netlify.app"
+    PRODUCTION_URL: str = "https://babes-bookstore.fly.dev"
+    FRONTEND_URL: str = "https://babesbooks.store"
     CORS_ORIGINS: list[str] = [
+        "https://babesbooks.store",
+        "https://www.babesbooks.store",
         "https://babes-bookstore.netlify.app",
         "http://localhost:8000",
         "http://localhost:8888",
@@ -62,11 +69,10 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     FROM_EMAIL: str = "noreply@babesbookstore.com"
 
-    # Admin accounts (auto-created on startup with free downloads)
-    ADMIN_EMAILS: list[str] = [
-        "dj.bernie@hotmail.co.uk",
-        "williammajanja@gmail.com",
-    ]
+    # Admin accounts (auto-created on startup with free downloads).
+    # Set via env, e.g. ADMIN_EMAILS='["you@example.com"]' — no real
+    # addresses belong in source control.
+    ADMIN_EMAILS: list[str] = []
 
     ALLOWED_LICENSES: list[str] = [
         "public_domain",

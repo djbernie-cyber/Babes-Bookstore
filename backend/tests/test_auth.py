@@ -82,11 +82,10 @@ async def test_admin_endpoint_blocked_for_normal_user(client):
 
 
 def test_admin_emails_are_configured():
-    """Both requested accounts must be present in config."""
+    """ADMIN_EMAILS comes from the environment and must be parseable."""
     from app.config import settings
 
-    assert "williammajanja@gmail.com" in settings.ADMIN_EMAILS
-    assert "dj.bernie@hotmail.co.uk" in settings.ADMIN_EMAILS
+    assert "admin@test.example" in settings.ADMIN_EMAILS
 
 
 @pytest.mark.asyncio
@@ -133,7 +132,7 @@ async def test_seeding_promotes_existing_user_to_admin(session_factory):
     from sqlalchemy import select
 
     async with session_factory() as s:
-        s.add(User(email="williammajanja@gmail.com", name="Will",
+        s.add(User(email="admin@test.example", name="Will",
                    is_admin=False, free_downloads=False))
         await s.commit()
 
@@ -141,7 +140,7 @@ async def test_seeding_promotes_existing_user_to_admin(session_factory):
 
     async with session_factory() as s:
         u = (await s.execute(
-            select(User).where(User.email == "williammajanja@gmail.com")
+            select(User).where(User.email == "admin@test.example")
         )).scalar_one()
         assert u.is_admin is True
         assert u.free_downloads is True

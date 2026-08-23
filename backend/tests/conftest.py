@@ -13,6 +13,8 @@ os.environ.setdefault("PAYPAL_CLIENT_ID", "paypal_test_dummy")
 os.environ.setdefault("PAYPAL_CLIENT_SECRET", "paypal_secret_dummy")
 os.environ.setdefault("SQUARE_ACCESS_TOKEN", "sq_test_dummy")
 os.environ.setdefault("SQUARE_LOCATION_ID", "L_test_dummy")
+# Admin list is env-driven (no real addresses in source); give tests a known one
+os.environ.setdefault("ADMIN_EMAILS", '["admin@test.example"]')
 
 import pytest
 import pytest_asyncio

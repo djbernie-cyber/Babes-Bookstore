@@ -79,13 +79,13 @@ fly secrets set SECRET_KEY=$(openssl rand -hex 32)
 fly deploy
 ```
 
-4. **Checkpoint:** open `https://babes-bookstore-api.fly.dev/health` —
+4. **Checkpoint:** open `https://babes-bookstore.fly.dev/health` —
    you should see `{"status":"ok",...}`.
    Also run `fly status` — you should see **two machines**: one `app`,
    one `worker`. The worker is what actually builds customer downloads;
    if it's missing, sales will silently never deliver.
 5. **Write down your Fly address** (e.g.
-   `https://babes-bookstore-api.fly.dev`). Every later step needs it.
+   `https://babes-bookstore.fly.dev`). Every later step needs it.
 
 > **Won't boot?** The app deliberately refuses to start with a default
 > security key or SQLite in production. Run `fly logs` — the error
@@ -106,15 +106,24 @@ fly deploy
    pencil icon to edit) and check the first line says:
 
    ```
-   /api/*  https://babes-bookstore-api.fly.dev/api/:splat  200
+   /api/*  https://babes-bookstore.fly.dev/api/:splat  200
    ```
 
    …using **your** Fly address from Step 1. (It's the shop's forwarding
    address for payments and searches. If your Fly name differs, fix it
    here, then Netlify → **Deploys → Trigger deploy**.)
 5. **Checkpoint:** open your Netlify site (something like
-   `https://<your-site>.netlify.app`). You should see the Babe's
-   Bookstore homepage. **Write down this address** — Step 4 and 5 need it.
+    `https://<your-site>.netlify.app`). You should see the Babe's
+    Bookstore homepage. **Write down this address** — Step 4 and 5 need it.
+6. **Custom domain.** The shop's permanent address is
+    `https://babesbooks.store` (already on Netlify DNS). In Netlify:
+    **Site configuration → Domain management → Add a domain** →
+    enter `babesbooks.store`, then add `www.babesbooks.store` and set
+    the apex as primary (Netlify redirects www → apex automatically).
+    Leave "Netlify DNS" selected so the A/CNAME records manage
+    themselves, then wait for the HTTPS certificate to provision.
+    Once live, set the canonical URL on the backend:
+    `fly secrets set FRONTEND_URL=https://babesbooks.store`
 
 ---
 
@@ -156,7 +165,7 @@ but Google is the quickest route for your Gmail admin account.)
 4. **Authorised redirect URIs** — paste exactly (use your Fly address):
 
    ```
-   https://babes-bookstore-api.fly.dev/api/v1/auth/google/callback
+   https://babes-bookstore.fly.dev/api/v1/auth/google/callback
    ```
 5. Copy the **Client ID** and **Client Secret**, then:
 
@@ -164,7 +173,7 @@ but Google is the quickest route for your Gmail admin account.)
 fly secrets set \
   GOOGLE_CLIENT_ID=xxx \
   GOOGLE_CLIENT_SECRET=xxx \
-  GOOGLE_REDIRECT_URI=https://babes-bookstore-api.fly.dev/api/v1/auth/google/callback \
+  GOOGLE_REDIRECT_URI=https://babes-bookstore.fly.dev/api/v1/auth/google/callback \
   FRONTEND_URL=https://YOUR-NETLIFY-ADDRESS.netlify.app
 ```
 
@@ -218,7 +227,7 @@ out to your bank. **This is the money step — don't rush it.**
    `pk_test_`) from https://dashboard.stripe.com/apikeys
 5. Add the confirmation link ("webhook"):
    https://dashboard.stripe.com/test/webhooks → **Add endpoint**
-   - URL: `https://babes-bookstore-api.fly.dev/api/v1/checkout/webhook/stripe`
+   - URL: `https://babes-bookstore.fly.dev/api/v1/checkout/webhook/stripe`
      (your Fly address)
    - Select events: `checkout.session.completed` **and**
      `payment_intent.succeeded`
@@ -338,8 +347,8 @@ fly secrets set SQUARE_ACCESS_TOKEN=xxx SQUARE_LOCATION_ID=xxx SQUARE_ENVIRONMEN
 Apple Pay and Google Pay need **no separate setup** — they ride on
 Stripe and appear automatically.
 
-**A proper domain (e.g. babesbookstore.co.uk):** buy one, point it at
-Netlify (custom domains) and at Fly, then update three things: the
+**Custom domain:** `babesbooks.store` is the shop's permanent address
+(set up in Step 2). If you ever change it, update three things: the
 `FRONTEND_URL` secret, the Google redirect URI, and the Stripe webhook
 URL. Until then, the free addresses work fine.
 
@@ -363,8 +372,8 @@ URL. Until then, the free addresses work fine.
 | What | Where |
 |---|---|
 | Code | https://github.com/djbernie-cyber/Babes-Bookstore |
-| Engine health | `https://babes-bookstore-api.fly.dev/health` |
-| API docs | `https://babes-bookstore-api.fly.dev/docs` |
+| Engine health | `https://babes-bookstore.fly.dev/health` |
+| API docs | `https://babes-bookstore.fly.dev/docs` |
 | Admin panel | `/admin` on your Netlify address |
 | Review queue | `/admin/books` |
 | Policies | `/terms` · `/privacy` · `/refunds` |

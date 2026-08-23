@@ -3,6 +3,11 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, AsyncIterator
 import httpx
 
+#: Sentinel licence for sources whose items must be checked individually.
+#: Deliberately not in ALLOWED_LICENSES, so the licence verifier holds any
+#: book carrying it in PENDING for manual review.
+LICENSE_VERIFY_PER_ITEM = "verify_per_item"
+
 
 @dataclass
 class BookMetadata:
@@ -44,7 +49,7 @@ class BaseSource(ABC):
     #: with 403/401, so present a conventional UA plus a contact URL.
     USER_AGENT = (
         "Mozilla/5.0 (compatible; BabesBookstore/1.0; "
-        "+https://babes-bookstore.netlify.app) public-domain-aggregator"
+        "+https://babesbooks.store) public-domain-aggregator"
     )
 
     def __init__(self):

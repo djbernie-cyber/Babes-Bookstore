@@ -154,7 +154,7 @@
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
+                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
             </div>
         </div>
     </footer>
@@ -189,10 +189,10 @@
                 const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
                 if (!res.ok) throw new Error('Failed to load stats');
                 const data = await res.json();
-                document.getElementById('stat-total').textContent = data.total_books ?? '—';
-                document.getElementById('stat-approved').textContent = data.approved ?? '—';
-                document.getElementById('stat-pending').textContent = data.pending ?? '—';
-                document.getElementById('stat-rejected').textContent = data.rejected ?? '—';
+                document.getElementById('stat-total').textContent = data.books?.total ?? '—';
+                document.getElementById('stat-approved').textContent = data.books?.approved ?? '—';
+                document.getElementById('stat-pending').textContent = data.books?.pending ?? '—';
+                document.getElementById('stat-rejected').textContent = data.books?.rejected ?? '—';
             } catch (e) {
                 showToast('Error loading stats');
             }
@@ -200,19 +200,19 @@
 
         async function scrapeAll() {
             showToast('Starting full scrape...');
-            await fetch('/api/v1/admin/scrape', { method: 'POST', headers: authHeaders() });
+            await fetch('/api/v1/admin/scrape/all', { method: 'POST', headers: authHeaders() });
             showToast('Scrape initiated');
         }
 
         async function scrapeSource(source) {
             showToast('Scraping ' + source + '...');
-            await fetch('/api/v1/admin/scrape/' + source, { method: 'POST', headers: authHeaders() });
+            await fetch('/api/v1/admin/scrape/source/' + source, { method: 'POST', headers: authHeaders() });
             showToast('Scrape initiated for ' + source);
         }
 
         async function reverifyAll() {
             showToast('Re-verifying licenses...');
-            await fetch('/api/v1/admin/reverify', { method: 'POST', headers: authHeaders() });
+            await fetch('/api/v1/admin/verify/licenses', { method: 'POST', headers: authHeaders() });
             showToast('Re-verification initiated');
         }
 
@@ -222,5 +222,6 @@
             showToast('Popular scrape initiated');
         }
     </script>
+    <script src="/js/store.js"></script>
 </body>
 </html>

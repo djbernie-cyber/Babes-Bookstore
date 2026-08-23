@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -19,10 +19,16 @@ class BundleBase(BaseModel):
     description: Optional[str] = None
     long_description: Optional[str] = None
     price_cents: int = Field(..., ge=0)
-    currency: str = Field(default="GBP", min_length=2, max_length=10)
+    currency: str = Field(default="gbp", min_length=2, max_length=10)
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     bundle_type: str = "curated"
+
+    @field_validator("currency")
+    @classmethod
+    def _lowercase_currency(cls, v: str) -> str:
+        """Store currencies as lowercase ISO codes everywhere (matches settings.CURRENCY)."""
+        return v.strip().lower()
 
 
 class BundleCreate(BundleBase):

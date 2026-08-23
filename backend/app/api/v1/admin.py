@@ -6,7 +6,7 @@ from typing import Optional
 from .deps import get_db, require_admin
 from ...models.book import Book, BookStatus
 from ...models.bundle import Bundle
-from ...models.purchase import Purchase
+from ...models.purchase import Purchase, PurchaseStatus
 from ...models.user import User
 from ...sources import source_registry
 
@@ -33,7 +33,7 @@ async def get_stats(db: AsyncSession = Depends(get_db), _admin=Depends(require_a
 
     total_purchases = (await db.execute(select(func.count(Purchase.id)))).scalar() or 0
     revenue_cents = (
-        await db.execute(select(func.sum(Purchase.amount_cents)).where(Purchase.status == "completed"))
+        await db.execute(select(func.sum(Purchase.amount_cents)).where(Purchase.status == PurchaseStatus.COMPLETED))
     ).scalar() or 0
 
     return {
