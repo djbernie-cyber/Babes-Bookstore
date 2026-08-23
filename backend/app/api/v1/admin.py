@@ -59,13 +59,14 @@ async def trigger_source_scrape(
     source_name: str,
     query: str = "",
     limit: int = 20,
+    start_page: int = 1,
     _admin=Depends(require_admin),
 ):
     if source_name not in source_registry.list_names():
         raise HTTPException(status_code=404, detail=f"Source '{source_name}' not found")
 
     from ...tasks.scrape import scrape_source_task
-    task = scrape_source_task.delay(source_name, query, limit)
+    task = scrape_source_task.delay(source_name, query, limit, start_page)
     return {"task_id": task.id, "source": source_name}
 
 

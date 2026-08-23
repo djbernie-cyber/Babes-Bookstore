@@ -36,6 +36,12 @@
         }
     </script>
     <link rel="stylesheet" href="/static/site.css">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#fbfbfd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="/static/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 </head>
 <body class="bg-stone-50 font-sans text-stone-900 min-h-screen flex flex-col">
 
@@ -78,7 +84,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
             <a
                 href="/api/v1/auth/google/login"
-                class="w-full flex items-center justify-center gap-3 px-4 py-3 border border-stone-300 rounded-lg text-stone-700 font-medium hover:bg-stone-50 transition-colors mb-6"
+                class="google-btn w-full flex items-center justify-center gap-3 px-4 py-3 border border-stone-300 rounded-lg text-stone-700 font-medium hover:bg-stone-50 transition-colors mb-6"
             >
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>

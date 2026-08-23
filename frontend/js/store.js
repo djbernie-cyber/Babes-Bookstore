@@ -67,4 +67,36 @@
     } else {
         enhanceChrome();
     }
+
+    // Honest, live marketing numbers — never hardcode a claim the
+    // catalogue can't back up. Pulled from the public API.
+    function refreshLiveStats() {
+        fetch('/api/v1/books?page_size=1').then(function (r) { return r.json(); })
+            .then(function (d) {
+                var n = d && d.total;
+                var el = document.querySelector('[data-live-books]');
+                if (el && typeof n === 'number') {
+                    el.textContent = n.toLocaleString() + (n === 1 ? ' book' : ' books');
+                }
+            }).catch(function () {});
+
+        fetch('/api/v1/checkout/config').then(function (r) { return r.json(); })
+            .then(function (cfg) {
+                if (!cfg) return;
+                // Google sign-in only works once OAuth is configured.
+                var googleOn = !!cfg.google_client_id;
+                document.querySelectorAll('.google-btn').forEach(function (b) {
+                    b.style.display = googleOn ? '' : 'none';
+                });
+                var payEl = document.querySelector('[data-live-payments]');
+                if (payEl) {
+                    var methods = [];
+                    if (cfg.stripe_publishable_key) { methods.push('Card'); methods.push('Apple Pay', 'Google Pay'); }
+                    if (cfg.paypal_client_id) methods.push('PayPal');
+                    if (cfg.square_application_id) methods.push('Square');
+                    payEl.textContent = methods.length ? methods.length + (methods.length === 1 ? ' way to pay' : ' ways to pay') : 'Payments launching soon';
+                }
+            }).catch(function () {});
+    }
+    refreshLiveStats();
 })();

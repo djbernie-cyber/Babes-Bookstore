@@ -1,0 +1,17 @@
+{
+  "name": "Babe's Bookstore",
+  "short_name": "Babe's Books",
+  "description": "Curated public domain and openly-licensed book bundles.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfbfd",
+  "theme_color": "#fbfbfd",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

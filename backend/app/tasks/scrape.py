@@ -35,6 +35,7 @@ class IngestReport:
     approved: int = 0
     pending: int = 0
     rejected: int = 0
+    skipped_dupe: int = 0
     errors: List[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
@@ -46,8 +47,14 @@ class IngestReport:
             "approved": self.approved,
             "pending": self.pending,
             "rejected": self.rejected,
+            "skipped_dupe": self.skipped_dupe,
             "errors": self.errors[:5],
         }
+
+
+def _normalize_title(title: str) -> str:
+    import re
+    return re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip()
 
 
 def _status_for(result) -> BookStatus:
@@ -64,6 +71,13 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
         return report
 
     async with AsyncSessionLocal() as session:
+        seen_titles = {
+            _normalize_title(t)
+            for (t,) in (await session.execute(
+                select(Book.title).where(Book.source == source_name)
+            )).all()
+        }
+
         for metadata in items:
             if not metadata.source_id or not metadata.title:
                 report.errors.append("skipped record missing source_id/title")
@@ -80,6 +94,11 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
                 report.approved += 1
             else:
                 report.pending += 1
+
+            norm_title = _normalize_title(metadata.title)
+            if norm_title in seen_titles:
+                report.skipped_dupe += 1
+                continue
 
             payload = {
                 "title": metadata.title[:500],
@@ -116,6 +135,7 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
             else:
                 session.add(Book(**payload, verified_at=datetime.utcnow()))
                 report.created += 1
+            seen_titles.add(norm_title)
 
         try:
             await session.commit()
@@ -127,14 +147,18 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
     return report
 
 
-async def _scrape_source(source_name: str, query: str, limit: int) -> dict:
+async def _scrape_source(source_name: str, query: str, limit: int, start_page: int = 1) -> dict:
     try:
         source = source_registry.get(source_name)
     except KeyError:
         return IngestReport(source=source_name, errors=[f"unknown source '{source_name}'"]).as_dict()
 
     try:
-        items = await source.search(query, limit=limit) if query else await source.list_popular(limit)
+        items = (
+            await source.search(query, limit=limit, start_page=start_page)
+            if query
+            else await source.list_popular(limit, start_page)
+        )
     except Exception as exc:
         logger.exception("Fetch failed for %s", source_name)
         return IngestReport(source=source_name, errors=[f"fetch failed: {exc}"]).as_dict()
@@ -162,9 +186,9 @@ async def _scrape_many(source_names: Sequence[str], query: str, limit: int) -> L
 
 
 @celery_app.task(name="scrape.source")
-def scrape_source_task(source_name: str, query: str = "", limit: int = 20) -> dict:
-    logger.info("Scraping %s (query=%r, limit=%s)", source_name, query, limit)
-    result = asyncio.run(_scrape_source(source_name, query, limit))
+def scrape_source_task(source_name: str, query: str = "", limit: int = 20, start_page: int = 1) -> dict:
+    logger.info("Scraping %s (query=%r, limit=%s, start_page=%s)", source_name, query, limit, start_page)
+    result = asyncio.run(_scrape_source(source_name, query, limit, start_page))
     logger.info("Scrape finished: %s", result)
     return result
 

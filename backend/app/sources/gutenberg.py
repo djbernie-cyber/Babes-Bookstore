@@ -29,12 +29,12 @@ class GutenbergSource(BaseSource):
     API_URL = "https://gutendex.com/books"
     PAGE_SIZE = 32  # Gutendex fixed page size
 
-    async def search(self, query: str, limit: int = 20) -> List[BookMetadata]:
-        return await self._collect({"search": query} if query else {}, limit)
+    async def search(self, query: str, limit: int = 20, start_page: int = 1) -> List[BookMetadata]:
+        return await self._collect({"search": query} if query else {}, limit, start_page)
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         # Gutendex sorts by download count by default.
-        return await self._collect({"sort": "popular"}, limit)
+        return await self._collect({"sort": "popular", "languages": "en"}, limit, start_page)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
         try:
@@ -61,34 +61,81 @@ class GutenbergSource(BaseSource):
                 logger.debug("Gutenberg download failed: %s", url, exc_info=True)
         return None
 
-    async def _collect(self, params: Dict[str, Any], limit: int) -> List[BookMetadata]:
-        """Page through the API until `limit` books are gathered."""
-        books: List[BookMetadata] = []
-        url: Optional[str] = self.API_URL
-        query: Optional[Dict[str, Any]] = {**params, "copyright": "false"}
+    async def _collect(
+        self, params: Dict[str, Any], limit: int, start_page: int = 1
+    ) -> List[BookMetadata]:
+        """Page through the API until `limit` books are gathered.
 
-        while url and len(books) < limit:
+        Starts at `start_page` so large imports can be resumed in batches
+        without re-fetching earlier pages.
+        """
+        books: List[BookMetadata] = []
+        query: Dict[str, Any] = {**params, "copyright": "false"}
+        page = max(1, start_page)
+
+        while len(books) < limit:
             try:
-                response = await self.client.get(url, params=query, follow_redirects=True)
+                response = await self.client.get(
+                    self.API_URL, params={**query, "page": page}, follow_redirects=True
+                )
                 response.raise_for_status()
                 payload = response.json()
             except Exception:
-                logger.warning("Gutenberg fetch failed (%s)", url, exc_info=True)
+                logger.warning("Gutenberg fetch failed (page %s)", page, exc_info=True)
                 break
 
-            for raw in payload.get("results", []):
+            results = payload.get("results", [])
+            for raw in results:
                 book = self._parse(raw)
                 if book:
                     books.append(book)
                     if len(books) >= limit:
                         break
 
-            url = payload.get("next")
-            query = None  # `next` already carries the querystring
-            if url:
-                await asyncio.sleep(self.rate_limit)
+            if not payload.get("next") or not results:
+                break  # reached the end of the catalogue
+            page += 1
+            await asyncio.sleep(self.rate_limit)
 
         return books[:limit]
+
+    @staticmethod
+    def _categorise(bookshelves, subjects):
+        """Best-effort genre from Gutenberg bookshelves / subjects."""
+        hay = " ".join(bookshelves or []) + " " + " ".join(subjects or [])
+        hay = hay.lower()
+        rules = [
+            ("mystery", "Mystery & Detective"),
+            ("detective", "Mystery & Detective"),
+            ("horror", "Gothic & Horror"),
+            ("gothic", "Gothic & Horror"),
+            ("ghost", "Gothic & Horror"),
+            ("science fiction", "Science Fiction"),
+            ("fantasy", "Fantasy"),
+            ("fairy", "Children & Fairy Tales"),
+            ("children", "Children & Fairy Tales"),
+            ("adventure", "Adventure"),
+            ("western", "Adventure"),
+            ("romance", "Romance"),
+            ("love", "Romance"),
+            ("poetry", "Poetry"),
+            ("drama", "Drama"),
+            ("play", "Drama"),
+            ("history", "History"),
+            ("philosophy", "Philosophy"),
+            ("religion", "Philosophy"),
+            ("biography", "Biography"),
+            ("cooking", "Non-Fiction"),
+            ("art", "Non-Fiction"),
+        ]
+        for needle, label in rules:
+            if needle in hay:
+                return label
+        if bookshelves:
+            shelf = bookshelves[0].split(":")[0].strip().title()
+            if shelf:
+                return shelf
+        return "Classics"
 
     def _parse(self, raw: Dict[str, Any]) -> Optional[BookMetadata]:
         book_id = raw.get("id")
@@ -116,6 +163,8 @@ class GutenbergSource(BaseSource):
                 break
 
         languages = raw.get("languages") or ["en"]
+        if "en" not in languages:
+            return None  # keep the store English-only and clean
 
         return BookMetadata(
             title=title[:500],
@@ -134,7 +183,7 @@ class GutenbergSource(BaseSource):
             epub_url=pick("application/epub"),
             pdf_url=pick("application/pdf"),
             cover_url=pick("image/jpeg"),
-            category=(raw.get("bookshelves") or [None])[0],
+            category=self._categorise(raw.get("bookshelves"), raw.get("subjects")),
             tags=[s for s in (raw.get("subjects") or [])[:5]],
             language=languages[0],
             publication_year=year,

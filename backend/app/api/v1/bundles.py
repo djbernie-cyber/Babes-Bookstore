@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 
@@ -143,7 +143,7 @@ async def create_bundle(
     reloaded = (await db.execute(
         select(Bundle).options(
             selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
-        ).where(Bundle.id == bundle.id)
+        ).where(Bundle.id == bundle.id).execution_options(populate_existing=True)
     )).unique().scalar_one()
 
     b_data = BundleResponse.model_validate(reloaded)
@@ -171,19 +171,22 @@ async def update_bundle(
         setattr(bundle, k, v)
 
     if book_ids is not None:
-        for bb in list(bundle.bundle_books):
-            await db.delete(bb)
+        # Bulk-delete via the Core API: ORM session.delete() would lazily load
+        # BundleBook.book outside the async context (MissingGreenlet).
+        await db.execute(sa_delete(BundleBook).where(BundleBook.bundle_id == bundle_id))
         await db.flush()
         for i, book_id in enumerate(book_ids):
-            bb = BundleBook(bundle_id=bundle.id, book_id=book_id, sort_order=i)
-            db.add(bb)
+            book = await db.get(Book, book_id)
+            if not book:
+                continue
+            db.add(BundleBook(bundle_id=bundle.id, book_id=book_id, sort_order=i))
 
     await db.commit()
 
     reloaded = (await db.execute(
         select(Bundle).options(
             selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
-        ).where(Bundle.id == bundle_id)
+        ).where(Bundle.id == bundle_id).execution_options(populate_existing=True)
     )).unique().scalar_one()
 
     b_data = BundleResponse.model_validate(reloaded)
