@@ -8,7 +8,7 @@ from ...models.user import User
 from jose import JWTError, jwt
 from ...config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

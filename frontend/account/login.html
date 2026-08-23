@@ -35,6 +35,7 @@
             }
         }
     </script>
+    <link rel="stylesheet" href="/static/site.css">
 </head>
 <body class="bg-stone-50 font-sans text-stone-900 min-h-screen flex flex-col">
 
@@ -208,7 +209,7 @@
                 throw new Error(data.detail || data.message || 'Login failed');
             }
 
-            localStorage.setItem('token', data.access_token);
+            localStorage.setItem('token', data.access_token || (data.data && data.data.access_token));
             localStorage.setItem('user', JSON.stringify(data.user));
 
             if (data.user && data.user.is_admin) {

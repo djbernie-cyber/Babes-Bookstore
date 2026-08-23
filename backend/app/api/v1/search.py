@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, cast, String as SQLString
 from typing import List
 
 from .deps import get_db
@@ -21,7 +21,9 @@ async def search_books(
         Book.title.ilike(f"%{q}%"),
         Book.author.ilike(f"%{q}%"),
         Book.description.ilike(f"%{q}%"),
-        Book.tags.contains([q]),
+        # tags is a JSON column; cast to text so the LIKE works on both
+        # Postgres (production) and SQLite (tests).
+        cast(Book.tags, SQLString).ilike(f"%{q}%"),
     )
     stmt = select(Book).where(
         Book.status == BookStatus.APPROVED,

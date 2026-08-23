@@ -42,6 +42,7 @@
         .bundle-card:hover { transform: translateY(-4px); }
         .bundle-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
     </style>
+    <link rel="stylesheet" href="/static/site.css">
 </head>
 <body class="bg-stone-50 text-stone-900">
     <!-- Navigation -->
@@ -78,10 +79,10 @@
     <section class="gradient-hero py-20 lg:py-28">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="inline-block bg-white/80 backdrop-blur-sm rounded-full px-6 py-2 mb-6 shadow-sm">
-                <span id="hero-price" class="font-semibold text-amber-700 text-lg">📚 Curated book bundles</span>
+                <span id="hero-price" class="font-semibold text-amber-700 text-lg tracking-wide">📚 Curated book bundles</span>
             </div>
-            <h1 class="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-stone-900 mb-6">
-                Babe's Bookstore
+            <h1 class="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-stone-900 mb-6 hero-title">
+                Timeless books,<br><em>beautifully bundled</em>
             </h1>
             <p class="text-xl md:text-2xl text-stone-700 max-w-2xl mx-auto mb-10 leading-relaxed">
                 Curated bundles of public domain and openly-licensed books, professionally formatted and ready to read on any device.
@@ -101,6 +102,7 @@
     <section class="py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
+                <p class="eyebrow mb-3">The Collection</p>
                 <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">Featured Bundles</h2>
                 <p class="text-lg text-stone-600 max-w-2xl mx-auto">Hand-picked collections of great reads, one simple price each.</p>
             </div>
@@ -143,19 +145,19 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
-                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">1 Price</p>
+                    <p class="stats-number text-3xl md:text-4xl font-bold mb-2">1 Price</p>
                     <p class="text-stone-400 text-sm">Per Bundle, No Subscription</p>
                 </div>
                 <div>
-                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">70,000+</p>
+                    <p class="stats-number text-3xl md:text-4xl font-bold mb-2">70,000+</p>
                     <p class="text-stone-400 text-sm">Public Domain Books</p>
                 </div>
                 <div>
-                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">100%</p>
+                    <p class="stats-number text-3xl md:text-4xl font-bold mb-2">100%</p>
                     <p class="text-stone-400 text-sm">Legally Licensed</p>
                 </div>
                 <div>
-                    <p class="text-3xl md:text-4xl font-bold text-amber-400 mb-2">5</p>
+                    <p class="stats-number text-3xl md:text-4xl font-bold mb-2">5</p>
                     <p class="text-stone-400 text-sm">Payment Methods</p>
                 </div>
             </div>
@@ -166,26 +168,27 @@
     <section class="py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
+                <p class="eyebrow mb-3">Simple by design</p>
                 <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">How It Works</h2>
                 <p class="text-lg text-stone-600">Getting great books is simple.</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
-                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <div class="hiw-numeral w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5">
                         <span class="text-3xl">1</span>
                     </div>
                     <h3 class="font-serif text-xl font-bold mb-3">Choose a Bundle</h3>
                     <p class="text-stone-600">Browse our curated collections. From classic fiction to scientific treatises, there's something for every reader.</p>
                 </div>
                 <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
-                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <div class="hiw-numeral w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5">
                         <span class="text-3xl">2</span>
                     </div>
                     <h3 class="font-serif text-xl font-bold mb-3">Pay Once</h3>
                     <p class="text-stone-600">One flat price, no subscriptions. Pay with Stripe, PayPal, Square, Apple Pay, or Google Pay.</p>
                 </div>
                 <div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-stone-100">
-                    <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <div class="hiw-numeral w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5">
                         <span class="text-3xl">3</span>
                     </div>
                     <h3 class="font-serif text-xl font-bold mb-3">Download &amp; Read</h3>
@@ -198,7 +201,8 @@
     <!-- Pay Your Way -->
     <section class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">Pay Your Way</h2>
+            <p class="eyebrow mb-3">Checkout, your choice</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-4">Pay Your Way</h2>
             <p class="text-lg text-stone-600 mb-10">Choose the payment method that works for you.</p>
             <div class="flex flex-wrap justify-center gap-6">
                 <div class="flex items-center gap-3 bg-stone-50 px-6 py-4 rounded-xl border border-stone-200">
@@ -259,7 +263,7 @@
                 </div>
             </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
+                <p>&copy; <span data-copyright-year>2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
             </div>
         </div>
     </footer>

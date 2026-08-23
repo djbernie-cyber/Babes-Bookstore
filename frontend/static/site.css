@@ -1,0 +1,234 @@
+/* ============================================================
+   Babe's Bookstore — design system
+   Layered on top of the Tailwind CDN config in each page.
+   ============================================================ */
+
+:root {
+  --ink-900: #1c1917;
+  --ink-700: #44403c;
+  --ink-500: #78716c;
+  --paper: #faf9f6;
+  --card: #ffffff;
+  --line: #e7e2d8;
+  --gold-300: #fcd34d;
+  --gold-500: #f59e0b;
+  --amber-600: #c2410c;
+  --amber-700: #9a3412;
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.08);
+  --shadow-md: 0 4px 14px rgba(28, 25, 23, 0.08), 0 2px 4px rgba(28, 25, 23, 0.05);
+  --shadow-lg: 0 18px 40px -12px rgba(28, 25, 23, 0.22);
+  --radius: 14px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(1200px 500px at 85% -10%, rgba(253, 230, 138, 0.18), transparent 60%),
+    radial-gradient(900px 420px at -10% 10%, rgba(251, 191, 36, 0.08), transparent 55%);
+  background-repeat: no-repeat;
+  color: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: #fde68a; color: var(--ink-900); }
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: var(--paper); }
+::-webkit-scrollbar-thumb {
+  background: #d6cfc2; border-radius: 8px; border: 3px solid var(--paper);
+}
+::-webkit-scrollbar-thumb:hover { background: #bfb6a5; }
+
+:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- Typography ---------- */
+h1, h2, h3 { letter-spacing: -0.02em; }
+.font-serif { font-feature-settings: "liga" 1, "kern" 1; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber-700);
+}
+.eyebrow::before {
+  content: ""; width: 1.75rem; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold-500), var(--amber-600));
+}
+
+/* ---------- Navigation ---------- */
+nav {
+  background: rgba(255, 255, 255, 0.82) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+nav.scrolled {
+  border-bottom-color: var(--line);
+  box-shadow: 0 6px 24px -12px rgba(28, 25, 23, 0.18);
+}
+nav a { position: relative; }
+nav .hidden.md\:flex a::after,
+nav .hidden[class*="md:flex"] a::after {
+  content: "";
+  position: absolute; left: 0; right: 100%; bottom: -6px;
+  height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold-500), var(--amber-600));
+  transition: right 0.22s ease;
+}
+nav .hidden.md\:flex a:hover::after { right: 0; }
+nav input[type="search"] {
+  background: rgba(250, 249, 246, 0.9);
+  border-radius: 999px;
+  padding-left: 1rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, width 0.25s ease;
+  width: 11rem;
+}
+nav input[type="search"]:focus { width: 14rem; }
+
+/* ---------- Hero ---------- */
+.gradient-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(1000px 480px at 15% -20%, #fef3c7 0%, transparent 60%),
+    radial-gradient(1100px 520px at 90% 0%, #fde68a 0%, transparent 62%),
+    linear-gradient(160deg, #fffbeb 0%, #fde68a 55%, #fbbf24 130%);
+}
+.gradient-hero::before,
+.gradient-hero::after {
+  content: "";
+  position: absolute; border-radius: 50%;
+  filter: blur(70px); opacity: 0.5; pointer-events: none;
+}
+.gradient-hero::before {
+  width: 420px; height: 420px; left: -120px; bottom: -160px;
+  background: radial-gradient(circle, #fff7ed 0%, transparent 70%);
+}
+.gradient-hero::after {
+  width: 520px; height: 520px; right: -140px; top: -180px;
+  background: radial-gradient(circle, #ffffffcc 0%, transparent 70%);
+}
+.gradient-hero > div { position: relative; z-index: 1; }
+
+.hero-title em {
+  font-style: italic;
+  background: linear-gradient(120deg, #b45309, #d97706 60%, #92400e);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ---------- Buttons ---------- */
+a.bg-amber-600, button.bg-amber-600,
+.btn-primary {
+  background-image: linear-gradient(135deg, #d97706 0%, #c2410c 100%) !important;
+  box-shadow: 0 8px 20px -8px rgba(194, 65, 12, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease !important;
+}
+a.bg-amber-600:hover, button.bg-amber-600:hover, .btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 14px 26px -10px rgba(194, 65, 12, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+a.bg-amber-600:active, button.bg-amber-600:active { transform: translateY(0); }
+
+a.bg-stone-900, button.bg-stone-900, .btn-dark {
+  background-image: linear-gradient(150deg, #292524 0%, #1c1917 100%) !important;
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.16s ease, box-shadow 0.16s ease !important;
+}
+a.bg-stone-900:hover, button.bg-stone-900:hover, .btn-dark:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ---------- Cards ---------- */
+.bundle-card, .book-card {
+  will-change: transform;
+  transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1.2),
+              box-shadow 0.22s ease, border-color 0.22s ease !important;
+}
+.bundle-card:hover, .book-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg) !important;
+  border-color: #fde68a !important;
+}
+.bundle-card:hover h3 { color: var(--amber-700); }
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.animate-pulse, [class*="animate-pulse"] {
+  animation: none !important;
+}
+.skeleton, .animate-pulse .h-48, .animate-pulse .h-5, .animate-pulse .h-3 {
+  background: linear-gradient(90deg, #eeeae1 25%, #f6f3ec 50%, #eeeae1 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s linear infinite !important;
+}
+
+/* ---------- Stats ---------- */
+.stats-number {
+  background: linear-gradient(120deg, #fcd34d, #f59e0b 70%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ---------- Forms ---------- */
+input:not([type="search"]), select, textarea {
+  border-radius: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--gold-500) !important;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15) !important;
+  outline: none;
+}
+
+/* ---------- Payment chips ---------- */
+section.bg-white .flex.items-center.gap-3 {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+section.bg-white .flex.items-center.gap-3:hover {
+  transform: translateY(-3px);
+  border-color: #fde68a;
+  box-shadow: var(--shadow-md);
+}
+
+/* ---------- How-it-works numerals ---------- */
+.hiw-numeral {
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.6), 0 8px 18px -8px rgba(217, 119, 6, 0.5);
+}
+
+/* ---------- Reveal on scroll ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.reveal.revealed { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------- Tables & misc (admin/account) ---------- */
+table { border-collapse: separate; border-spacing: 0; }
+th {
+  font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-500);
+}
+tbody tr { transition: background-color 0.15s ease; }
+tbody tr:hover { background-color: #fdfaf2; }
+
+details > summary { cursor: pointer; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }

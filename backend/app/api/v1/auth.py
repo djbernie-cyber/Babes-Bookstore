@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timedelta
@@ -204,10 +205,23 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
-    stmt = select(User).where(User.email == req.email)
+    return await _authenticate(req.email, req.password, db)
+
+
+@router.post("/token", summary="OAuth2 password flow (Swagger / form clients)")
+async def token(form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    try:
+        email = form.username.strip().lower()
+    except AttributeError:
+        raise HTTPException(status_code=422, detail="username is required")
+    return await _authenticate(email, form.password, db)
+
+
+async def _authenticate(email: str, password: str, db: AsyncSession) -> TokenResponse:
+    stmt = select(User).where(User.email == email)
     user = (await db.execute(stmt)).scalar_one_or_none()
 
-    if not user or not verify_password(req.password, user.hashed_password):
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token(user.id)

@@ -1,0 +1,14 @@
+app = 'babes-bookstore-redis'
+primary_region = 'lhr'
+
+[build]
+  image = 'redis:7-alpine'
+
+[processes]
+  app = 'sh -c "redis-server --bind 0.0.0.0 ::0 --requirepass $REDIS_PASSWORD --maxmemory 180mb --maxmemory-policy noeviction"'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  cpus = 1
+  cpu_kind = 'shared'
