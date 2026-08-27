@@ -487,9 +487,14 @@ async def create_free_checkout(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Free download for admin users with free_downloads=True."""
-    if not current_user or not (current_user.is_admin and current_user.free_downloads):
-        raise HTTPException(status_code=403, detail="Free downloads not available for your account")
+    """Payless checkout for any authenticated admin — any bundle, including custom.
+
+    Any is_admin user may claim a free download (amount 0). The legacy
+    free_downloads flag is still honoured but no longer required, so newly
+    promoted admins are immediately eligible.
+    """
+    if not current_user or not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Free downloads are available to admin accounts only — contact support to be promoted")
 
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)

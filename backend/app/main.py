@@ -20,6 +20,9 @@ async def _seed_admin_users(session_factory=None):
     """Ensure every address in ADMIN_EMAILS is an admin with free downloads.
 
     Idempotent: creates missing accounts and promotes existing ones.
+    Also ensures every existing admin has free_downloads so payless
+    checkout works immediately for any admin, including manually promoted
+    accounts and custom-bundle creators.
     `session_factory` is injectable so tests can supply their own database.
     """
     if session_factory is None:
@@ -50,6 +53,15 @@ async def _seed_admin_users(session_factory=None):
                     changed = True
                 if changed:
                     logger.info(f"Updated user to admin with free downloads: {email}")
+        # Backfill: any admin that was promoted manually but missing the flag
+        all_admins = (await db.execute(select(User).where(User.is_admin == True))).scalars().all()
+        backfilled = 0
+        for u in all_admins:
+            if not u.free_downloads:
+                u.free_downloads = True
+                backfilled += 1
+        if backfilled:
+            logger.info(f"Backfilled free_downloads for {backfilled} existing admin(s)")
         await db.commit()
 
 
