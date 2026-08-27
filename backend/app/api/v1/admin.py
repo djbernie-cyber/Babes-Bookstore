@@ -154,13 +154,6 @@ async def list_purchases(
         "page": page,
         "page_size": page_size,
     }
-            }
-            for p in purchases
-        ],
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
 
 
 @router.post("/books/bulk")
