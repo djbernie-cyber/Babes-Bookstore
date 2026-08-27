@@ -149,6 +149,18 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
 
 
 async def _scrape_source(source_name: str, query: str, limit: int, start_page: int = 1) -> dict:
+    # Celery invokes each task via asyncio.run(), which spins up a fresh
+    # event loop every time. The module-level async engine's connection pool
+    # is bound to whichever loop first opened a connection, so reusing it from
+    # a new loop raises "attached to a different loop". Dispose and let the
+    # pool rebuild against the current loop.
+    from ..database import engine
+
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
+
     try:
         source = source_registry.get(source_name)
     except KeyError:
