@@ -164,8 +164,12 @@ class GutenbergSource(BaseSource):
             if needle in hay:
                 return label
         if bookshelves:
-            shelf = bookshelves[0].split(":")[0].strip().title()
-            if shelf:
+            shelf = bookshelves[0].split(":")[-1].strip().title() if ":" in bookshelves[0] else bookshelves[0].strip().title()
+            shelf = shelf.replace("Best Books Ever Listings", "Classics")
+            shelf = shelf.replace("Banned Books From Anne Haight'S List", "Classics")
+            shelf = shelf.replace("Bestsellers, American, 1895-1923", "Classics")
+            shelf = shelf.replace("Best Books Ever List", "Classics")
+            if shelf and shelf not in ("Category", ""):
                 return shelf
         return "Classics"
 

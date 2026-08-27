@@ -19,21 +19,21 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',chrome); else chrome();
 
-  function live(){
-    fetch('/api/v1/books?page_size=1').then(function(r){return r.json()}).then(function(d){
-      var n=d&&d.total; if(typeof n!=='number') return;
-      var fmt=n.toLocaleString();
-      document.querySelectorAll('[data-live-books]').forEach(function(el){ el.textContent=fmt + (el.tagName==='P'&&el.classList.contains('font-serif')? '': (n===1?' book':' books')); });
-      // hero count
-      var h=document.getElementById('hero-live-count'); if(h) h.textContent=fmt+' books live';
-      var pc=document.getElementById('progress-count'); if(pc) pc.textContent=fmt;
-      var pp=document.getElementById('progress-pct'); if(pp) pp.textContent=(n/900).toFixed(1)+'%';
-      var pf=document.getElementById('progress-fill'); if(pf) pf.style.width=Math.min(100, n/900).toFixed(1)+'%';
-      // search placeholder
-      document.querySelectorAll('input[placeholder*="62,000"]').forEach(function(i){ i.placeholder='Search '+fmt+' books…'; });
-    }).catch(function(){});
+   function live(){
+     fetch('/api/v1/books?page_size=1&_='+Date.now()).then(function(r){return r.json()}).then(function(d){
+       var n=d&&d.total; if(typeof n!=='number') return;
+       var fmt=n.toLocaleString();
+       document.querySelectorAll('[data-live-books]').forEach(function(el){ el.textContent=fmt + (el.tagName==='P'&&el.classList.contains('font-serif')? '': (n===1?' book':' books')); });
+       // hero count
+       var h=document.getElementById('hero-live-count'); if(h) h.textContent=fmt+' books live';
+       var pc=document.getElementById('progress-count'); if(pc) pc.textContent=fmt;
+       var pp=document.getElementById('progress-pct'); if(pp) pp.textContent=(n/90000*100).toFixed(1)+'%';
+       var pf=document.getElementById('progress-fill'); if(pf) pf.style.width=Math.min(100, n/90000*100).toFixed(1)+'%';
+       // search placeholder
+       document.querySelectorAll('input[placeholder*="62,000"]').forEach(function(i){ i.placeholder='Search '+fmt+' books…'; });
+     }).catch(function(){});
 
-    fetch('/api/v1/checkout/config').then(function(r){return r.json()}).then(function(c){
+     fetch('/api/v1/checkout/config?_='+Date.now()).then(function(r){return r.json()}).then(function(c){
       if(!c) return;
       var on=!!c.google_client_id;
       document.querySelectorAll('.google-btn').forEach(function(b){ b.style.display=on?'':'none'; });

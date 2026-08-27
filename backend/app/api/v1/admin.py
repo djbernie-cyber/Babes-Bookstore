@@ -123,19 +123,19 @@ async def list_purchases(
     status_filter: Optional[str] = Query(None, alias="status"),
 ):
     """List all purchases with pagination — for revenue auditing and refund handling."""
-    stmt = select(Purchase).order_by(Purchase.created_at.desc())
+    stmt = select(Purchase, Bundle).outerjoin(Bundle, Purchase.bundle_id == Bundle.id).order_by(Purchase.created_at.desc())
     if status_filter:
         stmt = stmt.where(Purchase.status == status_filter)
-    total = (await db.execute(select(func.count()).select_from(stmt.subquery()))).scalar() or 0
-    stmt = stmt.offset((page - 1) * page_size).limit(page_size)
-    purchases = (await db.execute(stmt)).scalars().all()
+    total = (await db.execute(select(func.count()).select_from(select(Purchase).where(Purchase.status == status_filter) if status_filter else select(Purchase)).subquery()))).scalar() or 0
+    result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
+    rows = result.all()
 
     return {
         "items": [
             {
                 "id": p.id,
                 "bundle_id": p.bundle_id,
-                "bundle_name": p.bundle.name if hasattr(p, 'bundle') and p.bundle else None,
+                "bundle_name": b.name if b else None,
                 "user_id": p.user_id,
                 "customer_email": p.customer_email,
                 "customer_phone": p.customer_phone,
@@ -147,6 +147,13 @@ async def list_purchases(
                 "max_downloads": p.max_downloads,
                 "zip_path": p.zip_path,
                 "created_at": p.created_at.isoformat(),
+            }
+            for p, b in rows
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
             }
             for p in purchases
         ],
@@ -234,5 +241,39 @@ async def list_categories(
         .where(Book.status == BookStatus.APPROVED)
         .group_by(Book.category)
         .order_by(func.count(Book.id).desc())
+    )).all()
+    return [{"category": r[0], "count": r[1]} for r in rows if r[0]]
+
+
+@router.get("/books/bulk")
+async def list_books_bulk(
+    db: AsyncSession = Depends(get_db),
+    _admin=Depends(require_admin),
+    category: Optional[str] = Query(None),
+    limit: int = Query(500, ge=1, le=1000),
+):
+    """Return a flat list of book IDs + titles for bulk bundle assignment."""
+    stmt = select(Book.id, Book.title, Book.author, Book.category, Book.source).where(Book.status == BookStatus.APPROVED)
+    if category:
+        stmt = stmt.where(Book.category == category)
+    stmt = stmt.order_by(Book.created_at.desc()).limit(limit)
+    rows = (await db.execute(stmt)).all()
+    return [
+        {"id": r[0], "title": r[1], "author": r[2], "category": r[3], "source": r[4]}
+        for r in rows
+    ]
+
+
+@router.get("/bundle-categories")
+async def get_bundle_categories(
+    db: AsyncSession = Depends(get_db),
+    _admin=Depends(require_admin),
+):
+    """List distinct bundle categories for filtering."""
+    rows = (await db.execute(
+        select(Bundle.category, func.count(Bundle.id).label("count"))
+        .where(Bundle.category.isnot(None), Bundle.active == True)
+        .group_by(Bundle.category)
+        .order_by(func.count(Bundle.id).desc())
     )).all()
     return [{"category": r[0], "count": r[1]} for r in rows if r[0]]
