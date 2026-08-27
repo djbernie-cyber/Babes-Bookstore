@@ -402,6 +402,7 @@ async def create_apple_pay_session(
         intent = stripe.PaymentIntent.create(
             amount=amount,
             currency=currency,
+            statement_descriptor="BABES BOOKSTORE",
             metadata={
                 "purchase_id": str(purchase.id),
                 "bundle_id": str(bundle.id),
@@ -458,6 +459,7 @@ async def create_google_pay_session(
         intent = stripe.PaymentIntent.create(
             amount=amount,
             currency=currency,
+            statement_descriptor="BABES BOOKSTORE",
             metadata={
                 "purchase_id": str(purchase.id),
                 "bundle_id": str(bundle.id),

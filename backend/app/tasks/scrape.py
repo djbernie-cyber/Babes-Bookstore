@@ -96,9 +96,6 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
                 report.pending += 1
 
             norm_title = _normalize_title(metadata.title)
-            if norm_title in seen_titles:
-                report.skipped_dupe += 1
-                continue
 
             payload = {
                 "title": metadata.title[:500],
@@ -118,6 +115,8 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
                 "license_verified": approved,
             }
 
+            # Update an existing book (matched by source id) so re-scrapes
+            # refresh metadata/category instead of being dropped as dupes.
             existing = (await session.execute(
                 select(Book).where(
                     Book.source == source_name,
@@ -132,10 +131,12 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
                         setattr(existing, key, value)
                 existing.verified_at = datetime.utcnow()
                 report.updated += 1
+            elif norm_title in seen_titles:
+                report.skipped_dupe += 1
             else:
                 session.add(Book(**payload, verified_at=datetime.utcnow()))
                 report.created += 1
-            seen_titles.add(norm_title)
+                seen_titles.add(norm_title)
 
         try:
             await session.commit()
