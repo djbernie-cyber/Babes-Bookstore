@@ -9,6 +9,7 @@ class CheckoutRequest(BaseModel):
     email: EmailStr
     success_url: Optional[str] = None
     cancel_url: Optional[str] = None
+    phone: Optional[str] = None  # for M-Pesa STK push (2547XXXXXXXX)
 
     @model_validator(mode="after")
     def check_bundle_ref(self):

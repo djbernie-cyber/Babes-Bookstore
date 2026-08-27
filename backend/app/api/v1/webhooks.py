@@ -102,6 +102,9 @@ async def get_checkout_config():
         "paypal_client_id": settings.PAYPAL_CLIENT_ID,
         "google_client_id": settings.GOOGLE_CLIENT_ID,
         "square_application_id": settings.SQUARE_ACCESS_TOKEN and settings.SQUARE_LOCATION_ID,
+        "mpesa_enabled": bool(settings.MPESA_SHORTCODE and settings.MPESA_CONSUMER_KEY),
+        "mpesa_shortcode": settings.MPESA_SHORTCODE,
+        "mpesa_environment": settings.MPESA_ENVIRONMENT,
     }
 
 
@@ -563,6 +566,167 @@ async def create_free_checkout(
         checkout_url=f"/account?purchase_id={purchase.id}&token={purchase.download_token}",
         session_id=f"free_{purchase.id}",
     )
+
+
+# ─── M-PESA (Safaricom Daraja — mobile money) ────────────────────────────
+
+
+def _mpesa_base() -> str:
+    env = (settings.MPESA_ENVIRONMENT or "sandbox").lower()
+    return "https://sandbox.safaricom.co.ke" if env == "sandbox" else "https://api.safaricom.co.ke"
+
+
+async def _mpesa_access_token() -> str:
+    if not settings.MPESA_CONSUMER_KEY or not settings.MPESA_CONSUMER_SECRET:
+        raise HTTPException(status_code=500, detail="M-Pesa not configured — set MPESA_CONSUMER_KEY/SECRET")
+    import base64 as _b64
+    creds = f"{settings.MPESA_CONSUMER_KEY}:{settings.MPESA_CONSUMER_SECRET}"
+    token = _b64.b64encode(creds.encode()).decode()
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{_mpesa_base()}/oauth/v1/generate?grant_type=client_credentials",
+            headers={"Authorization": f"Basic {token}"},
+        )
+        resp.raise_for_status()
+        return resp.json()["access_token"]
+
+
+@router.post("/mpesa", response_model=CheckoutResponse)
+async def create_mpesa_checkout(
+    req: CheckoutRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Initiate M-Pesa STK push — funds settle to your Daraja shortcode.
+
+    Provide `phone` as 2547XXXXXXXX (Kenya) — we'll normalise 07xx → 2547xx.
+    Amount is derived from the bundle price (GBP pence → KES). In sandbox
+    the amount can be 1 KES for testing.
+    """
+    bundle = await _resolve_bundle(req, db)
+    amount_cents = _amount(bundle)
+    currency = _currency(bundle)
+
+    # Validate M-Pesa config
+    if not settings.MPESA_SHORTCODE or not settings.MPESA_PASSKEY:
+        raise HTTPException(status_code=500, detail="M-Pesa not configured — set MPESA_SHORTCODE/PASSKEY")
+
+    # Normalise phone: 07xx, 7xx, +2547xx → 2547xx
+    raw_phone = (req.phone or "").strip().replace(" ", "").replace("-", "")
+    if not raw_phone:
+        raise HTTPException(status_code=400, detail="phone is required for M-Pesa (format 2547XXXXXXXX)")
+    if raw_phone.startswith("+"):
+        raw_phone = raw_phone[1:]
+    if raw_phone.startswith("0"):
+        raw_phone = "254" + raw_phone[1:]
+    if raw_phone.startswith("7") and len(raw_phone) == 9:
+        raw_phone = "254" + raw_phone
+    if not raw_phone.startswith("254") or len(raw_phone) != 12:
+        raise HTTPException(status_code=400, detail="Invalid M-Pesa phone — use 2547XXXXXXXX")
+
+    # Convert GBP pence → KES (approx 1 GBP = 170 KES for display; sandbox allows 1)
+    # Use bundle price in KES minor units (KES has no cents, so amount is shillings)
+    kes_amount = max(1, int(round((amount_cents / 100) * 170)))
+    # In sandbox, cap to 1 for easier testing if you prefer — remove this line in production
+    # kes_amount = 1
+
+    callback_url = settings.MPESA_CALLBACK_URL or f"{settings.PRODUCTION_URL}/api/v1/checkout/webhook/mpesa"
+
+    purchase = Purchase(
+        bundle_id=bundle.id,
+        user_id=current_user.id if current_user else None,
+        customer_email=req.email,
+        customer_phone=raw_phone,
+        amount_cents=amount_cents,
+        currency=currency,
+        download_token=secrets.token_urlsafe(32),
+        status=PurchaseStatus.PENDING,
+        payment_provider=PaymentProvider.MPESA,
+    )
+    db.add(purchase)
+    await db.commit()
+    await db.refresh(purchase)
+
+    # Daraja STK push
+    try:
+        import base64, datetime as _dt
+        token = await _mpesa_access_token()
+        timestamp = _dt.datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        password = base64.b64encode(f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}".encode()).decode()
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{_mpesa_base()}/mpesa/stkpush/v1/processrequest",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={
+                    "BusinessShortCode": settings.MPESA_SHORTCODE,
+                    "Password": password,
+                    "Timestamp": timestamp,
+                    "TransactionType": "CustomerPayBillOnline",
+                    "Amount": kes_amount,
+                    "PartyA": raw_phone,
+                    "PartyB": settings.MPESA_SHORTCODE,
+                    "PhoneNumber": raw_phone,
+                    "CallBackURL": callback_url,
+                    "AccountReference": f"BABES-{bundle.id}-{purchase.id}",
+                    "TransactionDesc": f"{bundle.name[:20]}",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        # Daraja returns CheckoutRequestID on success
+        checkout_id = data.get("CheckoutRequestID") or data.get("MerchantRequestID") or ""
+        purchase.mpesa_checkout_id = checkout_id
+        await db.commit()
+        # Frontend should poll /api/v1/purchases/{id} or wait for STK push on phone
+        return CheckoutResponse(
+            checkout_url=f"/account?purchase_id={purchase.id}&token={purchase.download_token}&mpesa=pending",
+            session_id=checkout_id or f"mpesa_{purchase.id}",
+        )
+    except httpx.HTTPStatusError as e:
+        logger.error("M-Pesa STK failed: %s %s", e.response.status_code, e.response.text)
+        raise HTTPException(status_code=500, detail=f"M-Pesa STK push failed: {e.response.text[:200]}")
+    except Exception as e:
+        logger.error("M-Pesa error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/webhook/mpesa")
+async def mpesa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """Safaricom callback — Body -> stkCallback -> ResultCode 0 = success."""
+    try:
+        body = await request.json()
+    except Exception:
+        return {"ResultCode": 1, "ResultDesc": "Invalid JSON"}
+
+    try:
+        stk = body.get("Body", {}).get("stkCallback", {})
+        result_code = stk.get("ResultCode")
+        checkout_id = stk.get("CheckoutRequestID")
+        if not checkout_id:
+            return {"ResultCode": 0, "ResultDesc": "Ignored — no CheckoutRequestID"}
+
+        stmt = select(Purchase).where(Purchase.mpesa_checkout_id == checkout_id)
+        purchase = (await db.execute(stmt)).scalar_one_or_none()
+        if not purchase:
+            logger.warning("M-Pesa callback for unknown CheckoutRequestID %s", checkout_id)
+            return {"ResultCode": 0, "ResultDesc": "Unknown purchase"}
+
+        if result_code == 0:
+            purchase.status = PurchaseStatus.PAID
+            # For M-Pesa we consider PAID → COMPLETED after packaging, but mark PAID now
+            await db.commit()
+            from ...tasks.package_bundle import package_bundle_task
+            package_bundle_task.delay(purchase.id)
+            # Optionally complete immediately for device download (packaging will set COMPLETED)
+            # We leave status PAID so the worker will transition to COMPLETED
+        else:
+            purchase.status = PurchaseStatus.FAILED
+            await db.commit()
+            logger.info("M-Pesa payment failed for %s ResultCode %s", checkout_id, result_code)
+    except Exception as e:
+        logger.error("M-Pesa webhook error: %s", e)
+
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 
 # ─── WEBHOOKS ──────────────────────────────────────────────────────────────

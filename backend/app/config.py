@@ -69,6 +69,14 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     FROM_EMAIL: str = "noreply@babesbookstore.com"
 
+    # M-Pesa Daraja (Safaricom) — for mobile-money payouts
+    MPESA_CONSUMER_KEY: Optional[str] = None
+    MPESA_CONSUMER_SECRET: Optional[str] = None
+    MPESA_SHORTCODE: Optional[str] = None  # BusinessShortCode, e.g. 174379 for sandbox
+    MPESA_PASSKEY: Optional[str] = None
+    MPESA_ENVIRONMENT: str = "sandbox"  # sandbox or production
+    MPESA_CALLBACK_URL: Optional[str] = None  # defaults to {PRODUCTION_URL}/api/v1/checkout/webhook/mpesa
+
     # Local file storage fallback when R2 is not configured (useful for dev and
     # so bundles are still downloadable without Cloudflare credentials).
     LOCAL_STORAGE_PATH: str = "/tmp/babes_storage"

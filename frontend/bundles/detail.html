@@ -42,8 +42,10 @@
             <button onclick="pay('stripe')" class="w-full py-3.5 rounded-full bg-stone-900 text-white font-medium hover:bg-black flex items-center justify-center gap-2">💳 Pay with Stripe</button>
             <button onclick="pay('paypal')" class="w-full py-3.5 rounded-full bg-[#ffc439] text-stone-900 font-semibold border border-[#e6b12e] hover:bg-[#f5b800] flex items-center justify-center gap-2">🅿️ Pay with PayPal</button>
             <button onclick="pay('square')" class="w-full py-3.5 rounded-full bg-white border font-medium hover:bg-stone-50 flex items-center justify-center gap-2">◼ Square</button>
+            <button onclick="pay('mpesa')" id="mpesa-btn" class="hidden w-full py-3.5 rounded-full bg-[#43B02A] text-white font-semibold hover:bg-[#2e7d1f] flex items-center justify-center gap-2">📱 Pay with M-Pesa</button>
             <div class="grid grid-cols-2 gap-2.5"><button onclick="pay('apple_pay')" class="py-3 rounded-full bg-black text-white text-sm font-medium">🍎 Apple Pay</button><button onclick="pay('google_pay')" class="py-3 rounded-full bg-white border text-sm font-medium">🔵 Google Pay</button></div>
             <p class="text-[11px] leading-4 text-stone-500 text-center">By paying you consent to the download starting immediately. Faulty files are repaired or refunded — <a href="/refunds" class="underline">Refund Policy</a>.</p>
+            <p id="mpesa-hint" class="hidden text-xs text-center text-emerald-700">M-Pesa: you’ll get an STK push on your phone — enter PIN to complete. Funds settle directly to the configured shortcode.</p>
           </div>
           <div class="mt-6 bg-stone-50 rounded-2xl border p-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-stone-600">What you get</p><ul class="mt-3 space-y-2 text-sm text-stone-600"><li>✔ All books — EPUB (reflowable)</li><li>✔ PDF — print-ready</li><li>✔ Instant download</li><li>✔ Keep forever, any device</li></ul>
@@ -88,14 +90,37 @@ async function freeDownload(){
 }
 async function pay(provider){
   const email=prompt('Email to receive download links:'); if(!email||!email.includes('@')) return alert('Valid email required');
+  let phone=null;
+  if(provider==='mpesa'){
+    phone=prompt('M-Pesa phone (2547XXXXXXXX):'); if(!phone) return;
+    // normalise: allow 07xx
+    phone=phone.replace(/\s|-/g,'');
+    if(phone.startsWith('0')) phone='254'+phone.slice(1);
+    if(phone.startsWith('7')&&phone.length===9) phone='254'+phone;
+    if(!phone.startsWith('254')||phone.length!==12) return alert('Invalid phone — use 2547XXXXXXXX');
+  }
   const btn=event.target.closest('button'); const orig=btn.innerHTML; btn.innerHTML='Processing…'; btn.disabled=true;
   try{
-    const r=await fetch(`/api/v1/checkout/${provider}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bundle_slug:slug(),email})});
+    const body={bundle_slug:slug(),email}; if(phone) body.phone=phone;
+    const r=await fetch(`/api/v1/checkout/${provider}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Checkout failed');
-    if(d.checkout_url||d.url) location.href=d.checkout_url||d.url; else { alert('Checkout created — check email'); btn.innerHTML=orig; btn.disabled=false }
+    if(provider==='mpesa'){
+      alert('M-Pesa STK push sent to '+phone+' — check your phone, enter PIN, then check /account for download once paid. Funds settle directly to the configured shortcode.');
+    }
+    if(d.checkout_url||d.url) location.href=d.checkout_url||d.url; else { alert('Checkout created — check email/phone'); btn.innerHTML=orig; btn.disabled=false }
   }catch(e){ alert(e.message); btn.innerHTML=orig; btn.disabled=false }
 }
-document.addEventListener('DOMContentLoaded', load);
+async function loadMpesaConfig(){
+  try{
+    const r=await fetch('/api/v1/checkout/config'); if(!r.ok) return;
+    const c=await r.json();
+    if(c.mpesa_enabled){
+      document.getElementById('mpesa-btn').classList.remove('hidden');
+      document.getElementById('mpesa-hint').classList.remove('hidden');
+    }
+  }catch{}
+}
+document.addEventListener('DOMContentLoaded', ()=>{ load(); loadMpesaConfig(); });
 </script>
 </body>
 </html>

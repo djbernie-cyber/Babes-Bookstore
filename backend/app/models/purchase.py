@@ -26,6 +26,7 @@ class PaymentProvider:
     SQUARE = "square"
     APPLE_PAY = "apple_pay"
     GOOGLE_PAY = "google_pay"
+    MPESA = "mpesa"
     FREE = "free"
 
 
@@ -48,6 +49,10 @@ class Purchase(Base):
 
     # Square
     square_order_id = Column(String(200), nullable=True, index=True)
+
+    # M-Pesa
+    mpesa_checkout_id = Column(String(200), nullable=True, index=True)
+    customer_phone = Column(String(20), nullable=True)
 
     # Pricing
     amount_cents = Column(Integer, nullable=False)
