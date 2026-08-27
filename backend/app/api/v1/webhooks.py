@@ -1,6 +1,7 @@
 import secrets
 import logging
 import time
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Header, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -513,8 +514,50 @@ async def create_free_checkout(
     await db.commit()
     await db.refresh(purchase)
 
-    from ...tasks.package_bundle import package_bundle_task
-    package_bundle_task.delay(purchase.id)
+    # Device download: try to package synchronously so the same device
+    # that browsed can download immediately. Falls back to async worker.
+    zip_key = None
+    try:
+        from sqlalchemy.orm import selectinload
+        from ...models.bundle import BundleBook
+        # Ensure bundle books are loaded for sync packaging
+        await db.refresh(bundle, ["bundle_books"])
+        # Try sync packaging (fast for 3-18 books, ~3-8s)
+        from ...services.packaging import packaging
+        from datetime import timedelta
+        books = [bb.book for bb in bundle.bundle_books if bb.book and bb.book.status.value == "approved"]  # type: ignore
+        if books:
+            zip_key = packaging.create_bundle_zip(bundle, books)
+            purchase.zip_path = zip_key
+            purchase.download_expires_at = datetime.utcnow() + timedelta(hours=settings.DOWNLOAD_WINDOW_HOURS)
+            await db.commit()
+            logger.info("Free checkout sync-packaged bundle %s for purchase %s -> %s", bundle.slug, purchase.id, zip_key)
+    except Exception as e:
+        logger.warning("Sync packaging failed for free checkout %s, falling back to async: %s", purchase.id, e)
+        try:
+            from ...tasks.package_bundle import package_bundle_task
+            package_bundle_task.delay(purchase.id)
+        except Exception:
+            pass
+    else:
+        # Also queue async as backup if sync didn't produce a file (e.g. no books)
+        if not zip_key:
+            try:
+                from ...tasks.package_bundle import package_bundle_task
+                package_bundle_task.delay(purchase.id)
+            except Exception:
+                pass
+
+    # Return a same-device direct download URL when we have a zip, otherwise
+    # fall back to the account page (frontend will poll).
+    if zip_key:
+        from ...services.storage import storage
+        direct = storage.get_signed_url(zip_key, expires_in=settings.DOWNLOAD_WINDOW_HOURS * 3600)
+        # direct is /api/v1/purchases/storage/... for local fallback, or presigned R2 URL
+        return CheckoutResponse(
+            checkout_url=direct or f"/account?purchase_id={purchase.id}&token={purchase.download_token}",
+            session_id=f"free_{purchase.id}",
+        )
 
     return CheckoutResponse(
         checkout_url=f"/account?purchase_id={purchase.id}&token={purchase.download_token}",

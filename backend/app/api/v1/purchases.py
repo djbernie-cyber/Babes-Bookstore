@@ -106,8 +106,35 @@ async def get_download_link(
         raise HTTPException(status_code=404, detail="Purchase not found")
     if token != purchase.download_token:
         raise HTTPException(status_code=403, detail="Invalid download token")
+    # On-demand packaging for old purchases created before the fix or
+    # when the async worker was blocked — ensures same-device download
+    # works even if zip_path is missing.
     if not _download_available(purchase):
-        raise HTTPException(status_code=403, detail="Download not available")
+        # Attempt to package now if the purchase is completed but zip missing/expired
+        if purchase.status == PurchaseStatus.COMPLETED and purchase.download_count < purchase.max_downloads:
+            try:
+                from sqlalchemy.orm import selectinload
+                from ..models.bundle import BundleBook
+                from ..services.packaging import packaging
+                from datetime import timedelta
+                bundle = await db.get(Bundle, purchase.bundle_id)
+                if bundle:
+                    await db.refresh(bundle, ["bundle_books"])
+                    # Ensure books are loaded
+                    stmt = select(Bundle).options(selectinload(Bundle.bundle_books).selectinload(BundleBook.book)).where(Bundle.id == bundle.id)
+                    bundle = (await db.execute(stmt)).unique().scalar_one()
+                    books = [bb.book for bb in bundle.bundle_books if bb.book and bb.book.status.value == "approved"]
+                    if books:
+                        key = packaging.create_bundle_zip(bundle, books)
+                        if key:
+                            purchase.zip_path = key
+                            purchase.download_expires_at = datetime.utcnow() + timedelta(hours=settings.DOWNLOAD_WINDOW_HOURS)
+                            await db.commit()
+                            await db.refresh(purchase)
+            except Exception as e:
+                import logging; logging.getLogger(__name__).warning("On-demand packaging failed for purchase %s: %s", purchase_id, e)
+        if not _download_available(purchase):
+            raise HTTPException(status_code=403, detail="Download not available — bundle is still packaging, try again in 30s")
 
     from ..services.storage import storage
 
