@@ -124,9 +124,10 @@ async def list_purchases(
 ):
     """List all purchases with pagination — for revenue auditing and refund handling."""
     stmt = select(Purchase, Bundle).outerjoin(Bundle, Purchase.bundle_id == Bundle.id).order_by(Purchase.created_at.desc())
+    count_stmt = select(func.count()).select_from(select(Purchase).where(Purchase.status == status_filter) if status_filter else select(Purchase)).subquery()
     if status_filter:
         stmt = stmt.where(Purchase.status == status_filter)
-    total = (await db.execute(select(func.count()).select_from(select(Purchase).where(Purchase.status == status_filter) if status_filter else select(Purchase)).subquery()))).scalar() or 0
+    total = (await db.execute(count_stmt)).scalar() or 0
     result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
     rows = result.all()
 
