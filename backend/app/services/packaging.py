@@ -145,18 +145,17 @@ class PackagingService:
         key = f"{self.BUNDLE_ZIP_PREFIX}{bundle.slug}/{bundle.id}-{int(datetime.utcnow().timestamp())}.zip"
 
         uploaded = storage.upload_bytes(key, data, "application/zip")
-        # storage fallback writes locally even when R2 missing, so uploaded is still key
         if not uploaded:
             logger.error("Failed to store bundle zip for %s — even local fallback failed", bundle.slug)
-            # As absolute last resort, write to /tmp so at least something exists
             try:
-                fallback = f"/tmp/{bundle.slug}_{bundle.id}.zip"
-                with open(fallback, "wb") as f:
+                local = storage._local_path(key)
+                os.makedirs(os.path.dirname(local), exist_ok=True)
+                with open(local, "wb") as f:
                     f.write(data)
-                logger.info("Wrote bundle zip to fallback %s", fallback)
-                return fallback
-            except Exception:
-                pass
+                logger.info("Wrote bundle zip to fallback local %s", local)
+                return key
+            except Exception as e:
+                logger.error("Fallback local write failed for %s: %s", key, e)
             return key
 
         logger.info("Bundle %s packaged: %s books included=%s skipped=%s size=%s bytes -> %s", bundle.slug, len(books), included, skipped, len(data), key)

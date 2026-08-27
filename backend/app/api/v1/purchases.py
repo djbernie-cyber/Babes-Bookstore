@@ -80,12 +80,18 @@ async def serve_storage_file(key: str):
     still gated by the purchase token at /{purchase_id}/download, so this
     endpoint can be public.
     """
-    from ..services.storage import storage
+    from ...services.storage import storage
 
-    # Prevent traversal
-    if ".." in key or key.startswith("/"):
-        raise HTTPException(status_code=400, detail="Invalid key")
-    local = storage._local_path(key)
+    # Back-compat for old fallback that stored absolute /tmp/... paths
+    if key.startswith("/tmp/"):
+        local = key
+        # also handle //tmp duplication from earlier bug
+        if key.startswith("//tmp"):
+            local = key[1:]
+    else:
+        if ".." in key or key.startswith("/"):
+            raise HTTPException(status_code=400, detail="Invalid key")
+        local = storage._local_path(key)
     if not os.path.exists(local):
         raise HTTPException(status_code=404, detail="File not found — bundle may still be packaging, try again in 30s")
     return FileResponse(local, filename=os.path.basename(local), media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{os.path.basename(local)}"'})
@@ -114,8 +120,8 @@ async def get_download_link(
         if purchase.status == PurchaseStatus.COMPLETED and purchase.download_count < purchase.max_downloads:
             try:
                 from sqlalchemy.orm import selectinload
-                from ..models.bundle import BundleBook
-                from ..services.packaging import packaging
+                from ...models.bundle import BundleBook
+                from ...services.packaging import packaging
                 from datetime import timedelta
                 bundle = await db.get(Bundle, purchase.bundle_id)
                 if bundle:
@@ -136,7 +142,7 @@ async def get_download_link(
         if not _download_available(purchase):
             raise HTTPException(status_code=403, detail="Download not available — bundle is still packaging, try again in 30s")
 
-    from ..services.storage import storage
+    from ...services.storage import storage
 
     url = storage.get_signed_url(
         purchase.zip_path, expires_in=settings.DOWNLOAD_WINDOW_HOURS * 3600
