@@ -24,7 +24,7 @@ class GutenbergSource(BaseSource):
     name = "gutenberg"
     description = "Project Gutenberg — public domain ebooks"
     license_type = "public_domain"
-    rate_limit = 0.3
+    rate_limit = 1.0
 
     API_URL = "https://gutendex.com/books"
     PAGE_SIZE = 32  # Gutendex fixed page size
@@ -61,29 +61,57 @@ class GutenbergSource(BaseSource):
                 logger.debug("Gutenberg download failed: %s", url, exc_info=True)
         return None
 
+    async def _get_page(self, query: Dict[str, Any], page: int) -> dict:
+        """Fetch a single results page, retrying on transient failures.
+
+        Gutenberg rate-limits / occasionally drops connections under load, so a
+        single failed request must not abort the whole import. We retry with
+        exponential backoff and re-raise only after the budget is exhausted.
+        """
+        last_exc: Exception | None = None
+        for attempt in range(5):
+            try:
+                response = await self.client.get(
+                    self.API_URL, params={**query, "page": page}, follow_redirects=True
+                )
+                response.raise_for_status()
+                return response.json()
+            except Exception as exc:  # noqa: BLE001 - retry regardless of cause
+                last_exc = exc
+                await asyncio.sleep(min(2 ** attempt, 16))
+        logger.warning("Gutenberg page %s failed after retries", page)
+        raise last_exc if last_exc else RuntimeError("unknown fetch error")
+
     async def _collect(
         self, params: Dict[str, Any], limit: int, start_page: int = 1
     ) -> List[BookMetadata]:
         """Page through the API until `limit` books are gathered.
 
         Starts at `start_page` so large imports can be resumed in batches
-        without re-fetching earlier pages.
+        without re-fetching earlier pages. A page that keeps failing is skipped
+        rather than aborting the run, so a brief outage can't truncate the
+        catalogue.
         """
         books: List[BookMetadata] = []
         query: Dict[str, Any] = {**params, "copyright": "false"}
         page = max(1, start_page)
+        failures = 0
 
         while len(books) < limit:
             try:
-                response = await self.client.get(
-                    self.API_URL, params={**query, "page": page}, follow_redirects=True
-                )
-                response.raise_for_status()
-                payload = response.json()
+                payload = await self._get_page(query, page)
             except Exception:
-                logger.warning("Gutenberg fetch failed (page %s)", page, exc_info=True)
-                break
+                failures += 1
+                if failures >= 10:
+                    logger.warning(
+                        "Too many consecutive Gutenberg failures; stopping at page %s", page
+                    )
+                    break
+                page += 1
+                await asyncio.sleep(self.rate_limit * 2)
+                continue
 
+            failures = 0
             results = payload.get("results", [])
             for raw in results:
                 book = self._parse(raw)
@@ -92,7 +120,7 @@ class GutenbergSource(BaseSource):
                     if len(books) >= limit:
                         break
 
-            if not payload.get("next") or not results:
+            if not results or not payload.get("next"):
                 break  # reached the end of the catalogue
             page += 1
             await asyncio.sleep(self.rate_limit)

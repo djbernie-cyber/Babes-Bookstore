@@ -179,6 +179,14 @@ async def _scrape_source(source_name: str, query: str, limit: int, start_page: i
         await source.close()
 
     report = await _ingest(source_name, items)
+
+    # Close pooled connections on the loop we just used so they aren't torn
+    # down (and logged as errors) when asyncio.run() closes the loop.
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
+
     return report.as_dict()
 
 
