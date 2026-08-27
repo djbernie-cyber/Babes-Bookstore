@@ -113,6 +113,11 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
                 "publication_year": metadata.publication_year,
                 "status": status,
                 "license_verified": approved,
+                "isbn": metadata.isbn,
+                "page_count": metadata.page_count,
+                "cover_path": metadata.cover_url,
+                "epub_path": metadata.epub_url,
+                "pdf_path": metadata.pdf_url,
             }
 
             # Update an existing book (matched by source id) so re-scrapes

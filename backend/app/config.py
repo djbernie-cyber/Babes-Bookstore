@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     SENDGRID_API_KEY: Optional[str] = None
     FROM_EMAIL: str = "noreply@babesbookstore.com"
 
+    # Local file storage fallback when R2 is not configured (useful for dev and
+    # so bundles are still downloadable without Cloudflare credentials).
+    LOCAL_STORAGE_PATH: str = "/tmp/babes_storage"
+
     # Admin accounts (auto-created on startup with free downloads).
     # Set via env, e.g. ADMIN_EMAILS='["you@example.com"]' — no real
     # addresses belong in source control.

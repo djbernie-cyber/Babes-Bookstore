@@ -1,4 +1,6 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
@@ -68,6 +70,25 @@ async def list_my_purchases(
         )
         for p, b in rows
     ]
+
+
+@router.get("/storage/{key:path}")
+async def serve_storage_file(key: str):
+    """Serve a bundle ZIP from local filesystem fallback (when R2 not configured).
+
+    The key is obscured (bundle id + timestamp) and download availability is
+    still gated by the purchase token at /{purchase_id}/download, so this
+    endpoint can be public.
+    """
+    from ..services.storage import storage
+
+    # Prevent traversal
+    if ".." in key or key.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid key")
+    local = storage._local_path(key)
+    if not os.path.exists(local):
+        raise HTTPException(status_code=404, detail="File not found — bundle may still be packaging, try again in 30s")
+    return FileResponse(local, filename=os.path.basename(local), media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{os.path.basename(local)}"'})
 
 
 @router.get("/{purchase_id}/download")
