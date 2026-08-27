@@ -5,34 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Babe's Bookstore</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        amber: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
-                        }
-                    },
-                    fontFamily: {
-                        serif: ['Playfair Display', 'serif'],
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
+            theme: { extend: {
+                colors: { amber: { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#f59e0b',600:'#d97706',700:'#b45309',800:'#92400e',900:'#78350f' } },
+                fontFamily: { serif: ['Playfair Display','serif'], sans: ['Inter','sans-serif'] }
+            }}
         }
     </script>
     <link rel="stylesheet" href="/static/site.css">
@@ -50,26 +31,17 @@
                 <div class="flex items-center">
                     <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
                     <div class="hidden md:flex ml-10 space-x-8">
-                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
-                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                        <a href="/admin" class="text-amber-700 font-medium">Dashboard</a>
+                        <a href="/admin/books" class="text-stone-700 hover:text-amber-700 font-medium">Books</a>
+                        <a href="/admin/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/admin/purchases" class="text-stone-700 hover:text-amber-700 font-medium">Purchases</a>
+                        <a href="/bundles/custom" class="text-stone-700 hover:text-amber-700 font-medium">Custom Bundles</a>
                     </div>
-                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <form action="/search" method="get" class="hidden sm:block">
-                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </form>
-                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+                    <a href="/account" class="text-sm text-stone-700 hover:text-amber-700">Account</a>
                 </div>
             </div>
-        </div>
-    
-        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
-            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
-            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
-            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
         </div>
     </nav>
 
@@ -104,22 +76,56 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                 <div class="bg-white rounded-xl border border-stone-200 p-6">
-                    <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Scraping Controls</h2>
-                    <div class="space-y-3">
-                        <button onclick="scrapeAll()" class="w-full bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Scrape All Sources</button>
-                        <button onclick="scrapeSource('gutenberg')" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape Gutenberg</button>
-                        <button onclick="scrapeSource('standard_ebooks')" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape Standard Ebooks</button>
-                        <button onclick="scrapeSource('doab')" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape DOAB</button>
-                        <button onclick="reverifyAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Re-verify All Licenses</button>
+                    <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Catalogue & Scraping</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Source</label>
+                            <select id="scrape-source" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="gutenberg">Gutenberg</option>
+                                <option value="standard_ebooks">Standard Ebooks</option>
+                                <option value="wikisource">Wikisource</option>
+                                <option value="openstax">OpenStax</option>
+                                <option value="doab">DOAB</option>
+                                <option value="oapen">OAPEN</option>
+                                <option value="open_library">Open Library</option>
+                                <option value="internet_archive">Internet Archive</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Books per batch (limit)</label>
+                            <input type="number" id="scrape-limit" value="400" min="50" max="2000" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-600 mb-1">Start page (for resumes)</label>
+                            <input type="number" id="scrape-start-page" value="1" min="1" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <button onclick="scrapeSource()" class="w-full bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Scrape this source</button>
+                        <div class="border-t border-stone-200 pt-4">
+                            <button onclick="scrapeAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm mb-2">Scrape all sources (50 ea)</button>
+                            <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape popular titles</button>
+                            <button onclick="reverifyAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Re-verify all licenses</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl border border-stone-200 p-6">
-                    <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Quick Actions</h2>
-                    <div class="space-y-3">
-                        <a href="/admin/books" class="block w-full text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Manage Books</a>
-                        <a href="/admin/bundles" class="block w-full text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Manage Bundles</a>
-                        <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape Popular Books</button>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl border border-stone-200 p-6">
+                        <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Quick Actions</h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="/admin/books" class="text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Manage Books</a>
+                            <a href="/admin/bundles" class="text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Manage Bundles</a>
+                            <a href="/admin/purchases" class="text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Purchases</a>
+                            <a href="/bundles/custom" class="text-center bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Custom Bundles</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-stone-200 p-6">
+                        <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Revenue</h2>
+                        <div class="space-y-3">
+                            <div><p class="text-sm text-stone-500">Total Purchases</p><p id="stat-purchases" class="text-2xl font-bold text-stone-900">—</p></div>
+                            <div><p class="text-sm text-stone-500">Revenue</p><p id="stat-revenue" class="text-2xl font-bold text-green-600">—</p></div>
+                        </div>
+                        <a href="/admin/purchases" class="mt-3 text-sm text-amber-700 hover:text-amber-900 font-medium">View all purchases →</a>
                     </div>
                 </div>
             </div>
@@ -130,38 +136,8 @@
 
     <footer class="bg-stone-900 text-stone-300 mt-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
-                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">Shop</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
-                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">Account</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
-                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
-                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">About</h4>
-                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
-                    <ul class="space-y-2 text-sm mt-3">
-                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
-                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
-                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
-                    </ul>
-                </div>
-            </div>
             <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
+                <p>&copy; 2026 Babe's Bookstore. All books remain under their original licenses.</p>
             </div>
         </div>
     </footer>
@@ -178,17 +154,14 @@
         }
 
         function authHeaders() {
-            return {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            };
+            return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
         }
 
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.classList.remove('hidden');
-            setTimeout(() => t.classList.add('hidden'), 3000);
+            setTimeout(() => t.classList.add('hidden'), 4000);
         }
 
         async function loadStats() {
@@ -200,35 +173,62 @@
                 document.getElementById('stat-approved').textContent = data.books?.approved ?? '—';
                 document.getElementById('stat-pending').textContent = data.books?.pending ?? '—';
                 document.getElementById('stat-rejected').textContent = data.books?.rejected ?? '—';
+                document.getElementById('stat-purchases').textContent = data.purchases?.total ?? '—';
+                document.getElementById('stat-revenue').textContent = data.purchases?.revenue_cents
+                    ? '£' + (data.purchases.revenue_cents / 100).toFixed(2)
+                    : '—';
             } catch (e) {
                 showToast('Error loading stats');
             }
         }
 
+        async function scrapeSource() {
+            const source = document.getElementById('scrape-source').value;
+            const limit = document.getElementById('scrape-limit').value;
+            const startPage = document.getElementById('scrape-start-page').value;
+            showToast(`Starting scrape of ${source}...`);
+            try {
+                const res = await fetch(`/api/v1/admin/scrape/source/${source}?limit=${limit}&start_page=${startPage}`, {
+                    method: 'POST', headers: authHeaders()
+                });
+                const data = await res.json();
+                showToast(`Scrape started: ${source} (limit=${limit}, start_page=${startPage}) · Task: ${data.task_id?.substring(0,8)}`);
+            } catch (e) {
+                showToast('Failed to start scrape');
+            }
+        }
+
         async function scrapeAll() {
             showToast('Starting full scrape...');
-            await fetch('/api/v1/admin/scrape/all', { method: 'POST', headers: authHeaders() });
-            showToast('Scrape initiated');
-        }
-
-        async function scrapeSource(source) {
-            showToast('Scraping ' + source + '...');
-            await fetch('/api/v1/admin/scrape/source/' + source, { method: 'POST', headers: authHeaders() });
-            showToast('Scrape initiated for ' + source);
-        }
-
-        async function reverifyAll() {
-            showToast('Re-verifying licenses...');
-            await fetch('/api/v1/admin/verify/licenses', { method: 'POST', headers: authHeaders() });
-            showToast('Re-verification initiated');
+            try {
+                const res = await fetch('/api/v1/admin/scrape/all?limit_per_source=50', { method: 'POST', headers: authHeaders() });
+                const data = await res.json();
+                showToast('Full scrape initiated · Task: ' + (data.task_id?.substring(0,8)));
+            } catch (e) {
+                showToast('Failed to start scrape');
+            }
         }
 
         async function scrapePopular() {
             showToast('Scraping popular books...');
-            await fetch('/api/v1/admin/scrape/popular', { method: 'POST', headers: authHeaders() });
-            showToast('Popular scrape initiated');
+            try {
+                const res = await fetch('/api/v1/admin/scrape/popular?limit_per_source=100', { method: 'POST', headers: authHeaders() });
+                const data = await res.json();
+                showToast('Popular scrape initiated · Task: ' + (data.task_id?.substring(0,8)));
+            } catch (e) {
+                showToast('Failed to start scrape');
+            }
+        }
+
+        async function reverifyAll() {
+            showToast('Re-verifying licenses...');
+            try {
+                const res = await fetch('/api/v1/admin/verify/licenses', { method: 'POST', headers: authHeaders() });
+                showToast('Re-verification initiated');
+            } catch (e) {
+                showToast('Failed to start re-verification');
+            }
         }
     </script>
-    <script src="/js/store.js"></script>
 </body>
 </html>

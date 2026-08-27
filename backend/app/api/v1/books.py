@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
 from typing import List, Optional
+import re
 
 from .deps import get_db, require_admin, get_current_user
 from ...models.book import Book, BookStatus
@@ -74,6 +76,41 @@ async def list_books(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/{book_id}/download")
+async def download_book(book_id: int, db: AsyncSession = Depends(get_db)):
+    """Free individual book download — public domain works need no purchase.
+
+    Streams the best available file (EPUB > PDF > txt) directly from the
+    remote source so the library is free per-book, while bundles remain
+    the paid product.
+    """
+    book = await db.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    # Only approved public-domain / openly-licensed books are downloadable
+    if book.status != BookStatus.APPROVED or not book.license_verified:
+        raise HTTPException(status_code=403, detail="Book not yet verified for download")
+
+    # Use the same resolver as bundle packaging so we stay consistent
+    from ...services.packaging import packaging
+
+    content, ext = packaging._resolve_book_content(book)
+    if not content:
+        raise HTTPException(status_code=502, detail="Book file temporarily unavailable from source — try again or use the source URL")
+
+    # Sanitise filename for Content-Disposition
+    safe = re.sub(r"[^a-zA-Z0-9 _-]+", "", book.title or "book").strip()[:80] or "book"
+    filename = f"{safe}.{ext}"
+    # Provide preview-friendly content-type
+    ctype = {"epub": "application/epub+zip", "pdf": "application/pdf", "txt": "text/plain; charset=utf-8", "jpg": "image/jpeg"}.get(ext, "application/octet-stream")
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"; filename*=UTF-8\'\'{filename}',
+        "X-Book-Source": book.source_url or "",
+    }
+    return Response(content=content, media_type=ctype, headers=headers)
 
 
 @router.get("/{book_id}", response_model=BookResponse)

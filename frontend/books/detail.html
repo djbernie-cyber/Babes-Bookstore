@@ -16,26 +16,37 @@
     <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
 </div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl bg-stone-100">Library</a></div></nav>
 
-<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
-  <a href="/search" class="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900">← Back to library</a>
-  <div id="loading" class="text-center py-20"><div class="inline-block w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div><p class="text-sm text-stone-500 mt-3">Loading…</p></div>
+<main class="flex-1 max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
+  <a href="/search" class="inline-flex items-center gap-1.5 text-sm text-[#8a8683] hover:text-[#0b0b0c]">← Back to catalogue</a>
+  <div id="loading" class="text-center py-20"><div class="inline-block w-8 h-8 border-4 border-[#e7e2d9] border-t-[#0b0b0c] rounded-full animate-spin"></div><p class="text-sm text-[#8a8683] mt-3">Loading book…</p></div>
   <div id="err" class="hidden mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">Book not found.</div>
   <div id="book" class="hidden mt-6">
-    <div class="bg-white rounded-[22px] border overflow-hidden">
+    <div class="bg-white rounded-[20px] border overflow-hidden">
       <div class="md:flex">
-        <div id="cover" class="md:w-[340px] shrink-0 bg-stone-50 border-b md:border-b-0 md:border-r min-h-[380px] flex"></div>
+        <div id="cover" class="md:w-[360px] shrink-0 bg-[#f6f1e7] border-b md:border-b-0 md:border-r min-h-[460px] flex"></div>
         <div class="flex-1 p-7 sm:p-8">
-          <h1 id="title" class="font-serif text-3xl sm:text-4xl font-bold tracking-[-.02em] leading-tight"></h1>
-          <p id="author" class="text-lg text-stone-600 mt-2"></p>
+          <h1 id="title" class="font-serif text-3xl sm:text-4xl font-semibold tracking-[-0.02em] leading-tight"></h1>
+          <p id="author" class="text-lg text-[#57534e] mt-2"></p>
           <div id="meta" class="flex flex-wrap gap-2 mt-4"></div>
-          <div id="desc" class="prose prose-stone max-w-none mt-6 text-stone-700 leading-7"></div>
-          <div class="mt-8 bg-stone-50 rounded-2xl border p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Find this book in a bundle</p>
-            <p class="text-sm text-stone-600 mt-1">This title is part of our curated bundles — <a href="/bundles" class="underline">browse bundles</a> or <a href="/search" class="underline">search the library</a>.</p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a id="download" href="#" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0b0b0c] text-white text-sm font-semibold hover:bg-black">↓ Free download</a>
+            <a id="preview" href="#" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border text-sm font-medium hover:bg-[#fcfaf7]">Preview</a>
+            <span class="inline-flex items-center text-xs text-[#8a8683]">Individual books free · Bundles £10</span>
           </div>
-          <div id="source" class="border-t mt-8 pt-6 text-sm text-stone-500"></div>
+          <div id="desc" class="prose prose-stone max-w-none mt-6 text-[#1f1f1f] leading-7"></div>
+          <div class="mt-8 bg-[#fcfaf7] rounded-2xl border p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-[#8a8683]">Also in bundles</p>
+            <p class="text-sm text-[#57534e] mt-1">This title is free to download individually. Bundles are a curated convenience — 8–18 works, cleaned and typeset, for £10.</p>
+            <a href="/bundles" class="inline-flex mt-3 text-sm font-medium underline">Browse bundles →</a>
+          </div>
+          <div id="source" class="border-t mt-8 pt-6 text-sm text-[#8a8683]"></div>
         </div>
       </div>
+    </div>
+    <div id="preview-box" class="hidden mt-8 bg-white rounded-[20px] border p-6">
+      <h3 class="font-serif text-lg font-semibold">Preview</h3>
+      <p class="text-xs text-[#8a8683] mt-1">First 2,000 characters from the source file</p>
+      <pre id="preview-text" class="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#1f1f1f] max-h-[400px] overflow-auto bg-[#fcfaf7] p-4 rounded-xl border"></pre>
     </div>
   </div>
 </main>

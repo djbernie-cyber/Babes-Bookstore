@@ -129,8 +129,8 @@ async def create_custom_bundle(
 
     if not bundle_in.book_ids or len(bundle_in.book_ids) < 3:
         raise HTTPException(status_code=400, detail="Pick at least 3 books")
-    if len(bundle_in.book_ids) > 40:
-        raise HTTPException(status_code=400, detail="Custom bundles are limited to 40 books")
+    if len(bundle_in.book_ids) > 100:
+        raise HTTPException(status_code=400, detail="Custom bundles are limited to 100 books")
 
     # Normalise slug and ensure uniqueness
     base = _slugify(bundle_in.slug or bundle_in.name)
@@ -159,7 +159,7 @@ async def create_custom_bundle(
     db.add(bundle)
     await db.flush()
 
-    for i, book_id in enumerate(bundle_in.book_ids[:40]):
+    for i, book_id in enumerate(bundle_in.book_ids[:100]):
         book = await db.get(Book, book_id)
         if not book:
             continue

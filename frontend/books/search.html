@@ -45,11 +45,28 @@
 
 <script src="/js/store.js"></script>
 <script>
-const gradients=['from-amber-400 to-orange-500','from-rose-400 to-pink-500','from-emerald-400 to-teal-500','from-blue-400 to-indigo-500','from-violet-400 to-purple-500','from-amber-500 to-red-500','from-cyan-400 to-blue-500'];
-function grad(id){ return gradients[Math.abs((id||0))%gradients.length] }
+function coverHtml(b){
+  if(b.cover_path && /^https?:\/\//.test(b.cover_path)){
+    return `<img src="${b.cover_path}" alt="${b.title.replace(/"/g,'&quot;')}" class="w-full h-56 object-cover bg-[#f6f1e7]" loading="lazy">`;
+  }
+  // Professional serif letter on paper, not vibecoded gradient
+  const letter=(b.title||'?').charAt(0).toUpperCase();
+  return `<div class="w-full h-56 bg-[#f6f1e7] border-b flex flex-col items-center justify-center p-4"><span class="font-serif text-5xl text-[#0b0b0c]">${letter}</span><span class="text-[11px] tracking-wide uppercase font-medium text-[#8a8683] mt-2 text-center line-clamp-2">${b.title}</span></div>`;
+}
 function card(b){
-  const cover=b.cover_path && /^https?:\/\//.test(b.cover_path) ? `<img src="${b.cover_path}" alt="" class="w-full h-56 object-cover">` : `<div class="h-56 bg-gradient-to-br ${grad(b.id)} flex items-center justify-center"><span class="text-white text-4xl font-serif font-bold opacity-90">${(b.title||'?').charAt(0)}</span></div>`;
-  return `<a href="/books/${b.id}" class="book-card group overflow-hidden">${cover}<div class="p-4"><h3 class="font-serif font-bold leading-tight line-clamp-2 group-hover:text-stone-900">${b.title}</h3><p class="text-sm text-stone-500 mt-1">${b.author||'Unknown'}</p><div class="flex flex-wrap gap-1.5 mt-2">${b.category?`<span class="text-[11px] px-2 py-1 rounded-full bg-stone-100 border text-stone-600">${b.category}</span>`:''}${b.publication_year?`<span class="text-xs text-stone-400">${b.publication_year}</span>`:''}</div></div></a>`;
+  return `<div class="book-card group overflow-hidden flex flex-col">
+    <a href="/books/${b.id}" class="block">${coverHtml(b)}</a>
+    <div class="p-4 flex-1 flex flex-col">
+      <a href="/books/${b.id}" class="font-serif font-semibold leading-tight line-clamp-2 hover:underline">${b.title}</a>
+      <p class="text-sm text-[#57534e] mt-1">${b.author||'Unknown author'}</p>
+      <div class="flex flex-wrap gap-1.5 mt-2">${b.category?`<span class="text-[11px] px-2 py-1 rounded-full bg-white border text-[#57534e]">${b.category}</span>`:''}${b.publication_year?`<span class="text-xs text-[#8a8683]">${b.publication_year}</span>`:''}</div>
+      <div class="mt-3 flex gap-2">
+        <a href="/api/v1/books/${b.id}/download" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-[#0b0b0c] text-white hover:bg-black">Free download</a>
+        <a href="/books/${b.id}" class="text-xs font-medium px-3 py-2 rounded-full border bg-white hover:bg-[#fcfaf7]">Preview</a>
+      </div>
+      <p class="text-[11px] text-[#8a8683] mt-2">Free individual book · Bundles £10</p>
+    </div>
+  </div>`;
 }
 let curPage=1, lastQ="", lastCat="";
 async function search(p){

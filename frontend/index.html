@@ -1,307 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Babe's Bookstore — 90,000 Books, Beautifully Bundled</title>
-  <meta name="description" content="62,000+ public-domain books and counting — curated into beautiful themed bundles from £10. Public domain, openly licensed, yours forever.">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Babe's Bookstore — The Public Domain Library</title>
+  <meta name="description" content="A scholarly public-domain library. 1,065 works catalogued, building to 90,000. Curated bundles from £10. Public domain, openly licensed, print-ready.">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script>tailwind.config={theme:{extend:{fontFamily:{serif:['Playfair Display','serif'],sans:['Inter','sans-serif']}}}}</script>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{fontFamily:{serif:['EB Garamond','Georgia','serif'],sans:['Inter','system-ui','sans-serif']}}}}</script>
   <link rel="stylesheet" href="/static/site.css">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#fdfbf7">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b0b0c">
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 </head>
-<body class="text-stone-900">
-<nav class="sticky top-0 z-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-[68px]">
+<body class="bg-[#fcfaf7] text-[#121212] antialiased">
+<nav class="sticky top-0 z-50 bg-[#0b0b0c] text-[#fcfaf7] border-b border-[#1f1f1f]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-[64px]">
       <div class="flex items-center gap-8">
-        <a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em] text-stone-900">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
-        <div class="hidden md:flex items-center gap-7 text-[.92rem] font-medium">
-          <a href="/bundles" class="hover:text-stone-900 text-stone-600">Bundles</a>
-          <a href="/search" class="hover:text-stone-900 text-stone-600">Library</a>
-          <a href="/bundles" class="hidden lg:inline-flex items-center gap-1.5 text-stone-500 hover:text-stone-800"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Live catalogue</a>
+        <a href="/" class="font-serif text-[1.35rem] tracking-[-0.02em] font-semibold">Babe’s Bookstore <span class="font-normal text-[#a8a29e]">—</span> <span class="text-[#a8a29e] font-normal text-[0.95rem]">Public Domain Library</span></a>
+        <div class="hidden md:flex items-center gap-6 text-[13px] tracking-wide uppercase font-medium text-[#a8a29e]">
+          <a href="/bundles" class="hover:text-white">Bundles</a>
+          <a href="/search" class="hover:text-white">Catalogue</a>
+          <a href="/bundles/custom" class="hover:text-white">Custom Bundle</a>
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <form action="/search" method="get" class="hidden sm:block"><input type="search" name="q" placeholder="Search 62,000 books…" aria-label="Search"></form>
-        <a href="/search" class="sm:hidden p-2 text-stone-600" aria-label="Search">⌕</a>
-        <a href="/account" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-stone-200 bg-white text-sm font-medium hover:bg-stone-50">Account</a>
-        <button class="md:hidden p-2 -mr-2 text-stone-700" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg>
-        </button>
+        <form action="/search" method="get" class="hidden lg:block"><input type="search" name="q" placeholder="Search catalogue" class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-full px-4 py-2 text-sm text-white placeholder:text-[#7a7672] focus:outline-none focus:border-[#3a3a3e] w-[220px]"></form>
+        <a href="/account" class="hidden sm:inline-flex items-center px-4 py-2 rounded-full bg-white text-[#0b0b0c] text-sm font-medium hover:bg-[#f0ede8]">Account</a>
+        <button class="md:hidden p-2 -mr-2 text-[#a8a29e]" onclick="document.getElementById('m').classList.toggle('hidden')" aria-label="Menu"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
     </div>
   </div>
-  <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white/95 backdrop-blur px-4 py-3 space-y-1">
-    <a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-100 font-medium">Bundles</a>
-    <a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-100 font-medium">Library — Search</a>
-    <a href="/account" class="block px-3 py-2.5 rounded-xl hover:bg-stone-100 font-medium">Account</a>
+  <div id="m" class="hidden md:hidden border-t border-[#1f1f1f] bg-[#0b0b0c] px-4 py-3 space-y-1 text-sm">
+    <a href="/bundles" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Bundles</a>
+    <a href="/search" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Catalogue</a>
+    <a href="/bundles/custom" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Custom Bundle</a>
+    <a href="/account" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Account</a>
   </div>
 </nav>
 
-<!-- HERO: The Library -->
-<section class="hero-library !py-10 lg:!py-16">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid lg:grid-cols-[1.05fr_.95fr] gap-10 lg:gap-8 items-center">
-      <!-- copy -->
-      <div class="max-w-[620px]">
-        <div class="flex flex-wrap gap-2.5 mb-5">
-          <span class="live-pill"><span class="live-dot"></span><span id="hero-live-count">1,065 books live</span> · growing daily</span>
-          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-white text-xs font-semibold tracking-wide uppercase text-stone-600">Public domain · CC-licensed · Verified</span>
-        </div>
-        <h1 class="font-serif text-[2.5rem] sm:text-[3rem] lg:text-[3.65rem] font-[700] leading-[.95] tracking-[-.03em] text-stone-900">
-          Ninety thousand<br>
-          <span class="font-normal italic text-stone-700">books. One</span> beautiful<br>
-          <span class="relative">library.<span class="absolute left-0 -bottom-1 w-full h-[7px] bg-amber-200/60 -z-10"></span></span>
-        </h1>
-        <p class="mt-5 text-[1.05rem] leading-7 text-stone-600 max-w-[52ch]">We are building the honest, human-scale alternative to the algorithm — <span class="font-medium text-stone-800">62,175 Gutenberg classics and open textbooks</span>, restored, categorized and curated into themed bundles from <span class="font-semibold text-stone-900">£10</span>. No subscriptions. Yours forever — EPUB + PDF.</p>
-
-        <form action="/search" method="get" class="hero-search mt-7">
-          <input type="search" name="q" placeholder="Search the library — e.g. 'Austen', 'Gothic horror', 'relativity'…">
-          <button type="submit" class="bg-stone-900 text-white hover:bg-black">Search →</button>
-        </form>
-        <p class="mt-2.5 text-xs text-stone-500">Try: <a href="/search?q=Sherlock%20Holmes" class="underline decoration-stone-300 hover:decoration-stone-600">Sherlock Holmes</a> · <a href="/search?q=Wollstonecraft" class="underline decoration-stone-300 hover:decoration-stone-600">Wollstonecraft</a> · <a href="/search?q=quantum" class="underline decoration-stone-300 hover:decoration-stone-600">quantum</a></p>
-
-        <!-- progress to 90k -->
-        <div class="mt-8 bg-white rounded-2xl border border-stone-200 p-4 sm:p-5 shadow-sm">
-          <div class="flex items-baseline justify-between gap-4">
-            <p class="text-sm font-semibold text-stone-900">Building to <span class="font-serif">90,000</span></p>
-            <p class="text-xs font-medium text-stone-500"><span id="progress-count">1,065</span> / 90,000 · <span id="progress-pct">1.2%</span></p>
-          </div>
-          <div class="progress-rail mt-3"><div id="progress-fill" class="progress-fill" style="width:1.2%"></div></div>
-          <p class="mt-2.5 text-xs leading-5 text-stone-500">Live from <a href="https://gutendex.com" target="_blank" rel="noopener" class="underline">Gutendex</a> + OpenStax · Standard Ebooks · DOAB · Wikisource. Each book is <span class="font-medium text-stone-700">licence-verified</span> before it appears.</p>
-        </div>
-
-        <div class="mt-6 flex flex-wrap gap-3">
-          <a href="/bundles" class="inline-flex items-center gap-2 bg-stone-900 text-white px-6 py-3.5 rounded-full font-semibold hover:bg-black transition">Browse bundles — from £10</a>
-          <a href="/search" class="inline-flex items-center gap-2 bg-white border border-stone-300 px-6 py-3.5 rounded-full font-semibold hover:bg-stone-50">Explore the library</a>
-        </div>
-        <p class="mt-3 text-xs text-stone-400">14-day refund on faulty files · Secure checkout via Stripe · PayPal · Square · Apple/G Pay</p>
-      </div>
-
-      <!-- visual: the stacks -->
-      <div class="relative lg:pl-6">
-        <div class="bg-white rounded-[22px] border border-stone-200 shadow-lg p-6 sm:p-7">
-          <div class="flex items-center justify-between mb-5">
-            <p class="text-xs font-semibold tracking-[.14em] uppercase text-stone-500">The stacks — live</p>
-            <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Updated today</span>
-          </div>
-          <div class="shelf-stack">
-            <div class="shelf">
-              <div class="spine"><small>Melville</small><strong>Moby-Dick</strong></div>
-              <div class="spine"><small>Austen</small><strong>Pride &amp; Prejudice</strong></div>
-              <div class="spine"><small>Shelley</small><strong>Frankenstein</strong></div>
-              <div class="spine"><small>Doyle</small><strong>Sherlock</strong></div>
-              <div class="spine"><small>Wilde</small><strong>Dorian Gray</strong></div>
-            </div>
-            <div class="shelf">
-              <div class="spine"><small>Stoker</small><strong>Dracula</strong></div>
-              <div class="spine"><small>Dickens</small><strong>Great Expectations</strong></div>
-              <div class="spine"><small>Woolf</small><strong>Mrs Dalloway</strong></div>
-              <div class="spine"><small>Conrad</small><strong>Heart of Darkness</strong></div>
-              <div class="spine"><small>Brontë</small><strong>Jane Eyre</strong></div>
-            </div>
-            <div class="shelf">
-              <div class="spine"><small>Homer</small><strong>Odyssey</strong></div>
-              <div class="spine"><small>Plato</small><strong>Republic</strong></div>
-              <div class="spine"><small>Darwin</small><strong>Origin</strong></div>
-              <div class="spine"><small>Verne</small><strong>20,000 Leagues</strong></div>
-            </div>
-          </div>
-          <div class="mt-5 grid grid-cols-3 gap-3 text-center">
-            <div class="bg-stone-50 rounded-xl border border-stone-200 p-3">
-              <p class="font-serif text-xl font-bold" data-live-books>1,065</p><p class="text-[11px] tracking-wide uppercase font-semibold text-stone-500">Books live</p>
-            </div>
-            <div class="bg-stone-50 rounded-xl border border-stone-200 p-3">
-              <p class="font-serif text-xl font-bold">14</p><p class="text-[11px] tracking-wide uppercase font-semibold text-stone-500">Genres</p>
-            </div>
-            <div class="bg-stone-50 rounded-xl border border-stone-200 p-3">
-              <p class="font-serif text-xl font-bold">£10</p><p class="text-[11px] tracking-wide uppercase font-semibold text-stone-500">Per bundle</p>
-            </div>
-          </div>
-          <p class="mt-3 text-center text-xs text-stone-400">Real titles from the catalogue. Search any spine above.</p>
-        </div>
-        <!-- floating quote -->
-        <div class="hidden sm:block absolute -bottom-4 -left-2 bg-stone-900 text-stone-100 rounded-2xl p-4 shadow-lg max-w-[280px] rotate-[-1deg]">
-          <p class="font-serif text-sm leading-6">“A room without books is like a body without a soul.”</p><p class="text-xs text-stone-400 mt-1">— Cicero · In every bundle</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="marquee" aria-hidden="true">
-  <div class="marquee-track">
-    <span>90,000 books promised — 62,175 Gutenberg + OpenStax + DOAB + Wikisource + Standard Ebooks</span><span>·</span>
-    <span>Every book licence-verified</span><span>·</span>
-    <span>EPUB + PDF · Yours forever</span><span>·</span>
-    <span>90,000 books promised — 62,175 Gutenberg + OpenStax + DOAB + Wikisource + Standard Ebooks</span><span>·</span>
-    <span>Every book licence-verified</span><span>·</span>
-    <span>EPUB + PDF · Yours forever</span><span>·</span>
-  </div>
-</div>
-
-<!-- Genre rail -->
-<section class="!py-6 bg-white border-b border-stone-200">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between gap-4 mb-3">
-      <h2 class="font-serif text-lg font-bold">Browse by taste</h2>
-      <a href="/bundles" class="text-sm font-medium text-stone-600 hover:text-stone-900">All bundles →</a>
-    </div>
-    <div class="genre-rail" id="genre-rail">
-      <a href="/search?category=Science%20Fiction" class="genre-pill">Science Fiction</a>
-      <a href="/search?category=Mystery%20%26%20Detective" class="genre-pill">Mystery &amp; Detective</a>
-      <a href="/search?category=Gothic%20%26%20Horror" class="genre-pill">Gothic &amp; Horror</a>
-      <a href="/search?category=Romance" class="genre-pill">Romance</a>
-      <a href="/search?category=Adventure" class="genre-pill">Adventure</a>
-      <a href="/search?category=Children%20%26%20Fairy%20Tales" class="genre-pill">Children &amp; Fairy Tales</a>
-      <a href="/search?category=Fantasy" class="genre-pill">Fantasy</a>
-      <a href="/search?category=Philosophy" class="genre-pill">Philosophy</a>
-      <a href="/search?category=History" class="genre-pill">History</a>
-      <a href="/search?category=Poetry" class="genre-pill">Poetry</a>
-      <a href="/search?category=Biography" class="genre-pill">Biography</a>
-      <a href="/search?category=Drama" class="genre-pill">Drama</a>
-    </div>
-  </div>
-</section>
-
-<!-- Featured bundles — BENTO -->
-<section class="py-10 sm:py-14">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+<section class="bg-[#0b0b0c] text-[#fcfaf7] border-b border-[#1f1f1f]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
       <div>
-        <p class="eyebrow">The collection</p>
-        <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-[-.02em] mt-2">Featured bundles</h2>
-        <p class="text-stone-600 mt-2 max-w-xl">Hand-built collections. One fair price. Each bundle is a little syllabus — no filler, no AI slop, just great books.</p>
+        <p class="text-[11px] tracking-[0.18em] uppercase font-semibold text-[#a8a29e]">Est. 2024 — London & Online</p>
+        <h1 class="font-serif text-[2.2rem] sm:text-[3rem] lg:text-[3.4rem] leading-[0.95] tracking-[-0.03em] mt-3">The public domain,<br><span class="italic font-normal text-[#d6d3d1]">properly made.</span></h1>
+        <p class="mt-5 text-[16px] leading-7 text-[#d6d3d1] max-w-[56ch]">A scholarly library of works whose copyright has expired or been waived. Every text is licence-verified, cleaned, and delivered as print-ready PDF and reflowable EPUB — one price, no subscription, yours permanently.</p>
+        <form action="/search" method="get" class="mt-7 flex gap-2 max-w-[520px]">
+          <input type="search" name="q" placeholder="Search by title, author, or subject" class="flex-1 bg-white text-[#121212] rounded-full px-5 py-3.5 text-[15px] placeholder:text-[#8a8683] focus:outline-none">
+          <button class="bg-white text-[#0b0b0c] rounded-full px-6 py-3.5 text-sm font-semibold hover:bg-[#f0ede8]">Search</button>
+        </form>
+        <div class="mt-6 flex flex-wrap gap-2 text-xs">
+          <span class="px-3 py-1.5 rounded-full bg-[#1a1a1c] border border-[#2a2a2e] text-[#a8a29e]">Licence-verified</span>
+          <span class="px-3 py-1.5 rounded-full bg-[#1a1a1c] border border-[#2a2a2e] text-[#a8a29e]">TEI-cleaned</span>
+          <span class="px-3 py-1.5 rounded-full bg-[#1a1a1c] border border-[#2a2a2e] text-[#a8a29e]">PDF + EPUB</span>
+          <span class="px-3 py-1.5 rounded-full bg-[#1a1a1c] border border-[#2a2a2e] text-[#a8a29e]">No DRM</span>
+        </div>
       </div>
-      <a href="/bundles" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-stone-300 bg-white font-medium hover:bg-stone-50">View all bundles</a>
-    </div>
-    <div id="featured-bundles" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- skeletons -->
-      <div class="bundle-card p-0 animate-pulse"><div class="cover"></div><div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-3/4"></div><div class="h-3 bg-stone-100 rounded"></div></div></div>
-      <div class="bundle-card p-0 hidden sm:block animate-pulse"><div class="cover"></div><div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-2/3"></div><div class="h-3 bg-stone-100 rounded"></div></div></div>
-      <div class="bundle-card p-0 hidden lg:block animate-pulse"><div class="cover"></div><div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-1/2"></div><div class="h-3 bg-stone-100 rounded"></div></div></div>
-    </div>
-    <div class="sm:hidden text-center mt-8"><a href="/bundles" class="inline-flex px-6 py-3 rounded-full border border-stone-300 bg-white font-medium">View all bundles</a></div>
-  </div>
-</section>
-
-<!-- Custom builder CTA -->
-<section class="!py-8 bg-white border-y">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="bg-stone-900 rounded-[22px] p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-      <div class="max-w-xl"><p class="eyebrow !text-white/70 before:!bg-white/40">Make it yours</p><h3 class="font-serif text-2xl sm:text-3xl font-bold text-white mt-2 leading-tight">Build a custom bundle</h3><p class="text-stone-300 mt-2 leading-6">Pick any 3–40 books — Gothic horror for October, a philosophy syllabus, a kids' classics gift. We format it as EPUB + PDF. <span class="text-white font-semibold">£10, no subscription.</span></p></div>
-      <a href="/bundles/custom" class="shrink-0 inline-flex items-center gap-2 bg-white text-stone-900 px-7 py-3.5 rounded-full font-semibold hover:bg-stone-100">✨ Start building →</a>
-    </div>
-  </div>
-</section>
-
-<!-- Stats bar — honest -->
-<section class="stats-bar !py-10">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-      <div><p class="font-serif text-3xl font-bold" data-live-books>1,065</p><p class="text-sm text-stone-400 mt-1">Books live &amp; verified</p></div>
-      <div><p class="font-serif text-3xl font-bold">90,000</p><p class="text-sm text-stone-400 mt-1">Books promised</p></div>
-      <div><p class="font-serif text-3xl font-bold">100%</p><p class="text-sm text-stone-400 mt-1">Public domain / openly licensed</p></div>
-      <div><p class="font-serif text-3xl font-bold" data-live-payments>—</p><p class="text-sm text-stone-400 mt-1">Ways to pay</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- How it works — editorial -->
-<section class="bg-white">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="max-w-2xl"><p class="eyebrow">Simple by design</p><h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-[-.02em] mt-2">How it works</h2><p class="text-stone-600 mt-3">No subscriptions. No DRM. No dark patterns. Just books.</p></div>
-    <div class="grid md:grid-cols-3 gap-6 mt-10">
-      <div class="bg-stone-50 rounded-2xl border border-stone-200 p-7">
-        <div class="hiw-numeral w-10 h-10 rounded-full grid place-items-center text-sm font-bold">1</div>
-        <h3 class="font-serif text-xl font-bold mt-4">Choose a bundle</h3><p class="text-stone-600 text-sm leading-6 mt-2">From Gothic horror to quantum physics — each bundle is curated by a human reader, not an algorithm.</p>
-        <a href="/bundles" class="inline-flex mt-4 text-sm font-semibold underline decoration-stone-300 hover:decoration-stone-900">Browse bundles →</a>
-      </div>
-      <div class="bg-stone-50 rounded-2xl border border-stone-200 p-7">
-        <div class="hiw-numeral w-10 h-10 rounded-full grid place-items-center text-sm font-bold">2</div>
-        <h3 class="font-serif text-xl font-bold mt-4">Pay once</h3><p class="text-stone-600 text-sm leading-6 mt-2">One flat price. Stripe · PayPal · Square · Apple Pay · Google Pay. Statement: <span class="font-mono text-xs font-semibold">BABES BOOKSTORE</span>.</p>
-        <p class="text-xs text-stone-500 mt-3">14-day refund on faulty files — see <a href="/refunds" class="underline">Refund Policy</a>.</p>
-      </div>
-      <div class="bg-stone-50 rounded-2xl border border-stone-200 p-7">
-        <div class="hiw-numeral w-10 h-10 rounded-full grid place-items-center text-sm font-bold">3</div>
-        <h3 class="font-serif text-xl font-bold mt-4">Download &amp; keep</h3><p class="text-stone-600 text-sm leading-6 mt-2">EPUB + PDF, instantly. Read on Kindle, Kobo, phone, tablet — yours forever, no account required after purchase.</p>
+      <div class="bg-[#fcfaf7] text-[#121212] rounded-[20px] p-5 sm:p-6">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] tracking-[0.14em] uppercase font-semibold text-[#8a8683]">Collection status</p>
+          <span class="text-[11px] px-2 py-1 rounded-full bg-[#0b0b0c] text-white font-medium">Live</span>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+          <div class="bg-white border rounded-xl p-3"><p class="font-serif text-xl font-semibold" data-live-books>1,065</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#8a8683]">Catalogued</p></div>
+          <div class="bg-white border rounded-xl p-3"><p class="font-serif text-xl font-semibold">90,000</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#8a8683]">Target</p></div>
+          <div class="bg-white border rounded-xl p-3"><p class="font-serif text-xl font-semibold">£10</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#8a8683]">Per bundle</p></div>
+        </div>
+        <div class="mt-5">
+          <div class="flex justify-between text-xs"><span class="font-medium" id="progress-label">1,065 of 90,000</span><span class="text-[#8a8683]" id="progress-pct">1.2% complete</span></div>
+          <div class="h-1.5 bg-[#ece9e3] rounded-full mt-2 overflow-hidden"><div id="progress-fill" class="h-full bg-[#0b0b0c] rounded-full" style="width:1.2%"></div></div>
+          <p class="text-xs text-[#8a8683] mt-2 leading-5">Ingested from Gutenberg, Standard Ebooks, OpenStax, DOAB, Wikisource and others. Each work is verified before it appears. No claim is made beyond what is live.</p>
+        </div>
+        <div class="mt-5 grid grid-cols-4 gap-2" id="cover-grid">
+          <!-- covers injected here -->
+        </div>
+        <p class="text-[11px] text-[#8a8683] mt-3">Covers from the live catalogue — updated daily.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Pay your way — compact -->
-<section class="!py-10 bg-stone-50 border-y border-stone-200">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <p class="eyebrow justify-center">Checkout, your choice</p>
-    <h2 class="font-serif text-2xl font-bold mt-2">Pay your way</h2>
-    <p class="text-sm text-stone-500 mt-2">Real provider checkout — not mock buttons</p>
-    <div class="flex flex-wrap justify-center gap-3 mt-6">
-      <span class="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-4 py-2 text-sm font-medium"><img src="https://cdn.simpleicons.org/stripe/635bff" class="w-5 h-5" alt="" loading="lazy"> Stripe</span>
-      <span class="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-4 py-2 text-sm font-medium"><img src="https://cdn.simpleicons.org/paypal/003087" class="w-5 h-5" alt="" loading="lazy"> PayPal</span>
-      <span class="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-4 py-2 text-sm font-medium"><img src="https://cdn.simpleicons.org/square/000000" class="w-5 h-5" alt="" loading="lazy"> Square</span>
-      <span class="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-4 py-2 text-sm font-medium"><img src="https://cdn.simpleicons.org/apple/000000" class="w-5 h-5" alt="" loading="lazy"> Apple Pay</span>
-      <span class="inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-4 py-2 text-sm font-medium"><img src="https://cdn.simpleicons.org/googlepay/000000" class="w-5 h-5" alt="" loading="lazy"> Google Pay</span>
-      <span class="inline-flex items-center gap-2 bg-white border border-[#43B02A]/20 rounded-full px-4 py-2 text-sm font-medium text-[#1a7a0f]"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#43B02A" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg> M-Pesa</span>
-    </div>
-    <p class="text-xs text-stone-400 mt-3">Statement descriptor: <span class="font-mono font-semibold">BABES BOOKSTORE</span> · <a href="/refunds" class="underline">Refund policy</a></p>
+<section class="bg-white border-b">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap gap-2 text-xs">
+    <a href="/search?category=Classics" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Classics</a>
+    <a href="/search?category=Science%20Fiction" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Science Fiction</a>
+    <a href="/search?category=History" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">History</a>
+    <a href="/search?category=Philosophy" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Philosophy</a>
+    <a href="/search?category=Poetry" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Poetry</a>
+    <a href="/search?category=Biography" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Biography</a>
+    <a href="/bundles" class="px-3 py-1.5 rounded-full bg-[#0b0b0c] text-white">All bundles →</a>
   </div>
 </section>
 
-<footer>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid md:grid-cols-4 gap-8">
-      <div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm leading-6 text-stone-400">An honest library — 90,000 public-domain and openly-licensed books, restored and bundled with care.</p></div>
-      <div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">All bundles</a></li><li><a href="/search">Search the library</a></li></ul></div>
-      <div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li><li><a href="/account">My purchases</a></li></ul></div>
-      <div><h4 class="font-semibold text-white mb-3">About</h4><p class="text-sm text-stone-400">We add value through curation, cleaning and beautiful formatting — the books remain free; the bundles are the product.</p><ul class="space-y-2 text-sm mt-3"><li><a href="/terms">Terms</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/refunds">Refunds</a></li></ul></div>
+<section class="py-10 sm:py-14 bg-[#fcfaf7]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-end justify-between gap-4">
+      <div><p class="text-[11px] tracking-[0.14em] uppercase font-semibold text-[#8a8683]">Curated sets</p><h2 class="font-serif text-2xl sm:text-3xl font-semibold tracking-[-0.02em] mt-1">Bundles</h2><p class="text-sm text-[#57534e] mt-2 max-w-xl">Each bundle is a considered set — 8 to 18 works, cleaned and typeset, with a scholarly introduction. One price.</p></div>
+      <a href="/bundles" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">View all</a>
     </div>
-    <div class="border-t border-white/10 mt-10 pt-6 text-sm text-center text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore · All books remain under their original licences. <span class="hidden sm:inline">·</span> <a href="https://babes-bookstore.fly.dev/health" class="underline">API health</a></div>
+    <div id="featured-bundles" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+      <div class="bg-white border rounded-2xl p-6 animate-pulse"><div class="h-32 bg-[#ece9e3] rounded-xl"></div><div class="h-4 bg-[#ece9e3] rounded mt-4 w-3/4"></div></div>
+      <div class="bg-white border rounded-2xl p-6 hidden sm:block animate-pulse"><div class="h-32 bg-[#ece9e3] rounded-xl"></div><div class="h-4 bg-[#ece9e3] rounded mt-4 w-2/3"></div></div>
+      <div class="bg-white border rounded-2xl p-6 hidden lg:block animate-pulse"><div class="h-32 bg-[#ece9e3] rounded-xl"></div><div class="h-4 bg-[#ece9e3] rounded mt-4 w-1/2"></div></div>
+    </div>
   </div>
-</footer>
+</section>
+
+<section class="py-10 bg-white border-y">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid md:grid-cols-3 gap-6 text-sm">
+      <div class="border rounded-2xl p-6"><p class="text-[11px] uppercase tracking-wide font-semibold text-[#8a8683]">01 — Choose</p><p class="font-serif text-lg font-semibold mt-2">A bundle or build your own</p><p class="text-[#57534e] leading-6 mt-2">Select a curated set or pick 3–40 works in the <a href="/bundles/custom" class="underline">custom studio</a>. Every work is licence-verified.</p></div>
+      <div class="border rounded-2xl p-6"><p class="text-[11px] uppercase tracking-wide font-semibold text-[#8a8683]">02 — Pay once</p><p class="font-serif text-lg font-semibold mt-2">One price, your device</p><p class="text-[#57534e] leading-6 mt-2">£10 per bundle. Card, PayPal, Square, Apple Pay, Google Pay or M-Pesa STK. Statement: <span class="font-mono text-xs">BABES BOOKSTORE</span>.</p></div>
+      <div class="border rounded-2xl p-6"><p class="text-[11px] uppercase tracking-wide font-semibold text-[#8a8683]">03 — Keep</p><p class="font-serif text-lg font-semibold mt-2">Download and keep</p><p class="text-[#57534e] leading-6 mt-2">PDF + EPUB delivered immediately to the device that browsed. No account required after purchase. 14-day refund on faulty files.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="py-8 bg-[#fcfaf7] border-b">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-center gap-3 text-xs">
+    <span class="px-3 py-1.5 rounded-full bg-white border flex items-center gap-2"><img src="https://cdn.simpleicons.org/stripe/635bff" class="w-4 h-4" alt=""> Stripe</span>
+    <span class="px-3 py-1.5 rounded-full bg-white border flex items-center gap-2"><img src="https://cdn.simpleicons.org/paypal/003087" class="w-4 h-4" alt=""> PayPal</span>
+    <span class="px-3 py-1.5 rounded-full bg-white border flex items-center gap-2"><img src="https://cdn.simpleicons.org/square/000000" class="w-4 h-4" alt=""> Square</span>
+    <span class="px-3 py-1.5 rounded-full bg-white border flex items-center gap-2"><img src="https://cdn.simpleicons.org/apple/000000" class="w-4 h-4" alt=""> Apple Pay</span>
+    <span class="px-3 py-1.5 rounded-full bg-white border flex items-center gap-2"><img src="https://cdn.simpleicons.org/googlepay/000000" class="w-4 h-4" alt=""> Google Pay</span>
+    <span class="px-3 py-1.5 rounded-full bg-white border border-[#43B02A]/20 text-[#1a7a0f] flex items-center gap-1.5"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="#43B02A" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg> M-Pesa</span>
+    <span class="text-[#8a8683]">· Secure checkout · No subscription</span>
+  </div>
+</section>
+
+<footer class="bg-[#0b0b0c] text-[#a8a29e]"><div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-10"><div class="grid md:grid-cols-4 gap-8 text-sm"><div><p class="font-serif text-white font-semibold">Babe’s Bookstore</p><p class="leading-6 mt-2 text-[#8a8683]">A proper public-domain library. Texts are free; curation, cleaning and typesetting is the product.</p></div><div><p class="font-semibold text-white">Shop</p><ul class="mt-3 space-y-2"><li><a href="/bundles" class="hover:text-white">Bundles</a></li><li><a href="/search" class="hover:text-white">Catalogue</a></li><li><a href="/bundles/custom" class="hover:text-white">Custom Bundle</a></li></ul></div><div><p class="font-semibold text-white">Account</p><ul class="mt-3 space-y-2"><li><a href="/login" class="hover:text-white">Sign in</a></li><li><a href="/register" class="hover:text-white">Create account</a></li><li><a href="/account" class="hover:text-white">Purchases</a></li></ul></div><div><p class="font-semibold text-white">Legal</p><ul class="mt-3 space-y-2"><li><a href="/terms" class="hover:text-white">Terms</a></li><li><a href="/privacy" class="hover:text-white">Privacy</a></li><li><a href="/refunds" class="hover:text-white">Refunds</a></li></ul></div></div><div class="border-t border-[#1f1f1f] mt-8 pt-6 text-xs text-center text-[#7a7672]">© <span data-copyright-year>2026</span> Babe’s Bookstore · All texts remain under their original licences. <a href="https://babes-bookstore.fly.dev/health" class="underline">API</a></div></div></footer>
 
 <script src="/js/store.js"></script>
 <script>
 (function(){
-  const ORBS=["📚","🌙","💌","🧭","🧚","⚗️","🏛️","🎭","🦇","🗝️","🌊","✒️"];
-  function orbFor(c){ let h=0; for(let i=0;i<c.length;i++) h=(h*31+c.charCodeAt(i))>>>0; return ORBS[h%ORBS.length] }
   function price(cents,ccy){ return (window.formatPrice?formatPrice(cents,ccy):('£'+(cents/100).toFixed(2))) }
-  async function loadFeatured(){
+  async function covers(){
+    try{
+      const r=await fetch('/api/v1/books?page_size=8&category=Classics'); if(!r.ok) throw 0;
+      const d=await r.json(); const items=d.items||[];
+      const grid=document.getElementById('cover-grid');
+      if(!grid) return;
+      grid.innerHTML=items.map(b=>{
+        const cover=b.cover_path && /^https?:\/\//.test(b.cover_path) ? `<img src="${b.cover_path}" alt="" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-[#ece9e3] flex items-center justify-center text-[#8a8683] font-serif text-xl">${(b.title||'?').charAt(0)}</div>`;
+        return `<a href="/books/${b.id}" class="block aspect-[3/4] bg-white border rounded-xl overflow-hidden hover:border-[#0b0b0c] transition">${cover}</a>`;
+      }).join('');
+    }catch{}
+  }
+  async function featured(){
     const el=document.getElementById('featured-bundles');
     try{
-      const r=await fetch('/api/v1/bundles?featured=true&page_size=12');
-      if(!r.ok) throw new Error(r.status);
-      const d=await r.json(); const items=d.items||d.results||d||[];
-      if(!items.length){ el.innerHTML='<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-stone-200"><p class="font-serif text-xl font-bold">Bundles are being restocked</p><p class="text-stone-500 mt-2">Check back in a moment — new collections land daily.</p><a href="/bundles" class="inline-flex mt-4 px-5 py-2.5 rounded-full bg-stone-900 text-white font-medium">Browse all bundles</a></div>'; return }
+      const r=await fetch('/api/v1/bundles?featured=true&page_size=6'); if(!r.ok) throw 0;
+      const d=await r.json(); const items=d.items||[];
+      if(!items.length){ el.innerHTML='<div class="col-span-full text-center py-12 border rounded-2xl bg-white"><p class="font-medium">No featured bundles</p></div>'; return }
       el.innerHTML=items.map(b=>{
-        const n=Array.isArray(b.books)?b.books.length : (b.book_count||'?');
-        const orb=orbFor(b.slug||b.name);
-        return `<a href="/bundles/${b.slug}" class="bundle-card group">
-          <div class="cover"><div class="bundle-orb">${orb}</div></div>
-          <div class="p-5">
-            <div class="flex items-start justify-between gap-3">
-              <h3 class="font-serif text-[1.15rem] font-bold leading-tight group-hover:text-stone-900">${b.name}</h3>
-              <span class="shrink-0 text-[11px] font-semibold tracking-wide uppercase px-2 py-1 rounded-full bg-stone-900 text-white">${n} books</span>
-            </div>
-            ${b.category?`<p class="text-xs font-medium tracking-wide uppercase text-stone-500 mt-1">${b.category}</p>`:''}
-            <p class="text-sm leading-6 text-stone-600 mt-2 line-clamp-2">${b.description||'A curated set of great reads, cleaned and formatted for modern readers.'}</p>
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-stone-100">
-              <span class="font-semibold text-stone-900">${price(b.price_cents,b.currency)}</span>
-              <span class="text-sm font-medium text-stone-600 group-hover:text-stone-900">View bundle →</span>
-            </div>
-          </div>
+        const n=Array.isArray(b.books)?b.books.length:'?';
+        const cover=b.books&&b.books[0]&&b.books[0].cover_path ? `<img src="${b.books[0].cover_path}" alt="" class="w-full h-24 object-cover rounded-xl border">` : `<div class="w-full h-24 bg-[#ece9e3] rounded-xl"></div>`;
+        return `<a href="/bundles/${b.slug}" class="group bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
+          ${cover}
+          <h3 class="font-serif text-lg font-semibold leading-tight mt-4 group-hover:underline">${b.name}</h3>
+          <p class="text-xs uppercase tracking-wide font-medium text-[#8a8683] mt-1">${b.category||''} · ${n} works</p>
+          <p class="text-sm leading-6 text-[#57534e] mt-2 line-clamp-2">${b.description||''}</p>
+          <p class="text-sm font-semibold mt-4">${price(b.price_cents,b.currency)} <span class="font-normal text-[#8a8683]">— view →</span></p>
         </a>`;
       }).join('');
-      const priced=items.filter(b=>typeof b.price_cents==='number');
-      if(priced.length){ const c=priced.reduce((a,b)=>a.price_cents<=b.price_cents?a:b); const hl=document.querySelector('.hero-library a.bg-stone-900'); if(hl) hl.textContent=`Browse bundles — from ${price(c.price_cents,c.currency)}`; }
-    }catch(e){ console.error(e); el.innerHTML='<div class="col-span-full text-center py-10 bg-white rounded-2xl border"><p class="text-stone-600">Could not load bundles.</p><button onclick="location.reload()" class="mt-3 px-5 py-2 rounded-full bg-stone-900 text-white text-sm font-medium">Retry</button></div>' }
+    }catch(e){ el.innerHTML='<div class="col-span-full text-center py-10 border rounded-2xl bg-white"><p class="text-sm text-[#57534e]">Could not load bundles.</p></div>' }
   }
-  document.addEventListener('DOMContentLoaded', loadFeatured);
+  document.addEventListener('DOMContentLoaded', ()=>{ covers(); featured(); });
 })();
 </script>
 </body>

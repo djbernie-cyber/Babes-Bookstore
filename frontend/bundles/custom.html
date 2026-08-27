@@ -20,7 +20,7 @@
   <div class="max-w-3xl">
     <p class="eyebrow">Your syllabus, your rules</p>
     <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 leading-[.95]">Build your own bundle</h1>
-    <p class="text-stone-600 mt-3 leading-7">Pick any <span class="font-semibold text-stone-900">3–40 books</span> from the library of <span data-live-books>1,065</span> — we'll bundle them as a beautiful EPUB + PDF for <span class="font-semibold text-stone-900">£10</span>, yours forever. No admin needed. No subscription.</p>
+    <p class="text-stone-600 mt-3 leading-7">Pick any <span class="font-semibold text-stone-900">3–100 books</span> from the library of <span data-live-books>1065</span> — we'll bundle them as a beautiful EPUB + PDF for <span class="font-semibold text-stone-900">£10</span>, yours forever. No admin needed. No subscription.</p>
     <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="px-3 py-1.5 rounded-full bg-white border font-medium">Live catalogue · licence-verified</span><span class="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-medium">Only £10 — any 3–40 books</span></div>
   </div>
 
@@ -42,7 +42,7 @@
         <div id="r-pag" class="flex justify-center gap-2 mt-4"></div>
         <p id="r-empty" class="hidden text-center py-10 text-sm text-stone-500">No books found. Try a different search.</p>
       </div>
-      <p class="text-xs text-stone-400 px-1">Tip: add at least 3 books. Drag to reorder in the tray on the right (or use ↑ ↓).</p>
+      <p class="text-xs text-stone-400 px-1">Tip: add at least 3 books. Drag to reorder in the tray on the right (or use ↑ ↓). Up to 100 books per bundle.</p>
     </div>
 
     <!-- right: builder -->
@@ -50,7 +50,7 @@
       <div class="bg-white rounded-[22px] border p-6 sm:p-7 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="font-serif text-xl font-bold">Your bundle</h2>
-          <span id="count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-stone-900 text-white">0 / 40</span>
+          <span id="count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-stone-900 text-white">0 / 100</span>
         </div>
         <p id="count-hint" class="text-xs text-stone-500 mt-1">Add at least 3 books to create your bundle.</p>
         <div id="tray" class="mt-4 space-y-2 min-h-[140px] max-h-[360px] overflow-auto">
@@ -64,13 +64,13 @@
         </div>
 
         <div class="mt-6 bg-stone-50 rounded-2xl border p-4 flex items-center justify-between">
-          <div><p class="text-xs uppercase tracking-wide font-semibold text-stone-500">Price</p><p class="font-serif text-2xl font-bold">£10.00</p><p class="text-xs text-stone-500">Any 3–40 books · EPUB + PDF</p></div>
+          <div><p class="text-xs uppercase tracking-wide font-semibold text-stone-500">Price</p><p class="font-serif text-2xl font-bold">£10.00</p><p class="text-xs text-stone-500">Any 3–100 books · EPUB + PDF</p></div>
           <div class="text-right"><p class="text-sm font-medium"><span id="preview-n">0</span> books</p><p class="text-xs text-stone-500">Ready when you are</p></div>
         </div>
 
         <div id="err" class="hidden mt-4 bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-xl text-sm"></div>
         <button id="create" onclick="createBundle()" disabled class="mt-4 w-full py-3.5 rounded-full bg-stone-300 text-stone-500 font-semibold cursor-not-allowed">Add 3+ books to continue</button>
-        <p class="text-[11px] leading-4 text-stone-400 text-center mt-2">By creating you agree the bundle will be public and purchasable. Faulty files refunded — see <a href="/refunds" class="underline">Refunds</a>.</p>
+        <p class="text-[11px] leading-4 text-stone-400 text-center mt-2">By creating you agree the bundle will be public and purchasable. £10 for any 3–100 books. Faulty files refunded — see <a href="/refunds" class="underline">Refunds</a>.</p>
       </div>
 
       <div class="bg-stone-900 text-stone-300 rounded-[22px] p-5">
@@ -90,7 +90,7 @@ let curPage=1, totalPages=1;
 function renderTray(){
   const tray=document.getElementById('tray'), empty=document.getElementById('tray-empty');
   const count=document.getElementById('count'), hint=document.getElementById('count-hint'), btn=document.getElementById('create'), pn=document.getElementById('preview-n');
-  count.textContent=picks.length+" / 40"; pn.textContent=picks.length;
+  count.textContent=picks.length+" / 100"; pn.textContent=picks.length;
   if(!picks.length){ empty.classList.remove('hidden'); tray.querySelectorAll('.pick').forEach(e=>e.remove()); }
   else {
     empty.classList.add('hidden');
@@ -114,7 +114,7 @@ function renderTray(){
       tray.appendChild(div);
     });
   }
-  const ok=picks.length>=3 && picks.length<=40;
+  const ok=picks.length>=3 && picks.length<=100;
   const name=document.getElementById('b-name').value.trim();
   btn.disabled=!(ok && name.length>=3);
   btn.className= btn.disabled ? "mt-4 w-full py-3.5 rounded-full bg-stone-300 text-stone-500 font-semibold cursor-not-allowed" : "mt-4 w-full py-3.5 rounded-full bg-stone-900 text-white font-semibold hover:bg-black";
@@ -123,7 +123,7 @@ function renderTray(){
   hint.className= ok ? "text-xs text-emerald-700 mt-1 font-medium" : "text-xs text-stone-500 mt-1";
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML }
-function addPick(b){ if(picks.find(p=>p.id===b.id)) return; if(picks.length>=40) return alert('Custom bundles are limited to 40 books.'); picks.push({id:b.id,title:b.title,author:b.author}); renderTray() }
+function addPick(b){ if(picks.find(p=>p.id===b.id)) return; if(picks.length>=100) return alert('Custom bundles are limited to 100 books.'); picks.push({id:b.id,title:b.title,author:b.author}); renderTray() }
 function removePick(i){ picks.splice(i,1); renderTray() }
 function move(i,dir){ const j=i+dir; if(j<0||j>=picks.length) return; const t=picks[i]; picks[i]=picks[j]; picks[j]=t; renderTray() }
 function reorder(from,to){ const [m]=picks.splice(from,1); picks.splice(to,0,m); renderTray() }

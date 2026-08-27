@@ -24,10 +24,14 @@ class GutenbergSource(BaseSource):
     name = "gutenberg"
     description = "Project Gutenberg — public domain ebooks"
     license_type = "public_domain"
-    rate_limit = 1.0
+    rate_limit = 0.3
 
     API_URL = "https://gutendex.com/books"
     PAGE_SIZE = 32  # Gutendex fixed page size
+
+    #: Gutendex redirects books→books/ but the 301 costs ~1 RTT. Hit the
+    #: canonical (trailing-slash) path directly to skip the redirect entirely.
+    LIST_URL = "https://gutendex.com/books/"
 
     async def search(self, query: str, limit: int = 20, start_page: int = 1) -> List[BookMetadata]:
         return await self._collect({"search": query} if query else {}, limit, start_page)
@@ -72,7 +76,7 @@ class GutenbergSource(BaseSource):
         for attempt in range(5):
             try:
                 response = await self.client.get(
-                    self.API_URL, params={**query, "page": page}, follow_redirects=True
+                    self.LIST_URL, params={**query, "page": page}, follow_redirects=True
                 )
                 response.raise_for_status()
                 return response.json()

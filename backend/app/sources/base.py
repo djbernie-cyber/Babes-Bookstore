@@ -42,7 +42,7 @@ class BaseSource(ABC):
     name: str = ""
     description: str = ""
     license_type: str = "public_domain"
-    rate_limit: float = 1.0  # seconds between requests
+    rate_limit: float = 0.5  # seconds between requests
     requires_api_key: bool = False
 
     #: Some providers (Gutenberg, Standard Ebooks) reject unfamiliar agents

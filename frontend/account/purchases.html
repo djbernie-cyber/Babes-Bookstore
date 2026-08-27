@@ -27,6 +27,33 @@
       <span id="badge-admin" class="hidden ml-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Admin</span>
     </div>
 
+    <!-- Jones Vault — makes you feel like you own the stacks -->
+    <div id="jones-vault" class="mt-6 rounded-[22px] overflow-hidden border bg-[#0b0b0c] text-white relative">
+      <div class="absolute inset-0 opacity-[0.07]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 32px 32px;"></div>
+      <div class="relative p-6 sm:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] tracking-[0.18em] uppercase font-semibold text-[#a8a29e]">The Vault — Your Command</p>
+            <h2 class="font-serif text-2xl sm:text-3xl font-semibold tracking-[-0.02em] mt-2">The stacks are yours, <span id="jones-name" class="italic font-normal text-[#d6d3d1]">Jones</span>.</h2>
+            <p class="text-sm text-[#a8a29e] mt-2 max-w-xl">Every public-domain work we’ve verified is at your fingertips — <span data-live-books class="text-white font-semibold">1,065</span> catalogued today, building to 90,000. No gates, no limits. Pull any volume.</p>
+          </div>
+          <div class="bg-white text-[#0b0b0c] rounded-full px-4 py-2 text-xs font-semibold">90,000 volumes</div>
+        </div>
+        <div class="mt-6 grid grid-cols-3 gap-3 text-center">
+          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold" data-live-books>1,065</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">In your library</p></div>
+          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold" id="vault-bundles">19</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">Bundles</p></div>
+          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold">∞</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">Downloads</p></div>
+        </div>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="/search" class="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white text-[#0b0b0c] text-sm font-semibold hover:bg-[#f0ede8]">Enter the stacks →</a>
+          <a href="/bundles/custom" class="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-[#2a2a2e] bg-transparent text-white text-sm font-medium hover:bg-[#1a1a1c]">Build your vault</a>
+          <span class="inline-flex items-center text-xs text-[#a8a29e]">Tip: every single book is free to download — bundles are the curated shortcut.</span>
+        </div>
+      </div>
+      <!-- subtle shelf visual -->
+      <div class="h-2 bg-gradient-to-r from-[#d6b16a] via-[#8a6b3a] to-[#d6b16a] opacity-60"></div>
+    </div>
+
     <div class="mt-8 flex items-baseline justify-between"><h2 class="font-serif text-xl font-bold">Purchases</h2><a href="/bundles" class="text-sm font-medium underline">Browse bundles</a></div>
     <div id="empty" class="mt-4 bg-white rounded-[22px] border p-10 text-center"><p class="font-medium">No purchases yet</p><p class="text-sm text-stone-500 mt-1">Bundles you buy appear here with instant downloads.</p><a href="/bundles" class="inline-flex mt-5 px-6 py-3 rounded-full bg-stone-900 text-white text-sm font-medium">Browse bundles</a></div>
     <div id="list" class="hidden mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
