@@ -1,281 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Bundles - Babe's Bookstore</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        amber: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
-                        }
-                    },
-                    fontFamily: {
-                        serif: ['Playfair Display', 'serif'],
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .category-btn.active { background-color: #b45309; color: white; }
-    </style>
-    <link rel="stylesheet" href="/static/site.css">
-    <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#fbfbfd">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="apple-touch-icon" href="/static/icon.svg">
-    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Bundles — Babe's Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 </head>
-<body class="bg-stone-50 text-stone-900">
-    <!-- Navigation -->
-    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
-                    <div class="hidden md:flex ml-10 space-x-8">
-                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
-                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
-                    </div>
-                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <form action="/search" method="get" class="hidden sm:block">
-                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </form>
-                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
-                </div>
-            </div>
-        </div>
-    
-        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
-            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
-            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
-            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
-        </div>
-    </nav>
+<body>
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-[.92rem] font-medium"><a href="/bundles" class="text-stone-900">Bundles</a><a href="/search" class="text-stone-600 hover:text-stone-900">Library</a></div></div>
+  <div class="flex items-center gap-3"><form action="/search" class="hidden sm:block"><input type="search" name="q" placeholder="Search 62,000 books…"></form><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
+    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl bg-stone-100 font-medium">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="/account" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Account</a></div></nav>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Page Title -->
-        <div class="text-center mb-10">
-            <h1 class="font-serif text-4xl md:text-5xl font-bold text-stone-900 mb-4">Book Bundles</h1>
-            <p class="text-lg text-stone-600 max-w-2xl mx-auto">Curated collections of public domain and openly-licensed books. Pay once, keep forever.</p>
-        </div>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+  <div class="flex flex-wrap items-end justify-between gap-6">
+    <div><p class="eyebrow">Curated sets</p><h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2">Bundles</h1><p class="text-stone-600 mt-3 max-w-xl">Each bundle is a small syllabus — 12–40 books, cleaned, formatted (EPUB+PDF), yours forever. <span class="font-medium text-stone-800">£10 each.</span></p></div>
+    <div class="bg-white border rounded-2xl px-4 py-3 text-sm"><span class="font-semibold" id="bundle-count">—</span> bundles · <span data-live-books>1,065</span> books live</div>
+  </div>
 
-        <!-- Category Filters -->
-        <div class="flex flex-wrap justify-center gap-3 mb-10">
-            <button onclick="filterCategory('')" class="category-btn active px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">All</button>
-            <button onclick="filterCategory('fiction')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Fiction</button>
-            <button onclick="filterCategory('non-fiction')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Non-Fiction</button>
-            <button onclick="filterCategory('science')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Science</button>
-            <button onclick="filterCategory('philosophy')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">Philosophy</button>
-            <button onclick="filterCategory('history')" class="category-btn px-5 py-2 rounded-full border border-stone-300 font-medium text-sm hover:bg-amber-700 hover:text-white hover:border-amber-700 transition">History</button>
-        </div>
+  <div class="mt-8 flex flex-wrap gap-2" id="cat-filters">
+    <button data-cat="" class="genre-pill active">All</button>
+    <button data-cat="Classics" class="genre-pill">Classics</button>
+    <button data-cat="Mystery & Detective" class="genre-pill">Mystery</button>
+    <button data-cat="Gothic & Horror" class="genre-pill">Gothic &amp; Horror</button>
+    <button data-cat="Science Fiction" class="genre-pill">Sci-Fi</button>
+    <button data-cat="Fantasy" class="genre-pill">Fantasy</button>
+    <button data-cat="Romance" class="genre-pill">Romance</button>
+    <button data-cat="Adventure" class="genre-pill">Adventure</button>
+    <button data-cat="History" class="genre-pill">History</button>
+    <button data-cat="Philosophy" class="genre-pill">Philosophy</button>
+    <button data-cat="Biography" class="genre-pill">Biography</button>
+    <button data-cat="Poetry" class="genre-pill">Poetry</button>
+    <button data-cat="Children & Fairy Tales" class="genre-pill">Children</button>
+  </div>
 
-        <!-- Bundles Grid -->
-        <div id="bundles-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="bg-white rounded-2xl border border-stone-100 overflow-hidden animate-pulse">
-                <div class="h-48 bg-stone-200"></div>
-                <div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-3/4"></div><div class="h-3 bg-stone-100 rounded w-full"></div><div class="h-3 bg-stone-100 rounded w-1/2"></div></div>
-            </div>
-            <div class="hidden sm:block bg-white rounded-2xl border border-stone-100 overflow-hidden animate-pulse">
-                <div class="h-48 bg-stone-200"></div>
-                <div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-2/3"></div><div class="h-3 bg-stone-100 rounded w-full"></div><div class="h-3 bg-stone-100 rounded w-2/3"></div></div>
-            </div>
-            <div class="hidden lg:block bg-white rounded-2xl border border-stone-100 overflow-hidden animate-pulse">
-                <div class="h-48 bg-stone-200"></div>
-                <div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-1/2"></div><div class="h-3 bg-stone-100 rounded w-full"></div><div class="h-3 bg-stone-100 rounded w-1/3"></div></div>
-            </div>
-        </div>
+  <div class="mt-6 bg-stone-900 text-white rounded-[22px] p-6 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div><p class="font-serif text-xl font-bold">Can't find your perfect set?</p><p class="text-sm text-stone-300 mt-1">Build a custom bundle — pick any 3–40 books from the library for £10.</p></div>
+    <a href="/bundles/custom" class="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-stone-900 font-semibold hover:bg-stone-100">✨ Build custom bundle →</a>
+  </div>
 
-        <!-- Pagination -->
-        <div id="pagination" class="flex justify-center items-center gap-4 mt-12"></div>
-    </main>
+  <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+    <div class="bundle-card animate-pulse"><div class="cover"></div><div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-3/4"></div><div class="h-3 bg-stone-100 rounded"></div></div></div>
+    <div class="bundle-card hidden sm:block animate-pulse"><div class="cover"></div><div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-2/3"></div><div class="h-3 bg-stone-100 rounded"></div></div></div>
+    <div class="bundle-card hidden lg:block animate-pulse"><div class="cover"></div><div class="p-6 space-y-3"><div class="h-5 bg-stone-200 rounded w-1/2"></div><div class="h-3 bg-stone-100 rounded"></div></div></div>
+  </div>
+  <div id="pagination" class="flex justify-center items-center gap-3 mt-10"></div>
+  <p id="empty" class="hidden text-center py-16 text-stone-500">No bundles in this genre yet — we're adding daily.</p>
+</main>
 
-    <!-- Footer -->
-    <footer class="bg-stone-900 text-stone-300 mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
-                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">Shop</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
-                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">Account</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
-                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
-                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">About</h4>
-                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
-                    <ul class="space-y-2 text-sm mt-3">
-                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
-                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
-                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
-            </div>
-        </div>
-    </footer>
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">90,000 books promised — curated with care.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">All bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li><li><a href="/account">Purchases</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">About</h4><p class="text-sm text-stone-400">Public domain & openly licensed. Bundles are the product.</p></div></div><div class="border-t border-white/10 mt-10 pt-6 text-sm text-center text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore</div></div></footer>
 
-    <!-- Scripts -->
-    <script>
-        let currentPage = 1;
-        let currentCategory = '';
-        const PAGE_SIZE = 12;
-
-        async function loadBundles(page, category) {
-            const grid = document.getElementById('bundles-grid');
-            grid.innerHTML = `
-                <div class="text-center py-16 col-span-full">
-                    <div class="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-stone-500 mt-3">Loading bundles...</p>
-                </div>`;
-
-            let url = `/api/v1/bundles?page=${page}&page_size=${PAGE_SIZE}`;
-            if (category) url += `&category=${encodeURIComponent(category)}`;
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Failed to fetch bundles');
-                const data = await response.json();
-                const bundles = data.items || data.results || data || [];
-                const total = data.total || data.count || bundles.length;
-                const totalPages = Math.ceil(total / PAGE_SIZE);
-
-                if (bundles.length === 0) {
-                    grid.innerHTML = `
-                        <div class="col-span-full text-center py-16">
-                            <span class="text-5xl mb-4 block">📚</span>
-                            <p class="text-stone-500 text-lg mb-2">No bundles found${category ? ' in this category' : ''}.</p>
-                            <p class="text-stone-400">Check back soon for new collections!</p>
-                        </div>`;
-                    document.getElementById('pagination').innerHTML = '';
-                    return;
-                }
-
-                const cards = bundles.map(bundle => {
-                    const amount = formatPrice(bundle.price_cents, bundle.currency);
-                    const bookCount = Array.isArray(bundle.books) ? bundle.books.length : '?';
-                    return `
-                    <a href="/bundles/${bundle.slug}" class="bundle-card block bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden hover:shadow-lg">
-                        <div class="h-48 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center p-6">
-                            <div class="text-center">
-                                <span class="text-4xl">📚</span>
-                                <p class="text-amber-800 font-medium mt-2">${bookCount} books</p>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div class="flex items-start justify-between mb-2">
-                                <h3 class="font-serif text-xl font-bold text-stone-900">${bundle.name}</h3>
-                                ${bundle.category ? `<span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">${bundle.category}</span>` : ''}
-                            </div>
-                            <p class="text-stone-600 text-sm line-clamp-2 mb-4">${bundle.description || 'A curated collection of great reads.'}</p>
-                            <div class="flex items-center justify-between pt-2 border-t border-stone-100">
-                                <span class="text-amber-700 font-bold text-lg">${amount}</span>
-                                <span class="text-amber-600 text-sm font-medium">View Bundle &rarr;</span>
-                            </div>
-                        </div>
-                    </a>`;
-                }).join('');
-                grid.innerHTML = cards;
-
-                renderPagination(page, totalPages);
-            } catch (error) {
-                console.error('Error loading bundles:', error);
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-stone-100">
-                        <span class="text-5xl mb-4 block">⚠️</span>
-                        <p class="text-stone-500 text-lg mb-2">Unable to load bundles.</p>
-                        <button onclick="loadBundles(currentPage)" class="mt-3 bg-amber-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-amber-700 transition">Try again</button>
-                    </div>`;
-                document.getElementById('pagination').innerHTML = '';
-            }
-        }
-
-        function renderPagination(page, totalPages) {
-            const container = document.getElementById('pagination');
-            if (totalPages <= 1) { container.innerHTML = ''; return; }
-
-            let html = '';
-            html += `<button onclick="goToPage(${page - 1})" class="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-stone-100'}" ${page <= 1 ? 'disabled' : ''}>Previous</button>`;
-
-            const start = Math.max(1, page - 2);
-            const end = Math.min(totalPages, page + 2);
-            for (let i = start; i <= end; i++) {
-                html += `<button onclick="goToPage(${i})" class="w-10 h-10 rounded-lg text-sm font-medium ${i === page ? 'bg-amber-700 text-white' : 'border border-stone-300 hover:bg-stone-100'}">${i}</button>`;
-            }
-
-            if (end < totalPages) {
-                html += `<span class="text-stone-400 px-1">...</span>`;
-                html += `<button onclick="goToPage(${totalPages})" class="w-10 h-10 rounded-lg text-sm font-medium border border-stone-300 hover:bg-stone-100">${totalPages}</button>`;
-            }
-
-            html += `<button onclick="goToPage(${page + 1})" class="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-stone-100'}" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
-
-            container.innerHTML = html;
-        }
-
-        function goToPage(page) {
-            if (page < 1) return;
-            currentPage = page;
-            loadBundles(currentPage, currentCategory);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function filterCategory(category) {
-            currentCategory = category;
-            currentPage = 1;
-
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.remove('active', 'bg-amber-700', 'text-white', 'border-amber-700');
-            });
-            const activeBtn = event.target;
-            activeBtn.classList.add('active');
-
-            loadBundles(currentPage, currentCategory);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            loadBundles(currentPage, currentCategory);
-        });
-    </script>
-    <script src="/js/store.js"></script>
+<script src="/js/store.js"></script>
+<script>
+const ORBS=["📚","🌙","💌","🧭","🧚","⚗️","🏛️","🎭","🦇","🗝️","🌊","✒️"];
+function orb(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return ORBS[h%ORBS.length]}
+let page=1,cat="",PS=12;
+async function load(){
+  const grid=document.getElementById('grid'), pag=document.getElementById('pagination'), empty=document.getElementById('empty');
+  grid.innerHTML='<div class="col-span-full text-center py-12"><div class="inline-block w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div><p class="text-stone-500 mt-3 text-sm">Loading bundles…</p></div>';
+  let url=`/api/v1/bundles?page=${page}&page_size=${PS}`; if(cat) url+=`&category=${encodeURIComponent(cat)}`;
+  try{
+    const r=await fetch(url); if(!r.ok) throw new Error(r.status); const d=await r.json();
+    const items=d.items||[]; const total=d.total||items.length; document.getElementById('bundle-count').textContent=total;
+    if(!items.length){ grid.innerHTML=""; empty.classList.remove('hidden'); pag.innerHTML=""; return } empty.classList.add('hidden');
+    grid.innerHTML=items.map(b=>{
+      const n=Array.isArray(b.books)?b.books.length:'?';
+      return `<a href="/bundles/${b.slug}" class="bundle-card group"><div class="cover"><div class="bundle-orb">${orb(b.slug||b.name)}</div></div>
+      <div class="p-5"><div class="flex justify-between gap-3"><h3 class="font-serif text-lg font-bold leading-tight">${b.name}</h3><span class="shrink-0 text-xs font-semibold px-2 py-1 rounded-full bg-stone-900 text-white">${n} books</span></div>
+      ${b.category?`<p class="text-xs uppercase tracking-wide font-medium text-stone-500 mt-1">${b.category}</p>`:''}
+      <p class="text-sm leading-6 text-stone-600 mt-2 line-clamp-2">${b.description||'A wonderful set.'}</p>
+      <div class="flex items-center justify-between mt-4 pt-4 border-t"><span class="font-semibold">${formatPrice(b.price_cents,b.currency)}</span><span class="text-sm font-medium text-stone-600 group-hover:text-stone-900">View →</span></div></div></a>`;
+    }).join('');
+    const tp=Math.ceil(total/PS); let h=""; if(tp>1){
+      h+=`<button onclick="go(${page-1})" ${page<=1?'disabled':''} class="px-4 py-2 rounded-full border bg-white text-sm ${page<=1?'opacity-40':''}">Previous</button>`;
+      for(let i=Math.max(1,page-2);i<=Math.min(tp,page+2);i++) h+=`<button onclick="go(${i})" class="w-10 h-10 rounded-full text-sm ${i===page?'bg-stone-900 text-white':'border bg-white'}">${i}</button>`;
+      if(page+2<tp) h+=`<span class="text-stone-400">…</span><button onclick="go(${tp})" class="w-10 h-10 rounded-full border bg-white text-sm">${tp}</button>`;
+      h+=`<button onclick="go(${page+1})" ${page>=tp?'disabled':''} class="px-4 py-2 rounded-full border bg-white text-sm ${page>=tp?'opacity-40':''}">Next</button>`;
+    } pag.innerHTML=h;
+  }catch(e){ grid.innerHTML='<div class="col-span-full text-center py-12 bg-white rounded-2xl border"><p class="text-stone-600">Could not load bundles.</p><button onclick="load()" class="mt-3 px-5 py-2 rounded-full bg-stone-900 text-white text-sm">Retry</button></div>' }
+}
+function go(p){ if(p<1) return; page=p; load(); scrollTo({top:0,behavior:'smooth'}) }
+document.querySelectorAll('#cat-filters button').forEach(b=>b.addEventListener('click',e=>{
+  document.querySelectorAll('#cat-filters button').forEach(x=>x.classList.remove('active')); e.target.classList.add('active');
+  cat=e.target.dataset.cat; page=1; load();
+}));
+document.addEventListener('DOMContentLoaded', load);
+</script>
 </body>
 </html>

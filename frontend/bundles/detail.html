@@ -1,421 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bundle - Babe's Bookstore</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        amber: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
-                        }
-                    },
-                    fontFamily: {
-                        serif: ['Playfair Display', 'serif'],
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .payment-btn { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .payment-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .book-item { transition: background-color 0.15s ease; }
-        .book-item:hover { background-color: #fef3c7; }
-    </style>
-    <link rel="stylesheet" href="/static/site.css">
-    <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#fbfbfd">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="apple-touch-icon" href="/static/icon.svg">
-    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Bundle — Babe's Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 </head>
-<body class="bg-stone-50 text-stone-900">
-    <!-- Navigation -->
-    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
-                    <div class="hidden md:flex ml-10 space-x-8">
-                        <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
-                        <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
-                    </div>
-                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <form action="/search" method="get" class="hidden sm:block">
-                        <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    </form>
-                    <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
-                </div>
-            </div>
+<body class="min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/bundles" class="text-stone-900">Bundles</a><a href="/search" class="text-stone-600 hover:text-stone-900">Library</a></div></div>
+  <div class="flex items-center gap-3"><form action="/search" class="hidden sm:block"><input type="search" name="q" placeholder="Search…"></form><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
+    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl bg-stone-100">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a></div></nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
+  <a href="/bundles" class="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900">← Back to bundles</a>
+  <div id="loading" class="text-center py-20"><div class="inline-block w-10 h-10 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div><p class="text-sm text-stone-500 mt-3">Loading bundle…</p></div>
+  <div id="error" class="hidden text-center py-20"><p class="font-serif text-2xl font-bold">Bundle not found</p><p class="text-stone-500 mt-2">It may have been renamed.</p><a href="/bundles" class="inline-flex mt-6 px-6 py-3 rounded-full bg-stone-900 text-white font-medium">Browse bundles</a></div>
+  <div id="content" class="hidden">
+    <div class="grid lg:grid-cols-[1.35fr_.75fr] gap-8 lg:gap-10 mt-6">
+      <div>
+        <div class="bg-white rounded-[22px] border p-7 sm:p-8">
+          <div class="flex items-start gap-4">
+            <div id="orb" class="w-14 h-14 rounded-2xl bg-stone-900 text-white grid place-items-center text-2xl shrink-0">📚</div>
+            <div class="min-w-0"><h1 id="name" class="font-serif text-3xl sm:text-4xl font-bold tracking-[-.02em] leading-none"></h1><p id="cat" class="text-xs uppercase tracking-wide font-semibold text-stone-500 mt-2"></p><p id="desc" class="text-stone-600 leading-7 mt-3"></p></div>
+          </div>
+          <div class="mt-6 flex flex-wrap gap-2 text-xs"><span id="count" class="px-3 py-1.5 rounded-full bg-stone-900 text-white font-semibold"></span><span class="px-3 py-1.5 rounded-full border bg-stone-50">EPUB + PDF</span><span class="px-3 py-1.5 rounded-full border bg-stone-50">Yours forever</span></div>
         </div>
-    
-        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
-            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
-            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
-            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
+        <h2 class="font-serif text-2xl font-bold mt-8">Inside this bundle <span id="book-count" class="text-stone-400 text-lg font-sans font-normal"></span></h2>
+        <div id="books" class="mt-4 space-y-3"></div>
+      </div>
+      <div class="lg:sticky lg:top-[88px] h-fit">
+        <div class="bg-white rounded-[22px] border p-6 sm:p-7 shadow-sm">
+          <p class="text-xs uppercase tracking-wide font-semibold text-stone-500 text-center">Bundle price</p>
+          <p class="text-center font-serif text-5xl font-bold tracking-[-.02em] mt-1" id="price">—</p><p class="text-center text-sm text-stone-500">One-time · No subscription</p>
+          <div id="free-section" class="hidden mt-6"><button onclick="freeDownload()" class="w-full py-3.5 rounded-full bg-emerald-600 text-white font-semibold hover:bg-emerald-700">🎁 Download free (admin)</button><p class="text-xs text-emerald-700 text-center mt-2">Free downloads enabled for your account</p></div>
+          <div id="paid" class="mt-6 space-y-2.5">
+            <button onclick="pay('stripe')" class="w-full py-3.5 rounded-full bg-stone-900 text-white font-medium hover:bg-black flex items-center justify-center gap-2">💳 Pay with Stripe</button>
+            <button onclick="pay('paypal')" class="w-full py-3.5 rounded-full bg-[#ffc439] text-stone-900 font-semibold border border-[#e6b12e] hover:bg-[#f5b800] flex items-center justify-center gap-2">🅿️ Pay with PayPal</button>
+            <button onclick="pay('square')" class="w-full py-3.5 rounded-full bg-white border font-medium hover:bg-stone-50 flex items-center justify-center gap-2">◼ Square</button>
+            <div class="grid grid-cols-2 gap-2.5"><button onclick="pay('apple_pay')" class="py-3 rounded-full bg-black text-white text-sm font-medium">🍎 Apple Pay</button><button onclick="pay('google_pay')" class="py-3 rounded-full bg-white border text-sm font-medium">🔵 Google Pay</button></div>
+            <p class="text-[11px] leading-4 text-stone-500 text-center">By paying you consent to the download starting immediately. Faulty files are repaired or refunded — <a href="/refunds" class="underline">Refund Policy</a>.</p>
+          </div>
+          <div class="mt-6 bg-stone-50 rounded-2xl border p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-stone-600">What you get</p><ul class="mt-3 space-y-2 text-sm text-stone-600"><li>✔ All books — EPUB (reflowable)</li><li>✔ PDF — print-ready</li><li>✔ Instant download</li><li>✔ Keep forever, any device</li></ul>
+          </div>
         </div>
-    </nav>
+      </div>
+    </div>
+  </div>
+</main>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <!-- Back Link -->
-        <a href="/bundles" class="inline-flex items-center text-stone-600 hover:text-amber-700 text-sm font-medium mb-8">
-            &larr; Back to Bundles
-        </a>
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">Curated, verified, yours.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">About</h4><p class="text-sm text-stone-400">Public domain & openly licensed.</p></div></div></div></footer>
 
-        <!-- Loading State -->
-        <div id="loading" class="text-center py-20">
-            <div class="inline-block w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-stone-500 mt-4 text-lg">Loading bundle...</p>
-        </div>
-
-        <!-- Error State -->
-        <div id="error" class="hidden text-center py-20">
-            <span class="text-5xl block mb-4">😕</span>
-            <h2 class="font-serif text-2xl font-bold text-stone-900 mb-2">Bundle Not Found</h2>
-            <p class="text-stone-500 mb-6">We couldn't find the bundle you're looking for.</p>
-            <a href="/bundles" class="inline-block bg-amber-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-800 transition">Browse All Bundles</a>
-        </div>
-
-        <!-- Bundle Content -->
-        <div id="bundle-content" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <!-- Left: Bundle Info + Books -->
-                <div class="lg:col-span-2">
-                    <!-- Bundle Header -->
-                    <div class="bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl p-8 mb-8">
-                        <div class="flex items-start gap-4">
-                            <div class="text-5xl">📚</div>
-                            <div>
-                                <h1 id="bundle-name" class="font-serif text-3xl md:text-4xl font-bold text-stone-900 mb-2"></h1>
-                                <p id="bundle-category" class="text-amber-800 font-medium text-sm mb-3"></p>
-                                <p id="bundle-description" class="text-stone-700 text-lg leading-relaxed"></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Books List -->
-                    <div>
-                        <h2 class="font-serif text-2xl font-bold text-stone-900 mb-6">
-                            Books in this Bundle
-                            <span id="book-count" class="text-stone-400 text-lg font-sans font-normal ml-2"></span>
-                        </h2>
-                        <div id="books-list" class="space-y-3"></div>
-                    </div>
-                </div>
-
-                <!-- Right: Purchase Sidebar -->
-                <div class="lg:col-span-1">
-                    <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 sticky top-24">
-                        <div class="text-center mb-6">
-                            <span class="text-sm text-stone-500 font-medium uppercase tracking-wide">Bundle Price</span>
-                            <p class="text-5xl font-bold text-amber-700 mt-1"><span id="bundle-price">&hellip;</span></p>
-                            <p class="text-stone-500 text-sm mt-1">One-time payment, no subscription</p>
-                        </div>
-
-                        <div class="border-t border-stone-200 pt-6 mb-6">
-                            <h3 class="font-semibold text-stone-900 mb-4 text-center">Choose Payment Method</h3>
-                            <div id="payment-buttons" class="space-y-3">
-                                <!-- Free download button (shown for admin users) -->
-                                <div id="free-download-section" class="hidden">
-                                    <button onclick="freeDownload()" class="payment-btn w-full flex items-center justify-center gap-3 bg-green-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-700">
-                                        <span>🎁</span> Download Free (Admin)
-                                    </button>
-                                    <p class="text-center text-xs text-green-600 mt-2">Free downloads enabled for your account</p>
-                                </div>
-                                <!-- Paid payment buttons -->
-                                <div id="paid-buttons">
-                                    <button onclick="payWith('stripe')" class="payment-btn w-full flex items-center justify-center gap-3 bg-indigo-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-indigo-700">
-                                        <span>💳</span> Pay with Stripe
-                                    </button>
-                                    <button onclick="payWith('paypal')" class="payment-btn w-full flex items-center justify-center gap-3 bg-yellow-400 text-yellow-900 py-3 px-4 rounded-xl font-medium hover:bg-yellow-500">
-                                        <span>🅿️</span> Pay with PayPal
-                                    </button>
-                                    <button onclick="payWith('square')" class="payment-btn w-full flex items-center justify-center gap-3 bg-stone-800 text-white py-3 px-4 rounded-xl font-medium hover:bg-stone-900">
-                                        <span>◼️</span> Pay with Square
-                                    </button>
-                                    <button onclick="payWith('apple_pay')" class="payment-btn w-full flex items-center justify-center gap-3 bg-black text-white py-3 px-4 rounded-xl font-medium hover:bg-stone-800">
-                                        <span>🍎</span> Pay with Apple Pay
-                                    </button>
-                                    <button onclick="payWith('google_pay')" class="payment-btn w-full flex items-center justify-center gap-3 bg-white text-stone-800 py-3 px-4 rounded-xl font-medium border border-stone-300 hover:bg-stone-50">
-                                        <span>🔵</span> Pay with Google Pay
-                                    </button>
-                                    <p class="text-xs text-stone-500 leading-relaxed mt-2">By paying you consent to the download starting immediately and understand that your 14-day right to cancel ends once it begins. Faulty files are always repaired or refunded — see our <a href="/refunds" class="text-amber-700 underline hover:text-amber-900">Refund Policy</a>.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-stone-50 rounded-xl p-4">
-                            <h4 class="text-xs font-semibold text-stone-700 uppercase tracking-wide mb-2">What You Get</h4>
-                            <ul class="space-y-2 text-sm text-stone-600">
-                                <li class="flex items-start gap-2">
-                                    <span class="text-amber-600 mt-0.5">✓</span>
-                                    <span>All books in EPUB format</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-amber-600 mt-0.5">✓</span>
-                                    <span>PDF versions included</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-amber-600 mt-0.5">✓</span>
-                                    <span>Instant download</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-amber-600 mt-0.5">✓</span>
-                                    <span>Read on any device</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-amber-600 mt-0.5">✓</span>
-                                    <span>Keep forever</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-stone-900 text-stone-300 mt-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
-                    <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">Shop</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
-                        <li><a href="/search" class="hover:text-amber-500">Search</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">Account</h4>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="/login" class="hover:text-amber-500">Login</a></li>
-                        <li><a href="/register" class="hover:text-amber-500">Register</a></li>
-                        <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-white mb-3">About</h4>
-                    <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
-                    <ul class="space-y-2 text-sm mt-3">
-                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
-                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
-                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-                <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
-    <script>
-        let bundleData = null;
-
-        function getSlug() {
-            const path = window.location.pathname;
-            const parts = path.split('/').filter(Boolean);
-            return parts[parts.length - 1];
-        }
-
-        async function loadBundle() {
-            const slug = getSlug();
-            if (!slug || slug === 'index.html') {
-                showError();
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/v1/bundles/${slug}`);
-                if (!response.ok) throw new Error('Bundle not found');
-                bundleData = await response.json();
-                renderBundle(bundleData);
-            } catch (error) {
-                console.error('Error loading bundle:', error);
-                showError();
-            }
-        }
-
-        function renderBundle(bundle) {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('error').classList.add('hidden');
-            document.getElementById('bundle-content').classList.remove('hidden');
-
-            document.getElementById('bundle-name').textContent = bundle.name;
-            document.title = `${bundle.name} - Babe's Bookstore`;
-
-            if (bundle.category) {
-                const catEl = document.getElementById('bundle-category');
-                catEl.textContent = bundle.category;
-                catEl.classList.remove('hidden');
-            } else {
-                document.getElementById('bundle-category').classList.add('hidden');
-            }
-
-            document.getElementById('bundle-description').textContent = bundle.description || '';
-
-            document.getElementById('bundle-price').textContent = formatPrice(bundle.price_cents, bundle.currency);
-
-            const books = bundle.books || [];
-            document.getElementById('book-count').textContent = `(${books.length} book${books.length !== 1 ? 's' : ''})`;
-
-            const booksList = document.getElementById('books-list');
-            if (books.length === 0) {
-                booksList.innerHTML = `
-                    <div class="bg-white rounded-xl p-6 text-center border border-stone-200">
-                        <p class="text-stone-500">Book list will be available soon.</p>
-                    </div>`;
-                return;
-            }
-
-            booksList.innerHTML = books.map((book, index) => `
-                <div class="book-item bg-white rounded-xl p-5 border border-stone-100 flex items-start gap-4">
-                    <span class="flex-shrink-0 w-8 h-8 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center text-sm font-bold">${index + 1}</span>
-                    <div class="min-w-0 flex-1">
-                        <h3 class="font-semibold text-stone-900">${book.title || 'Untitled'}</h3>
-                        ${book.author ? `<p class="text-stone-500 text-sm mt-0.5">by ${book.author}</p>` : ''}
-                        ${book.description ? `<p class="text-stone-600 text-sm mt-2 line-clamp-2">${book.description}</p>` : ''}
-                        ${book.format || book.formats ? `<div class="flex gap-2 mt-2">${(Array.isArray(book.formats) ? book.formats : [book.format]).filter(Boolean).map(f => `<span class="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">${f}</span>`).join('')}</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function showError() {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('bundle-content').classList.add('hidden');
-            document.getElementById('error').classList.remove('hidden');
-        }
-
-        function checkAdminFreeDownloads() {
-            const user = JSON.parse(localStorage.getItem('user') || 'null');
-            if (user && user.is_admin && user.free_downloads) {
-                document.getElementById('free-download-section').classList.remove('hidden');
-                document.getElementById('paid-buttons').classList.add('hidden');
-            }
-        }
-
-        async function freeDownload() {
-            const slug = getSlug();
-            const user = JSON.parse(localStorage.getItem('user') || 'null');
-            const token = localStorage.getItem('token');
-
-            if (!user || !token) {
-                alert('Please login first to use free downloads.');
-                window.location.href = '/login';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/v1/checkout/free', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        bundle_slug: slug,
-                        email: user.email
-                    })
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.detail || 'Free download failed');
-                }
-
-                const data = await response.json();
-                alert('Free download started! Check your email for the download link.');
-                if (data.checkout_url) {
-                    window.location.href = data.checkout_url;
-                }
-            } catch (error) {
-                console.error('Free download error:', error);
-                alert('Error: ' + error.message);
-            }
-        }
-
-        function payWith(provider) {
-            const email = prompt('Enter your email address to receive your download links:');
-            if (!email) return;
-
-            if (!email.includes('@') || !email.includes('.')) {
-                alert('Please enter a valid email address.');
-                return;
-            }
-
-            const slug = getSlug();
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></span> Processing...';
-            btn.disabled = true;
-
-            const endpoint = `/api/v1/checkout/${provider}`;
-            fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bundle_slug: slug,
-                    email: email
-                })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Checkout failed');
-                return response.json();
-            })
-            .then(data => {
-                if (data.checkout_url || data.url) {
-                    window.location.href = data.checkout_url || data.url;
-                } else {
-                    alert('Checkout session created! Check your email for instructions.');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Checkout error:', error);
-                alert('Something went wrong. Please try again.');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadBundle();
-            checkAdminFreeDownloads();
-        });
-    </script>
-    <script src="/js/store.js"></script>
+<script src="/js/store.js"></script>
+<script>
+const ORBS=["📚","🌙","💌","🧭","🧚","⚗️","🏛️","🎭","🦇","🗝️","🌊","✒️"];
+function orb(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return ORBS[h%ORBS.length]}
+let bundle=null;
+function slug(){ const p=location.pathname.split('/').filter(Boolean); return p[p.length-1] }
+async function load(){
+  const s=slug(); if(!s) return showErr();
+  try{ const r=await fetch(`/api/v1/bundles/${encodeURIComponent(s)}`); if(!r.ok) throw new Error(); bundle=await r.json(); render(bundle) }catch(e){ showErr() }
+}
+function render(b){
+  document.getElementById('loading').classList.add('hidden'); document.getElementById('content').classList.remove('hidden');
+  document.getElementById('name').textContent=b.name; document.title=b.name+" — Babe's Bookstore";
+  document.getElementById('orb').textContent=orb(b.slug||b.name);
+  document.getElementById('cat').textContent=b.category||""; document.getElementById('desc').textContent=b.description||"";
+  document.getElementById('price').textContent=formatPrice(b.price_cents,b.currency);
+  const books=b.books||[]; document.getElementById('count').textContent=books.length+" books"; document.getElementById('book-count').textContent=`(${books.length})`;
+  const el=document.getElementById('books');
+  if(!books.length) el.innerHTML='<div class="bg-white rounded-2xl border p-6 text-center text-stone-500">Book list coming soon.</div>';
+  else el.innerHTML=books.map((bk,i)=>`<a href="/books/${bk.id}" class="flex gap-4 bg-white rounded-2xl border p-4 hover:shadow-sm hover:border-stone-300 transition"><span class="w-8 h-8 rounded-full bg-stone-900 text-white grid place-items-center text-sm font-bold shrink-0">${i+1}</span><div class="min-w-0"><p class="font-semibold leading-tight">${bk.title}</p><p class="text-sm text-stone-500">${bk.author||''}</p></div><span class="ml-auto text-stone-400">→</span></a>`).join('');
+  // free downloads gating
+  try{ const u=JSON.parse(localStorage.getItem('user')||'null'); if(u&&u.is_admin){ document.getElementById('free-section').classList.remove('hidden'); document.getElementById('paid').classList.add('hidden') } }catch{}
+}
+function showErr(){ document.getElementById('loading').classList.add('hidden'); document.getElementById('error').classList.remove('hidden') }
+async function freeDownload(){
+  const token=localStorage.getItem('token'), user=JSON.parse(localStorage.getItem('user')||'null');
+  if(!token||!user){ alert('Please login'); location.href='/login'; return }
+  const r=await fetch('/api/v1/checkout/free',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({bundle_slug:slug(),email:user.email})});
+  const d=await r.json(); if(!r.ok) return alert(d.detail||'Failed'); alert('Free download started!'); if(d.checkout_url) location.href=d.checkout_url;
+}
+async function pay(provider){
+  const email=prompt('Email to receive download links:'); if(!email||!email.includes('@')) return alert('Valid email required');
+  const btn=event.target.closest('button'); const orig=btn.innerHTML; btn.innerHTML='Processing…'; btn.disabled=true;
+  try{
+    const r=await fetch(`/api/v1/checkout/${provider}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bundle_slug:slug(),email})});
+    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Checkout failed');
+    if(d.checkout_url||d.url) location.href=d.checkout_url||d.url; else { alert('Checkout created — check email'); btn.innerHTML=orig; btn.disabled=false }
+  }catch(e){ alert(e.message); btn.innerHTML=orig; btn.disabled=false }
+}
+document.addEventListener('DOMContentLoaded', load);
+</script>
 </body>
 </html>

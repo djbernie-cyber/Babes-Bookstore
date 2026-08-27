@@ -4,9 +4,13 @@ from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 
-from .deps import get_db, require_admin
+from fastapi import status
+import re
+
+from .deps import get_db, get_current_user, require_admin
 from ...models.bundle import Bundle, BundleBook
 from ...models.book import Book, BookStatus
+from ...models.user import User
 from ...schemas.bundle import (
     BundleCreate,
     BundleUpdate,
@@ -100,6 +104,81 @@ async def get_bundle(bundle_id_or_slug: str, db: AsyncSession = Depends(get_db))
 
     b_data = BundleResponse.model_validate(bundle)
     b_data.books = _serialize_books(bundle)
+    return b_data
+
+
+def _slugify(value: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return re.sub(r"-{2,}", "-", s) or "bundle"
+
+
+@router.post("/custom", response_model=BundleResponse, status_code=status.HTTP_201_CREATED)
+async def create_custom_bundle(
+    bundle_in: BundleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+):
+    """Create a user-curated custom bundle (no admin required).
+
+    Authenticated users get a persistent bundle; anonymous users may still
+    create a one-off custom bundle that is immediately purchasable.
+    Custom bundles are always priced at the standard price and marked
+    bundle_type='custom'.
+    """
+    from ...config import settings as _settings
+
+    if not bundle_in.book_ids or len(bundle_in.book_ids) < 3:
+        raise HTTPException(status_code=400, detail="Pick at least 3 books")
+    if len(bundle_in.book_ids) > 40:
+        raise HTTPException(status_code=400, detail="Custom bundles are limited to 40 books")
+
+    # Normalise slug and ensure uniqueness
+    base = _slugify(bundle_in.slug or bundle_in.name)
+    slug = base
+    suffix = 2
+    while (await db.execute(select(Bundle).where(Bundle.slug == slug))).scalar_one_or_none():
+        slug = f"{base}-{suffix}"
+        suffix += 1
+
+    bundle = Bundle(
+        name=bundle_in.name.strip()[:200],
+        slug=slug,
+        description=bundle_in.description,
+        long_description=bundle_in.long_description,
+        price_cents=_settings.STANDARD_PRICE_PENCE,
+        currency=_settings.CURRENCY,
+        cover_image_path=bundle_in.cover_image_path,
+        category=bundle_in.category or "Custom",
+        tags=bundle_in.tags,
+        bundle_type="custom",
+        meta_title=bundle_in.meta_title,
+        meta_description=bundle_in.meta_description,
+        active=True,
+        featured=False,
+    )
+    db.add(bundle)
+    await db.flush()
+
+    for i, book_id in enumerate(bundle_in.book_ids[:40]):
+        book = await db.get(Book, book_id)
+        if not book:
+            continue
+        db.add(BundleBook(bundle_id=bundle.id, book_id=book_id, sort_order=i))
+
+    await db.commit()
+    await db.refresh(bundle, ["bundle_books"])
+
+    reloaded = (
+        await db.execute(
+            select(Bundle)
+            .options(selectinload(Bundle.bundle_books).selectinload(BundleBook.book))
+            .where(Bundle.id == bundle.id)
+            .execution_options(populate_existing=True)
+        )
+    ).unique().scalar_one()
+
+    b_data = BundleResponse.model_validate(reloaded)
+    b_data.books = _serialize_books(reloaded)
     return b_data
 
 

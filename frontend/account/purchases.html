@@ -1,253 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Purchases – Babe's Bookstore</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        amber: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
-                        }
-                    },
-                    fontFamily: {
-                        serif: ['Playfair Display', 'serif'],
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="/static/site.css">
-    <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#fbfbfd">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="apple-touch-icon" href="/static/icon.svg">
-    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Account — Babe's Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 </head>
-<body class="bg-stone-50 font-sans text-stone-900 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/bundles" class="text-stone-600">Bundles</a><a href="/search" class="text-stone-600">Library</a></div></div>
+  <div class="flex items-center gap-3"><button onclick="logout()" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Sign out</button>
+    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="#" onclick="logout()" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Sign out</a></div></nav>
 
-<nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-            <div class="flex items-center">
-                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
-                <div class="hidden md:flex ml-10 space-x-8">
-                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
-                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
-                </div>
-                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
-            </div>
-            <div class="flex items-center space-x-4">
-                <form action="/search" method="get" class="hidden sm:block">
-                    <input type="search" name="q" placeholder="Search books..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </form>
-                <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
-            </div>
-        </div>
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
+  <div id="logged-out" class="hidden text-center py-16">
+    <div class="bg-white rounded-[22px] border p-10 max-w-md mx-auto"><p class="font-serif text-2xl font-bold">Please sign in</p><p class="text-stone-500 mt-2 text-sm">View your purchases and downloads.</p><a href="/login" class="inline-flex mt-6 px-6 py-3 rounded-full bg-stone-900 text-white font-medium">Sign in</a><p class="text-sm text-stone-500 mt-4">No account? <a href="/register" class="underline">Create one</a></p></div>
+  </div>
+  <div id="logged-in" class="hidden">
+    <div class="bg-white rounded-[22px] border p-6 sm:p-7 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-full bg-stone-900 text-white grid place-items-center font-serif font-bold text-xl" id="avatar">—</div>
+      <div class="min-w-0"><h1 id="uname" class="font-serif text-2xl font-bold tracking-[-.01em]"></h1><p id="uemail" class="text-sm text-stone-500"></p></div>
+      <span id="badge-admin" class="hidden ml-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Admin</span>
     </div>
 
-        <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-white px-4 py-3 space-y-1">
-            <a href="/bundles" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Bundles</a>
-            <a href="/search" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Search</a>
-            <a href="/account" class="block px-3 py-2 rounded-lg text-stone-700 hover:bg-amber-50 hover:text-amber-700 font-medium">Account</a>
-        </div>
-    </nav>
-
-<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
-
-    <div id="logged-out" class="hidden text-center py-16">
-        <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-10 max-w-md mx-auto">
-            <svg class="w-16 h-16 mx-auto text-stone-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-            <h2 class="font-serif text-2xl font-bold text-stone-900 mb-2">Please Login</h2>
-            <p class="text-stone-500 mb-6">Sign in to view your purchases and account details.</p>
-            <a href="/login" class="inline-block px-6 py-3 bg-amber-700 text-white rounded-lg font-medium hover:bg-amber-800 transition-colors">
-                Sign In
-            </a>
-            <p class="text-sm text-stone-400 mt-4">
-                Don't have an account?
-                <a href="/register" class="text-amber-700 font-medium hover:text-amber-800">Create one</a>
-            </p>
-        </div>
-    </div>
-
-    <div id="logged-in" class="hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-8 mb-8">
-            <div class="flex items-center gap-4">
-                <div id="user-avatar" class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <span id="user-initial" class="text-amber-700 font-serif font-bold text-xl"></span>
-                </div>
-                <div>
-                    <h1 id="user-name" class="font-serif text-2xl font-bold text-stone-900"></h1>
-                    <p id="user-email" class="text-stone-500 text-sm"></p>
-                </div>
-            </div>
-        </div>
-
-        <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">My Purchases</h2>
-
-        <div id="purchases-empty" class="bg-white rounded-xl shadow-sm border border-stone-200 p-10 text-center">
-            <svg class="w-12 h-12 mx-auto text-stone-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-            </svg>
-            <h3 class="text-lg font-semibold text-stone-700 mb-2">No Purchases Yet</h3>
-            <p class="text-stone-500 mb-6">Purchases will appear here after you buy a bundle.</p>
-            <a href="/bundles" class="inline-block px-6 py-3 bg-amber-700 text-white rounded-lg font-medium hover:bg-amber-800 transition-colors">
-                Browse Bundles
-            </a>
-        </div>
-
-        <div id="purchases-list" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-    </div>
-
+    <div class="mt-8 flex items-baseline justify-between"><h2 class="font-serif text-xl font-bold">Purchases</h2><a href="/bundles" class="text-sm font-medium underline">Browse bundles</a></div>
+    <div id="empty" class="mt-4 bg-white rounded-[22px] border p-10 text-center"><p class="font-medium">No purchases yet</p><p class="text-sm text-stone-500 mt-1">Bundles you buy appear here with instant downloads.</p><a href="/bundles" class="inline-flex mt-5 px-6 py-3 rounded-full bg-stone-900 text-white text-sm font-medium">Browse bundles</a></div>
+    <div id="list" class="hidden mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </div>
 </main>
 
-<footer class="bg-stone-900 text-stone-300 mt-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-                <h3 class="font-serif text-2xl font-bold text-amber-500 mb-4">Babe's Bookstore</h3>
-                <p class="text-sm">Curated public domain and openly-licensed books for readers everywhere.</p>
-            </div>
-            <div>
-                <h4 class="font-semibold text-white mb-3">Shop</h4>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="/bundles" class="hover:text-amber-500">All Bundles</a></li>
-                    <li><a href="/search" class="hover:text-amber-500">Search</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-semibold text-white mb-3">Account</h4>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="/login" class="hover:text-amber-500">Login</a></li>
-                    <li><a href="/register" class="hover:text-amber-500">Register</a></li>
-                    <li><a href="/account" class="hover:text-amber-500">My Purchases</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-semibold text-white mb-3">About</h4>
-                <p class="text-sm">All books are verified public domain or openly licensed. We add value through curation, professional formatting, and themed collections.</p>
-                    <ul class="space-y-2 text-sm mt-3">
-                        <li><a href="/terms" class="hover:text-amber-500">Terms of Service</a></li>
-                        <li><a href="/privacy" class="hover:text-amber-500">Privacy Policy</a></li>
-                        <li><a href="/refunds" class="hover:text-amber-500">Refund Policy</a></li>
-                    </ul>
-            </div>
-        </div>
-        <div class="border-t border-stone-800 mt-8 pt-8 text-sm text-center">
-            <p>&copy; <span data-copyright-year">2026</span> Babe's Bookstore. All books remain under their original licenses.</p>
-        </div>
-    </div>
-</footer>
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-sm text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore</div></footer>
 
+<script src="/js/store.js"></script>
 <script>
-    function checkAuth() {
-        const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('user');
-
-        if (!token || !userStr) {
-            document.getElementById('logged-out').classList.remove('hidden');
-            return;
-        }
-
-        let user;
-        try {
-            user = JSON.parse(userStr);
-        } catch {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            document.getElementById('logged-out').classList.remove('hidden');
-            return;
-        }
-
-        document.getElementById('logged-in').classList.remove('hidden');
-
-        const name = user.name || user.email || 'User';
-        document.getElementById('user-name').textContent = name;
-        document.getElementById('user-email').textContent = user.email || '';
-        document.getElementById('user-initial').textContent = name.charAt(0).toUpperCase();
-
-        loadPurchases(token);
-    }
-
-    async function loadPurchases(token) {
-        try {
-            const response = await fetch('/api/v1/purchases', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            if (!response.ok) throw new Error('Failed to load purchases');
-            const purchases = await response.json();
-
-            if (!Array.isArray(purchases) || purchases.length === 0) return;
-
-            document.getElementById('purchases-empty').classList.add('hidden');
-            const listEl = document.getElementById('purchases-list');
-            listEl.classList.remove('hidden');
-            listEl.innerHTML = purchases.map(p => {
-                const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
-                const statusLabel = p.status.charAt(0).toUpperCase() + p.status.slice(1);
-                const statusClass = p.status === 'completed' ? 'bg-green-100 text-green-700'
-                    : p.status === 'failed' ? 'bg-red-100 text-red-700'
-                    : 'bg-amber-100 text-amber-700';
-                const downloadBtn = p.download_available
-                    ? `<button onclick="downloadPurchase(${p.id}, '${p.download_token || ''}')" class="mt-3 w-full bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 transition">Download</button>`
-                    : '';
-                return `
-                <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
-                    <h3 class="font-serif font-bold text-stone-900">${p.bundle_name || 'Purchase'}</h3>
-                    <div class="flex items-center justify-between mt-1">
-                        <p class="text-stone-500 text-sm">${date}</p>
-                        <span class="text-xs font-medium px-2 py-0.5 rounded-full ${statusClass}">${statusLabel}</span>
-                    </div>
-                    <p class="text-stone-700 text-sm mt-2 font-medium">${formatPrice(p.amount_cents, p.currency)}</p>
-                    ${downloadBtn}
-                </div>
-            `;
-            }).join('');
-        } catch (err) {
-            console.error('Error loading purchases:', err);
-        }
-    }
-
-    async function downloadPurchase(purchaseId, dlToken) {
-        const token = localStorage.getItem('token');
-        try {
-            const response = await fetch(`/api/v1/purchases/${purchaseId}/download?token=${encodeURIComponent(dlToken || '')}`, {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.detail || 'Download not available');
-            if (data.url) window.location.href = data.url;
-        } catch (err) {
-            alert(err.message);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', checkAuth);
+function logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); location.href='/login' }
+function check(){
+  const t=localStorage.getItem('token'), s=localStorage.getItem('user');
+  if(!t||!s){ document.getElementById('logged-out').classList.remove('hidden'); return }
+  let u; try{ u=JSON.parse(s)}catch{ localStorage.clear(); document.getElementById('logged-out').classList.remove('hidden'); return }
+  document.getElementById('logged-in').classList.remove('hidden');
+  document.getElementById('uname').textContent=u.name||u.email||'User';
+  document.getElementById('uemail').textContent=u.email||'';
+  document.getElementById('avatar').textContent=(u.name||u.email||'U').charAt(0).toUpperCase();
+  if(u.is_admin) document.getElementById('badge-admin').classList.remove('hidden');
+  load(t);
+}
+async function load(token){
+  try{
+    const r=await fetch('/api/v1/purchases',{headers:{'Authorization':'Bearer '+token}}); if(!r.ok) throw new Error();
+    const arr=await r.json(); if(!Array.isArray(arr)||!arr.length) return;
+    document.getElementById('empty').classList.add('hidden'); const el=document.getElementById('list'); el.classList.remove('hidden');
+    el.innerHTML=arr.map(p=>{
+      const d=p.created_at?new Date(p.created_at).toLocaleDateString():'';
+      const st=p.status||'completed'; const cls=st==='completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':st==='failed'?'bg-red-50 text-red-700 border-red-200':'bg-amber-50 text-amber-700 border-amber-200';
+      const dl=p.download_available?`<button onclick="dl(${p.id},'${p.download_token||''}')" class="mt-3 w-full py-2.5 rounded-full bg-stone-900 text-white text-sm font-medium">Download</button>`:'';
+      return `<div class="bg-white rounded-2xl border p-5"><h3 class="font-serif font-bold leading-tight">${p.bundle_name||'Bundle'}</h3><div class="flex items-center justify-between mt-1"><p class="text-sm text-stone-500">${d}</p><span class="text-xs font-medium px-2 py-1 rounded-full border ${cls}">${st}</span></div><p class="text-sm font-semibold mt-2">${formatPrice(p.amount_cents,p.currency)}</p>${dl}</div>`;
+    }).join('');
+  }catch(e){ console.error(e) }
+}
+async function dl(id, tok){
+  const t=localStorage.getItem('token');
+  try{
+    const r=await fetch(`/api/v1/purchases/${id}/download?token=${encodeURIComponent(tok||'')}`,{headers:{'Authorization':'Bearer '+t}});
+    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Not available'); if(d.url) location.href=d.url;
+  }catch(e){ alert(e.message) }
+}
+document.addEventListener('DOMContentLoaded', check);
 </script>
-
-    <script src="/js/store.js"></script>
 </body>
 </html>

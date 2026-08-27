@@ -9,6 +9,7 @@
 /admin/books  /admin/books.html  200
 /admin/bundles  /admin/bundles.html  200
 /admin  /admin/dashboard.html  200
+/bundles/custom  /bundles/custom.html  200
 /bundles/*  /bundles/detail.html  200
 /books/*  /books/detail.html  200
 /bundles  /bundles/index.html  200

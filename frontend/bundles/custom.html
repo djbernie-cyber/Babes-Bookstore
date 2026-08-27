@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Build Your Bundle — Babe's Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+</head>
+<body class="min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/bundles" class="text-stone-900">Bundles</a><a href="/search" class="text-stone-600 hover:text-stone-900">Library</a><a href="/bundles/custom" class="text-stone-900 underline decoration-stone-300 underline-offset-4">Custom Bundle</a></div></div>
+  <div class="flex items-center gap-3"><a href="/bundles" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">All bundles</a><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full bg-stone-900 text-white text-sm font-medium">Account</a>
+    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/bundles/custom" class="block px-3 py-2.5 rounded-xl bg-stone-900 text-white">✨ Build custom bundle</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a></div></nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
+  <div class="max-w-3xl">
+    <p class="eyebrow">Your syllabus, your rules</p>
+    <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 leading-[.95]">Build your own bundle</h1>
+    <p class="text-stone-600 mt-3 leading-7">Pick any <span class="font-semibold text-stone-900">3–40 books</span> from the library of <span data-live-books>1,065</span> — we'll bundle them as a beautiful EPUB + PDF for <span class="font-semibold text-stone-900">£10</span>, yours forever. No admin needed. No subscription.</p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="px-3 py-1.5 rounded-full bg-white border font-medium">Live catalogue · licence-verified</span><span class="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-medium">Only £10 — any 3–40 books</span></div>
+  </div>
+
+  <div class="grid lg:grid-cols-[1.15fr_.85fr] gap-6 lg:gap-8 mt-8 items-start">
+    <!-- left: search & picks -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-[22px] border p-5 sm:p-6">
+        <div class="flex gap-2">
+          <div class="flex-1 flex gap-2 bg-stone-50 border rounded-full p-1.5">
+            <input id="q" type="search" placeholder="Search — try 'Austen', 'horror', 'physics'…" class="flex-1 !border-0 !bg-transparent px-4 py-2 text-sm">
+            <button onclick="doSearch(1)" class="px-5 py-2 rounded-full bg-stone-900 text-white text-sm font-medium hover:bg-black">Search</button>
+          </div>
+          <select id="cat" onchange="doSearch(1)" class="hidden sm:block px-3 py-2 rounded-full border bg-white text-sm">
+            <option value="">All genres</option><option>Classics</option><option>Science Fiction</option><option>Fantasy</option><option>Mystery &amp; Detective</option><option>Gothic &amp; Horror</option><option>Romance</option><option>Adventure</option><option>Children &amp; Fairy Tales</option><option>Poetry</option><option>Drama</option><option>History</option><option>Philosophy</option><option>Biography</option><option>Non-Fiction</option>
+          </select>
+        </div>
+        <div id="meta" class="hidden mt-3 text-xs text-stone-500"></div>
+        <div id="results" class="mt-4 grid gap-3 max-h-[560px] overflow-auto pr-1"></div>
+        <div id="r-pag" class="flex justify-center gap-2 mt-4"></div>
+        <p id="r-empty" class="hidden text-center py-10 text-sm text-stone-500">No books found. Try a different search.</p>
+      </div>
+      <p class="text-xs text-stone-400 px-1">Tip: add at least 3 books. Drag to reorder in the tray on the right (or use ↑ ↓).</p>
+    </div>
+
+    <!-- right: builder -->
+    <div class="lg:sticky lg:top-[88px] space-y-4">
+      <div class="bg-white rounded-[22px] border p-6 sm:p-7 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="font-serif text-xl font-bold">Your bundle</h2>
+          <span id="count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-stone-900 text-white">0 / 40</span>
+        </div>
+        <p id="count-hint" class="text-xs text-stone-500 mt-1">Add at least 3 books to create your bundle.</p>
+        <div id="tray" class="mt-4 space-y-2 min-h-[140px] max-h-[360px] overflow-auto">
+          <div id="tray-empty" class="rounded-2xl border border-dashed p-8 text-center text-sm text-stone-500 bg-stone-50">Your picks will appear here.<br><span class="text-xs">Search on the left and tap “Add”.</span></div>
+        </div>
+
+        <div class="mt-6 space-y-3">
+          <div><label class="text-sm font-medium">Bundle name <span class="text-red-500">*</span></label><input id="b-name" maxlength="80" placeholder="e.g. My Gothic Autumn" class="mt-1 w-full px-4 py-3 border rounded-xl text-sm"><p class="text-xs text-stone-400 mt-1">We’ll create a URL from this — you can edit it below.</p></div>
+          <div><label class="text-sm font-medium">Slug (URL)</label><input id="b-slug" placeholder="my-gothic-autumn (auto)" class="mt-1 w-full px-4 py-3 border rounded-xl text-sm font-mono"><p class="text-xs text-stone-400 mt-1">Lowercase, hyphens only. Leave blank to auto-generate.</p></div>
+          <div><label class="text-sm font-medium">Description</label><textarea id="b-desc" rows="3" maxlength="280" placeholder="What’s the thread? e.g. Three haunted houses, two unreliable narrators…" class="mt-1 w-full px-4 py-3 border rounded-xl text-sm"></textarea></div>
+        </div>
+
+        <div class="mt-6 bg-stone-50 rounded-2xl border p-4 flex items-center justify-between">
+          <div><p class="text-xs uppercase tracking-wide font-semibold text-stone-500">Price</p><p class="font-serif text-2xl font-bold">£10.00</p><p class="text-xs text-stone-500">Any 3–40 books · EPUB + PDF</p></div>
+          <div class="text-right"><p class="text-sm font-medium"><span id="preview-n">0</span> books</p><p class="text-xs text-stone-500">Ready when you are</p></div>
+        </div>
+
+        <div id="err" class="hidden mt-4 bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-xl text-sm"></div>
+        <button id="create" onclick="createBundle()" disabled class="mt-4 w-full py-3.5 rounded-full bg-stone-300 text-stone-500 font-semibold cursor-not-allowed">Add 3+ books to continue</button>
+        <p class="text-[11px] leading-4 text-stone-400 text-center mt-2">By creating you agree the bundle will be public and purchasable. Faulty files refunded — see <a href="/refunds" class="underline">Refunds</a>.</p>
+      </div>
+
+      <div class="bg-stone-900 text-stone-300 rounded-[22px] p-5">
+        <p class="font-serif font-bold text-white">How custom bundles work</p><ul class="mt-3 space-y-2 text-sm leading-6 text-stone-400"><li>• You curate, we package — professionally formatted EPUB + PDF.</li><li>• £10 flat, no matter if you pick 3 or 40 books.</li><li>• Download instantly after purchase — same as our curated bundles.</li><li>• Signed in? Your bundle is saved to your account.</li></ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-sm text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore · Custom bundles are public and shareable.</div></footer>
+
+<script src="/js/store.js"></script>
+<script>
+let picks=[]; // {id,title,author}
+let curPage=1, totalPages=1;
+
+function renderTray(){
+  const tray=document.getElementById('tray'), empty=document.getElementById('tray-empty');
+  const count=document.getElementById('count'), hint=document.getElementById('count-hint'), btn=document.getElementById('create'), pn=document.getElementById('preview-n');
+  count.textContent=picks.length+" / 40"; pn.textContent=picks.length;
+  if(!picks.length){ empty.classList.remove('hidden'); tray.querySelectorAll('.pick').forEach(e=>e.remove()); }
+  else {
+    empty.classList.add('hidden');
+    // rebuild
+    tray.querySelectorAll('.pick').forEach(e=>e.remove());
+    picks.forEach((b,i)=>{
+      const div=document.createElement('div');
+      div.className='pick flex items-center gap-3 bg-white border rounded-xl p-3';
+      div.draggable=true;
+      div.dataset.idx=i;
+      div.innerHTML=`<span class="w-7 h-7 rounded-full bg-stone-900 text-white grid place-items-center text-xs font-bold shrink-0">${i+1}</span>
+        <div class="min-w-0 flex-1"><p class="text-sm font-medium leading-tight truncate">${esc(b.title)}</p><p class="text-xs text-stone-500 truncate">${esc(b.author||'')}</p></div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button onclick="move(${i},-1)" class="w-7 h-7 rounded-full border bg-white text-xs" ${i===0?'disabled':''}>↑</button>
+          <button onclick="move(${i},1)" class="w-7 h-7 rounded-full border bg-white text-xs" ${i===picks.length-1?'disabled':''}>↓</button>
+          <button onclick="removePick(${i})" class="w-7 h-7 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs">✕</button>
+        </div>`;
+      div.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain', i) });
+      div.addEventListener('dragover',e=>e.preventDefault());
+      div.addEventListener('drop',e=>{ e.preventDefault(); const from=+e.dataTransfer.getData('text/plain'); const to=i; if(from!==to) reorder(from,to) });
+      tray.appendChild(div);
+    });
+  }
+  const ok=picks.length>=3 && picks.length<=40;
+  const name=document.getElementById('b-name').value.trim();
+  btn.disabled=!(ok && name.length>=3);
+  btn.className= btn.disabled ? "mt-4 w-full py-3.5 rounded-full bg-stone-300 text-stone-500 font-semibold cursor-not-allowed" : "mt-4 w-full py-3.5 rounded-full bg-stone-900 text-white font-semibold hover:bg-black";
+  btn.textContent= !picks.length ? "Add 3+ books to continue" : picks.length<3 ? `Add ${3-picks.length} more book${3-picks.length===1?'':'s'}` : name.length<3 ? "Enter a bundle name" : `Create bundle — £10 →`;
+  hint.textContent= ok ? `${picks.length} books · ready to create` : `Add at least 3 books to create your bundle.`;
+  hint.className= ok ? "text-xs text-emerald-700 mt-1 font-medium" : "text-xs text-stone-500 mt-1";
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML }
+function addPick(b){ if(picks.find(p=>p.id===b.id)) return; if(picks.length>=40) return alert('Custom bundles are limited to 40 books.'); picks.push({id:b.id,title:b.title,author:b.author}); renderTray() }
+function removePick(i){ picks.splice(i,1); renderTray() }
+function move(i,dir){ const j=i+dir; if(j<0||j>=picks.length) return; const t=picks[i]; picks[i]=picks[j]; picks[j]=t; renderTray() }
+function reorder(from,to){ const [m]=picks.splice(from,1); picks.splice(to,0,m); renderTray() }
+
+async function doSearch(page){
+  if(page) curPage=page;
+  const q=document.getElementById('q').value.trim(), cat=document.getElementById('cat').value;
+  const meta=document.getElementById('meta'), results=document.getElementById('results'), pag=document.getElementById('r-pag'), empty=document.getElementById('r-empty');
+  meta.classList.add('hidden'); results.innerHTML='<div class="text-center py-8"><div class="inline-block w-7 h-7 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div><p class="text-xs text-stone-500 mt-2">Searching…</p></div>'; empty.classList.add('hidden'); pag.innerHTML="";
+  const params=new URLSearchParams(); if(q) params.set('search',q); if(cat) params.set('category',cat); params.set('page',curPage); params.set('page_size','12');
+  try{
+    const r=await fetch('/api/v1/books?'+params.toString()); if(!r.ok) throw new Error(r.status);
+    const d=await r.json(); const items=d.items||[]; const total=d.total||0; totalPages=Math.ceil(total/12)||1;
+    meta.textContent=`${total.toLocaleString()} result${total===1?'':'s'}${q?' for “'+q+'”':''}${cat?' in '+cat:''}`; meta.classList.remove('hidden');
+    if(!items.length){ results.innerHTML=""; empty.classList.remove('hidden'); return }
+    results.innerHTML=items.map(b=>{
+      const added=!!picks.find(p=>p.id===b.id);
+      return `<div class="flex gap-3 bg-stone-50 border rounded-xl p-3">
+        <div class="w-12 h-16 rounded-lg bg-gradient-to-br from-stone-800 to-stone-600 shrink-0 grid place-items-center text-white font-serif font-bold">${esc((b.title||'?').charAt(0))}</div>
+        <div class="min-w-0 flex-1"><p class="text-sm font-semibold leading-tight line-clamp-2">${esc(b.title)}</p><p class="text-xs text-stone-500 truncate">${esc(b.author||'Unknown')} ${b.category?'· '+esc(b.category):''}</p>
+        <div class="mt-2 flex gap-2"><a href="/books/${b.id}" target="_blank" class="text-xs px-2.5 py-1 rounded-full border bg-white hover:bg-stone-50">View</a>
+        <button onclick='addPick(${JSON.stringify({id:b.id,title:b.title,author:b.author}).replace(/'/g,"&#39;")})' ${added?'disabled':''} class="text-xs px-3 py-1 rounded-full ${added?'bg-emerald-50 border border-emerald-200 text-emerald-700':'bg-stone-900 text-white hover:bg-black'}">${added?'Added ✓':'Add →'}</button></div></div></div>`;
+    }).join('');
+    // pagination
+    let h=""; if(totalPages>1){
+      h+=`<button onclick="doSearch(${curPage-1})" ${curPage<=1?'disabled':''} class="px-3 py-1.5 rounded-full border bg-white text-xs ${curPage<=1?'opacity-40':''}">Prev</button>`;
+      h+=`<span class="text-xs text-stone-500 px-2">Page ${curPage} / ${totalPages}</span>`;
+      h+=`<button onclick="doSearch(${curPage+1})" ${curPage>=totalPages?'disabled':''} class="px-3 py-1.5 rounded-full border bg-white text-xs ${curPage>=totalPages?'opacity-40':''}">Next</button>`;
+    } pag.innerHTML=h;
+  }catch(e){ results.innerHTML=`<p class="text-center py-8 text-sm text-red-600">Search failed: ${esc(e.message)}</p>` }
+}
+
+document.getElementById('b-name').addEventListener('input', renderTray);
+document.getElementById('b-slug').addEventListener('input', ()=>{ document.getElementById('b-slug').value=document.getElementById('b-slug').value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/--+/g,'-') });
+document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); doSearch(1)} });
+
+async function createBundle(){
+  const err=document.getElementById('err'); err.classList.add('hidden');
+  const name=document.getElementById('b-name').value.trim(), slug=document.getElementById('b-slug').value.trim(), desc=document.getElementById('b-desc').value.trim();
+  if(name.length<3) { err.textContent='Bundle name must be at least 3 characters.'; err.classList.remove('hidden'); return }
+  if(picks.length<3) { err.textContent='Add at least 3 books.'; err.classList.remove('hidden'); return }
+  const btn=document.getElementById('create'); const orig=btn.textContent; btn.textContent='Creating…'; btn.disabled=true;
+  const payload={ name, slug: slug||name, description: desc||`A custom bundle of ${picks.length} hand-picked books.`, long_description: desc||'', price_cents:1000, currency:'gbp', category:'Custom', bundle_type:'custom', book_ids: picks.map(p=>p.id) };
+  const headers={'Content-Type':'application/json'}; const t=localStorage.getItem('token'); if(t) headers['Authorization']='Bearer '+t;
+  try{
+    const r=await fetch('/api/v1/bundles/custom',{method:'POST',headers,body:JSON.stringify(payload)});
+    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Failed to create bundle');
+    location.href='/bundles/'+encodeURIComponent(d.slug);
+  }catch(e){ err.textContent=e.message; err.classList.remove('hidden'); btn.textContent=orig; btn.disabled=false }
+}
+document.addEventListener('DOMContentLoaded',()=>{ doSearch(1); renderTray(); });
+</script>
+</body>
+</html>
