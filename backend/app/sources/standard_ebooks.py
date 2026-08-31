@@ -37,7 +37,7 @@ class StandardEbooksSource(BaseSource):
         q = query.lower()
         return [b for b in books if q in b.title.lower() or q in (b.author or "").lower()][:limit]
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         return await self._catalogue(limit)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:

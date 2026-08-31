@@ -82,9 +82,11 @@ class BaseSource(ABC):
         """Download book content (PDF/EPUB)."""
         pass
 
-    @abstractmethod
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
-        """List popular/recent books from this source."""
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
+        """List popular/recent books from this source.
+
+        Sources may ignore start_page if they don't support pagination.
+        """
         pass
 
     def is_known_license(self, license_type: Optional[str]) -> bool:

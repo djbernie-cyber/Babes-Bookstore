@@ -46,7 +46,7 @@ class DOABSource(BaseSource):
             or q in (b.description or "").lower()
         ][:limit]
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         return await self._harvest(limit)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:

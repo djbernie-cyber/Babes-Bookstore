@@ -45,7 +45,7 @@ class WikisourceSource(BaseSource):
             return []
         return [b for b in (self._parse(h.get("title")) for h in hits) if b][:limit]
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         books: List[BookMetadata] = []
         for category in self.QUALITY_CATEGORIES:
             if len(books) >= limit:

@@ -172,11 +172,14 @@ async def _scrape_source(source_name: str, query: str, limit: int, start_page: i
         return IngestReport(source=source_name, errors=[f"unknown source '{source_name}'"]).as_dict()
 
     try:
-        items = (
-            await source.search(query, limit=limit, start_page=start_page)
-            if query
-            else await source.list_popular(limit, start_page)
-        )
+        if query:
+            items = await source.search(query, limit=limit, start_page=start_page)
+        else:
+            try:
+                items = await source.list_popular(limit, start_page=start_page)
+            except TypeError:
+                # Some sources don't support pagination (start_page).
+                items = await source.list_popular(limit)
     except Exception as exc:
         logger.exception("Fetch failed for %s", source_name)
         return IngestReport(source=source_name, errors=[f"fetch failed: {exc}"]).as_dict()

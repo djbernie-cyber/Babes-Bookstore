@@ -50,7 +50,7 @@ class OAPENSource(BaseSource):
     async def download(self, metadata: BookMetadata) -> Optional[bytes]:
         return None
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         return await self.search("", limit)
 
     def _parse_oai(self, text: str, limit: int, query: str) -> List[BookMetadata]:

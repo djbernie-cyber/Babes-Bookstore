@@ -88,7 +88,7 @@ class OpenLibrarySource(BaseSource):
     async def download(self, metadata: BookMetadata) -> Optional[bytes]:
         return None
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         # `q=*` is not valid Solr syntax here and returns nothing. Restrict to
         # items with a public scan so results are actually redistributable, and
         # over-fetch because many hits are filtered out below.

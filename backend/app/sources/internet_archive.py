@@ -89,7 +89,7 @@ class InternetArchiveSource(BaseSource):
             pass
         return None
 
-    async def list_popular(self, limit: int = 50) -> List[BookMetadata]:
+    async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         params = {
             "q": 'mediatype:texts AND licenseurl:*publicdomain*',
             "fl[]": "identifier,title,creator,date,licenseurl",
