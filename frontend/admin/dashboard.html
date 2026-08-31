@@ -92,6 +92,7 @@
                                 <option value="oapen">OAPEN</option>
                                 <option value="open_library">Open Library</option>
                                 <option value="internet_archive">Internet Archive</option>
+                                <option value="african_ebooks">African Literature</option>
                             </select>
                         </div>
                         <div>
@@ -103,11 +104,13 @@
                             <input type="number" id="scrape-start-page" value="1" min="1" class="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         </div>
                         <button onclick="scrapeSource()" class="w-full bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Scrape this source</button>
-                        <div class="border-t border-stone-200 pt-4">
-                            <button onclick="scrapeAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm mb-2">Scrape all sources (50 ea)</button>
-                            <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape popular titles</button>
-                            <button onclick="reverifyAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Re-verify all licenses</button>
-                        </div>
+                    <div class="border-t border-stone-200 pt-4">
+                        <button onclick="scrapeAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm mb-2">Scrape all sources (50 ea)</button>
+                        <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape popular titles</button>
+                        <button onclick="scrapeAfrican()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Ingest African Literature</button>
+                        <button onclick="retagAfrican()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Tag existing African books</button>
+                        <button onclick="reverifyAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Re-verify all licenses</button>
+                    </div>
                     </div>
                 </div>
 
@@ -230,6 +233,28 @@
                 showToast('Re-verification initiated');
             } catch (e) {
                 showToast('Failed to start re-verification');
+            }
+        }
+
+        async function scrapeAfrican() {
+            showToast('Ingesting African Literature...');
+            try {
+                const res = await fetch('/api/v1/admin/scrape/source/african_ebooks?limit=200', { method: 'POST', headers: authHeaders() });
+                const data = await res.json();
+                showToast('African Literature ingest started · Task: ' + (data.task_id?.substring(0,8)));
+            } catch (e) {
+                showToast('Failed to start African ingestion');
+            }
+        }
+
+        async function retagAfrican() {
+            showToast('Tagging existing African books...');
+            try {
+                const res = await fetch('/api/v1/admin/retag/african-literature', { method: 'POST', headers: authHeaders() });
+                const data = await res.json();
+                showToast('Tagging started · Task: ' + (data.task_id?.substring(0,8)));
+            } catch (e) {
+                showToast('Failed to start tagging');
             }
         }
     </script>

@@ -60,11 +60,18 @@
     <div class="mt-8 flex items-baseline justify-between"><h2 class="font-serif text-xl font-bold">Purchases</h2><a href="/bundles" class="text-sm font-medium underline">Browse bundles</a></div>
     <div id="empty" class="mt-4 bg-white rounded-[22px] border p-10 text-center"><p class="font-medium">No purchases yet</p><p class="text-sm text-stone-500 mt-1">Bundles you buy appear here with instant downloads.</p><a href="/bundles" class="inline-flex mt-5 px-6 py-3 rounded-full bg-stone-900 text-white text-sm font-medium">Browse bundles</a></div>
     <div id="list" class="hidden mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+    <div class="mt-8 grid sm:grid-cols-2 gap-4">
+      <div data-coming-soon="wishlist"></div>
+      <div data-coming-soon="subscriptions"></div>
+      <div data-coming-soon="reader" class="sm:col-span-2"></div>
+    </div>
   </div>
 </main>
 
 <footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-sm text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore</div></footer>
 
+<script src="/js/coming-soon.js"></script>
 <script src="/js/store.js"></script>
 <script>
 function logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); location.href='/login' }

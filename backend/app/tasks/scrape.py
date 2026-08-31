@@ -22,6 +22,11 @@ from ..models.book import Book, BookStatus
 from ..services.license_verifier import license_verifier, LicenseStatus
 from ..sources import source_registry
 from ..sources.base import BookMetadata
+from ..sources.african_ebooks import (
+    AFRICAN_LITERATURE_TAG,
+    AFRICAN_AUTHORS,
+    AFRICAN_THEMES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +69,17 @@ def _status_for(result) -> BookStatus:
     return BookStatus.PENDING
 
 
+def _is_african(metadata: BookMetadata) -> bool:
+    """Heuristic: is this work African-authored or African-themed?"""
+    hay = " ".join(filter(None, [metadata.title, metadata.author, metadata.description]))
+    hay_l = (hay or "").lower()
+    if any(a.lower() in hay_l for a in AFRICAN_AUTHORS):
+        return True
+    if any(t.lower() in hay_l for t in AFRICAN_THEMES):
+        return True
+    return False
+
+
 async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestReport:
     """Upsert scraped metadata, enforcing licence rules. Idempotent."""
     report = IngestReport(source=source_name, found=len(items))
@@ -97,6 +113,10 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
 
             norm_title = _normalize_title(metadata.title)
 
+            tags = list(metadata.tags or [])
+            if _is_african(metadata) and AFRICAN_LITERATURE_TAG not in tags:
+                tags.insert(0, AFRICAN_LITERATURE_TAG)
+
             payload = {
                 "title": metadata.title[:500],
                 "author": metadata.author,
@@ -108,7 +128,7 @@ async def _ingest(source_name: str, items: Sequence[BookMetadata]) -> IngestRepo
                 "license_type": metadata.license_type,
                 "license_url": metadata.license_url,
                 "category": metadata.category,
-                "tags": metadata.tags or [],
+                "tags": tags,
                 "language": metadata.language or "en",
                 "publication_year": metadata.publication_year,
                 "status": status,
@@ -235,3 +255,38 @@ def scrape_popular_task(limit_per_source: int = 50) -> List[dict]:
     names = source_registry.list_names()
     logger.info("Scraping popular titles from %d sources", len(names))
     return asyncio.run(_scrape_many(names, "", limit_per_source))
+
+
+@celery_app.task(name="retag.african_literature")
+def retag_african_literature_task() -> dict:
+    """Backfill: tag existing books that match the African-literature heuristic.
+
+    Idempotent — only adds the tag where it is missing, and never downgrades
+    or removes anything.
+    """
+    from ..database import AsyncSessionLocal
+
+    async def _run() -> dict:
+        tagged = 0
+        scanned = 0
+        async with AsyncSessionLocal() as session:
+            stmt = select(Book).where(Book.status == BookStatus.APPROVED)
+            result = await session.execute(stmt)
+            for book in result.scalars():
+                scanned += 1
+                hay = " ".join(filter(None, [book.title, book.author, book.description]))
+                hay_l = (hay or "").lower()
+                is_african = any(a.lower() in hay_l for a in AFRICAN_AUTHORS) or any(
+                    t.lower() in hay_l for t in AFRICAN_THEMES
+                )
+                if is_african:
+                    tags = list(book.tags or [])
+                    if AFRICAN_LITERATURE_TAG not in tags:
+                        tags.insert(0, AFRICAN_LITERATURE_TAG)
+                        book.tags = tags
+                        tagged += 1
+            await session.commit()
+        return {"scanned": scanned, "tagged": tagged}
+
+    logger.info("Backfilling African Literature tags")
+    return asyncio.run(_run())

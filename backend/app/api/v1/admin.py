@@ -108,6 +108,14 @@ async def trigger_license_verification(_admin=Depends(require_admin)):
     return {"task_id": task.id}
 
 
+@router.post("/retag/african-literature")
+async def trigger_african_retag(_admin=Depends(require_admin)):
+    """Backfill 'African Literature' tags on existing approved books."""
+    from ...tasks.scrape import retag_african_literature_task
+    task = retag_african_literature_task.delay()
+    return {"task_id": task.id}
+
+
 @router.get("/sources")
 async def list_sources(_admin=Depends(require_admin)):
     """Describe every registered source without opening HTTP clients."""

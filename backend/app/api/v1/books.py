@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, String
 from typing import List, Optional
 import re
 
@@ -21,6 +21,7 @@ async def list_books(
     category: Optional[str] = None,
     source: Optional[str] = None,
     license_type: Optional[str] = None,
+    tag: Optional[str] = None,
     status_filter: Optional[BookStatus] = Query(None, alias="status"),
     search: Optional[str] = None,
     approved_only: bool = True,
@@ -52,6 +53,9 @@ async def list_books(
         stmt = stmt.where(Book.source == source)
     if license_type:
         stmt = stmt.where(Book.license_type == license_type)
+    if tag:
+        # Portable JSON-array membership across Postgres and SQLite.
+        stmt = stmt.where(func.cast(Book.tags, String).ilike(f'%"{tag}"%'))
 
     if search:
         search_filter = or_(

@@ -8,6 +8,7 @@ registry handing out sources with closed transports after the first run.
 from typing import Dict, List, Type
 
 from .base import BaseSource
+from .african_ebooks import AfricanEbooksSource
 from .doab import DOABSource
 from .gutenberg import GutenbergSource
 from .internet_archive import InternetArchiveSource
@@ -27,6 +28,7 @@ SOURCE_CLASSES: tuple[Type[BaseSource], ...] = (
     DOABSource,             # CC-licensed academic books
     OAPENSource,            # open access academic
     OpenLibrarySource,      # metadata + public scans
+    AfricanEbooksSource,    # curated African & diaspora literature
 )
 
 

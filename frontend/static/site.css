@@ -41,3 +41,12 @@ footer a{ color:#a8a29e } footer a:hover{ color:#fff }
 /* scrollbar */
 ::-webkit-scrollbar{ width:10px; height:10px }
 ::-webkit-scrollbar-thumb{ background:#d6d0c2; border-radius:999px; border:2px solid var(--paper) }
+
+/* coming soon */
+.coming-soon{ display:flex; align-items:flex-start; gap:.75rem; background:linear-gradient(180deg,#fff, #fbf9f5); border:1px dashed var(--line2); border-radius:14px; padding:.9rem 1rem; }
+.coming-soon-badge{ flex:0 0 auto; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#7c2d12; background:#ffedd5; border:1px solid #fed7aa; padding:.3rem .6rem; border-radius:999px; }
+.coming-soon-body{ display:flex; flex-direction:column; gap:.15rem; min-width:0 }
+.coming-soon-title{ font-family:var(--font-serif); font-size:.95rem; font-weight:600; line-height:1.2 }
+.coming-soon-copy{ font-size:.82rem; line-height:1.45; color:var(--muted) }
+.coming-soon-link{ flex:0 0 auto; align-self:center; font-size:.8rem; font-weight:600; color:var(--ink); text-decoration:underline; text-underline-offset:2px; white-space:nowrap }
+.coming-soon-link:hover{ color:#57534e }

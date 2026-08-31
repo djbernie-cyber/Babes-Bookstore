@@ -6,6 +6,8 @@
 /register  /account/register.html  200
 /account  /account/purchases.html  200
 /search  /books/search.html  200
+/categories/african-literature  /categories/african-literature.html  200
+/categories/*  /categories/african-literature.html  200
 /admin/books  /admin/books.html  200
 /admin/bundles  /admin/bundles.html  200
 /admin  /admin/dashboard.html  200
