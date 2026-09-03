@@ -1,17 +1,22 @@
+# fly.toml app configuration file generated for babes-bookstore on 2026-08-23T15:01:01Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = 'babes-bookstore'
 primary_region = 'lhr'
-
-[processes]
-  app = ''
-  worker = ''
 
 [build]
   dockerfile = 'backend/Dockerfile'
 
 [env]
+  DEBUG = 'false'
   PORT = '8000'
   WEB_CONCURRENCY = '2'
-  DEBUG = 'false'
+
+[processes]
+  app = ''
+  worker = ''
 
 [http_service]
   internal_port = 8000
@@ -36,5 +41,6 @@ primary_region = 'lhr'
 [[vm]]
   size = 'shared-cpu-1x'
   memory = '512mb'
-  cpus = 1
   cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 512
