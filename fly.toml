@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for babes-bookstore on 2026-08-23T15:01:01Z
+# fly.toml app configuration file generated for babes-bookstore-ziaarq on 2026-09-03T19:08:21Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'babes-bookstore'
-primary_region = 'lhr'
+app = 'babes-bookstore-ziaarq'
+primary_region = 'ams'
 
 [build]
   dockerfile = 'backend/Dockerfile'
@@ -19,7 +19,7 @@ primary_region = 'lhr'
   worker = ''
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'suspend'
   auto_start_machines = true
