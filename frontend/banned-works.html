@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Banned Works — Babe's Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+</head>
+<body class="min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-[.92rem] font-medium"><a href="/bundles" class="text-stone-600 hover:text-stone-900">Bundles</a><a href="/search" class="text-stone-900">Library</a><a href="/categories/african-literature" class="text-stone-900">African Literature</a></div></div>
+  <div class="flex items-center gap-3"><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
+    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="/categories/african-literature" class="block px-3 py-2.5 rounded-xl bg-stone-100 font-medium">African Literature</a></div></nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
+  <a href="/" class="inline-flex items-center gap-1.5 text-sm text-[#8a8683] hover:text-[#0b0b0c]">← Home</a>
+  <div class="mb-6">
+    <p class="eyebrow">Censorship Reference</p>
+    <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 leading-[.95]">Banned Works of the World</h1>
+    <p class="text-stone-600 mt-3 leading-7">A reference catalogue of notable censorship cases: books banned, burned, or otherwise suppressed by governments, churches, and other authorities across history. (This is a research / reading list; BABE'S BOOKSTORE carries only public-domain / openly-licensed works.)</p>
+  </div>
+
+  <div class="bg-stone-900 text-white rounded-[22px] p-6 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div>
+      <p class="font-serif text-xl font-bold">Europe</p>
+      <p class="text-sm text-stone-300 mt-1">From Ovid to the Nazi book burnings, 1933–1945; from Soviet suppression to modern LGBTI‑law bans.</p>
+    </div>
+    <p class="text-sm text-stone-400">•</p>
+    <div>
+      <p class="font-serif text-xl font-bold">Africa</p>
+      <p class="text-sm text-stone-300 mt-1">From colonial bans on Ngũgĩ wa Thiong'o to apartheid-era censorship of hundreds of ANC titles.</p>
+    </div>
+    <p class="text-sm text-stone-400">•</p>
+    <div>
+      <p class="font-serif text-xl font-bold">Americas</p>
+      <p class="text-sm text-stone-300 mt-1">From Ulysses' obscenity trial to modern school-challenge lists; from slave-narratives to contemporary challenged books.</p>
+    </div>
+    <p class="text-sm text-stone-400">•</p>
+    <div>
+      <p class="font-serif text-xl font-bold">Asia</p>
+      <p class="text-sm text-stone-300 mt-1">From The Satanic Verses fatwa to North Korea's total foreign‑book ban.</p>
+    </div>
+  </div>
+
+  <div class="mt-6 space-y-4">
+    <details class="border rounded-lg p-4">
+      <summary class="font-serif text-lg font-bold cursor-pointer">Europe — full list</summary>
+      <div class="mt-3 text-sm text-stone-300 overflow-y-auto" style="max-height: 400px;">
+        <ul class="space-y-2">
+          <li>Ulysses — James Joyce (obscenity)</li>
+          <li>Lady Chatterley's Lover — D. H. Lawrence (obscenity)</li>
+          <li>The Rainbow — D. H. Lawrence (suppressed 1915)</li>
+          <li>Jude the Obscure — Thomas Hardy (bishop burned it 1895)</li>
+          <li>Fanny Hill — John Cleland (obscenity; banned ~200 years)</li>
+          <li>All Quiet on the Western Front — Erich Maria Remarque (Nazi era)</li>
+          <li>The Tin Drum / modern classics — Nazi censorship, 1933 burnings</li>
+          <li>Animal Farm / 1984 — George Orwell (anti‑Soviet)</li>
+          <li>Doctor Zhivago — Boris Pasternak (ideological)</li>
+          <li>The Gulag Archipelago — Aleksandr Solzhenitsyn (banned)</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="border rounded-lg p-4">
+      <summary class="font-serif text-lg font-bold cursor-pointer">Africa — full list</summary>
+      <div class="mt-3 text-sm text-stone-300 overflow-y-auto" style="max-height: 400px;">
+        <ul class="space-y-2">
+          <li>A Grain of Wheat — Ngũgĩ wa Thiong'o (banned 1977)</li>
+          <li>Petals of Blood — Ngũgĩ (banned 1977)</li>
+          <li>Weep Not, Child — Ngũgĩ (colonial Kenya)</li>
+          <li>The River Between — Ngũgĩ (colonial)</li>
+          <li>I Write What I Like — Steve Biko (banned)</li>
+          <li>125+ banned ANC titles — anti‑apartheid literature</li>
+          <li>Nervous Conditions — Tsitsi Dangarembga (Rhodesian era)</li>
+          <li>No Easy Walk to Freedom — Nelson Mandela (banned)</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="border rounded-lg p-4">
+      <summary class="font-serif text-lg font-bold cursor-pointer">Americas — full list</summary>
+      <div class="mt-3 text-sm text-stone-300 overflow-y-auto" style="max-height: 400px;">
+        <ul class="space-y-2">
+          <li>Ulysses — James Joyce (1933 US v. One Book)</li>
+          <li>Lady Chatterley's Lover — D. H. Lawrence (1960 trial)</li>
+          <li>Tropic of Cancer — Henry Miller (1964)</li>
+          <li>Naked Lunch — William S. Burroughs (1966)</li>
+          <li>Howl — Allen Ginsberg (1957 obscenity trial)</li>
+          <li>Huckleberry Finn — Mark Twain (race language)</li>
+          <li>The Catcher in the Rye — J.D. Salinger (language/behavior)</li>
+          <li>Beloved — Toni Morrison (sexual content)</li>
+          <li>American Psycho — Bret Easton Ellis (challenged)</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="border rounded-lg p-4">
+      <summary class="font-serif text-lg font-bold cursor-pointer">Asia — full list</summary>
+      <div class="mt-3 text-sm text-stone-300 overflow-y-auto" style="max-height: 400px;">
+        <ul class="space-y-2">
+          <li>The Satanic Verses — Salman Rushdie (blasphemy, fatwa)</li>
+          <li>Lolita — Vladimir Nabokov (banned/challenged)</li>
+          <li>North Korea — total foreign-book ban</li>
+          <li>Midnight's Children — Salman Rushdie (partial ban)</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+</main>
+
+<footer class="bg-stone-950 text-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div>
+      <div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li><li><a href="/categories/african-literature">African Literature</a></li></ul></div>
+      <div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div>
+      <div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/" class="hover:text-white">Home</a></li><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/authors/african" class="hover:text-white">African Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/search" class="hover:text-white">All books</a></li><li><a href="/banned-works" class="hover:text-white">Banned Works</a></li></ul></div>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/coming-soon.js"></script>
+<script src="/js/store.js"></script>
+<script>
+function buildList(items){return `<li>${items.map(i=>`<div class="flex items-start gap-2"><span class="text-[10px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">${i.split(' — ')[0]||i}</span> <span class="text-sm text-stone-400">${i.split(' — ')[1]||''}</span></div>`).join('')}</li>`;}
+document.addEventListener('DOMContentLoaded',()=>{const sections=document.querySelectorAll('details');sections.forEach(s=>s.addEventListener('toggle',()=>{const summary=s.querySelector('summary');summary.classList.toggle('text-stone-200',s.open);}))});
+</script>
+</body>
+</html>
