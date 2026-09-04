@@ -18,6 +18,7 @@ class PurchaseStatus:
     PAID = "paid"
     COMPLETED = "completed"
     FAILED = "failed"
+    EXPIRED = "expired"
 
 
 class PaymentProvider:
