@@ -11,6 +11,7 @@ from .models.user import User
 from .models.book import Book, BookStatus
 from .models.bundle import Bundle
 from .api.v1.router import api_router
+from .middleware import RateLimitMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -123,6 +124,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+app.add_middleware(RateLimitMiddleware)
 
 app.include_router(api_router)
 
