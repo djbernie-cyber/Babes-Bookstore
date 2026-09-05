@@ -14,6 +14,21 @@ from .storage import storage
 logger = logging.getLogger(__name__)
 
 
+def _html_to_plain(raw: bytes, cap: int = 1_500_000) -> Optional[str]:
+    """Best-effort HTML to plain text for on-demand reader sources."""
+    html = raw[:cap].decode("utf-8", "ignore")
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup(["script", "style", "nav", "header", "footer"]):
+            tag.decompose()
+        text = soup.get_text("\n")
+    except Exception:
+        text = html
+    lines = [ln.strip() for ln in text.splitlines()]
+    return "\n\n".join(ln for ln in lines if ln).strip()
+
+
 class PackagingService:
     """Generates ZIP bundles of books for delivery.
 
@@ -134,13 +149,15 @@ class PackagingService:
         except Exception as e:
             logger.warning("Failed to cache %s for book %s: %s", key, book.id, e)
 
-    def _resolve_book_text(self, book: Book) -> Optional[str]:
+    async def _resolve_book_text(self, book: Book) -> Optional[str]:
         """Return plain-text content for the in-browser reader (prefers txt).
 
         Order of preference (mirrors download logic but text-first):
           1. Cached plain text for this book.
           2. A ``text_url`` recorded in source metadata.
           3. Gutenberg .txt fallbacks derived from ``source_id``.
+          4. Sources that render readable content on demand (Wikibooks) are
+             asked directly via their adapter's ``download()``.
         Returns ``None`` when only binary formats (epub/pdf) exist — the caller
         can then fall back to the epub-centric resolver or the download URL.
 
@@ -171,14 +188,28 @@ class PackagingService:
             gid = source_id
             url = f"https://www.gutenberg.org/ebooks/{gid}.txt.utf-8"
 
-        if not url:
-            return None
+        if url:
+            data = self._fetch_remote(url, timeout=60.0)
+            if data and len(data) >= 500:
+                self._cache_content(book, "txt", data)
+                return self._human_text(data)
 
-        data = self._fetch_remote(url, timeout=60.0)
-        if not data or len(data) < 500:
-            return None
-        self._cache_content(book, "txt", data)
-        return self._human_text(data)
+        # 4. On-demand rendering for sources without a stable text URL.
+        if book.source not in ("gutenberg", "biodiversity"):
+            try:
+                from ..sources.registry import source_registry
+                src = source_registry.get(book.source)
+                try:
+                    payload = await src.download(book)
+                finally:
+                    await src.close()
+                if payload:
+                    raw = payload if isinstance(payload, bytes) else payload.encode("utf-8", "ignore")
+                    self._cache_content(book, "txt", raw)
+                    return _html_to_plain(raw)
+            except Exception:
+                logger.debug("On-demand text fetch failed for %s/%s", book.source, book.source_id, exc_info=True)
+        return None
 
     def _human_text(self, data: bytes, cap: int = 1_500_000) -> str:
         """Decode reader-facing text, dropping the Gutenberg boilerplate header

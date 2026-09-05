@@ -19,6 +19,8 @@ from .standard_ebooks import StandardEbooksSource
 from .wikisource import WikisourceSource
 from .military import MilitarySource
 from .suppressed import SuppressedClassicsSource
+from .wikibooks import WikibooksSource
+from .biodiversity import BiodiversitySource
 
 #: Registered in rough order of catalogue quality.
 SOURCE_CLASSES: tuple[Type[BaseSource], ...] = (
@@ -33,6 +35,8 @@ SOURCE_CLASSES: tuple[Type[BaseSource], ...] = (
     AfricanEbooksSource,    # curated African & diaspora literature
     MilitarySource,         # public-domain military training & strategy
     SuppressedClassicsSource,  # banned / burned classical & erotic canon
+    WikibooksSource,        # CC BY-SA instructional books
+    BiodiversitySource,     # public-domain natural history (API key)
 )
 
 

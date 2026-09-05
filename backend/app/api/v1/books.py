@@ -103,7 +103,7 @@ async def book_text(book_id: int, db: AsyncSession = Depends(get_db)):
 
     from ...services.packaging import packaging
 
-    text = packaging._resolve_book_text(book)
+    text = await packaging._resolve_book_text(book)
     if not text:
         raise HTTPException(
             status_code=422,
