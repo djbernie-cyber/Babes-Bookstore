@@ -91,10 +91,11 @@ class OpenLibrarySource(BaseSource):
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
         # `q=*` is not valid Solr syntax here and returns nothing. Restrict to
         # items with a public scan so results are actually redistributable, and
-        # over-fetch because many hits are filtered out below.
+        # use ``page`` to offset across a long walk of this source.
         params = {
             "q": "public_scan_b:true",
             "sort": "readinglog",
+            "page": max(1, start_page),
             "limit": min(max(limit * 3, 30), 100),
             "fields": "key,title,author_name,first_publish_year,public_scan_b,ia,ebook_access",
         }

@@ -32,7 +32,12 @@
     html[data-theme="dark"]{ filter:invert(92%) hue-rotate(180deg) }
     html[data-theme="dark"] img,html[data-theme="dark"] .toolbar{ filter:invert(100%) hue-rotate(180deg) }
   </style>
-</head>
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  </head>
 <body>
   <div class="toolbar">
     <a href="#" onclick="history.back();return false">← Back</a>

@@ -14,7 +14,9 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#0b0b0c">
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
-</head>
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  </head>
 <body class="bg-[#fcfaf7] text-[#121212] antialiased">
 <nav class="sticky top-0 z-50 bg-[#0b0b0c] text-[#fcfaf7] border-b border-[#1f1f1f]">
   <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -87,13 +89,14 @@
 
 <section class="bg-white border-b">
   <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap gap-2 text-xs">
-    <a href="/search?category=Classics" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Classics</a>
-    <a href="/search?category=Science%20Fiction" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Science Fiction</a>
-    <a href="/search?category=History" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">History</a>
-    <a href="/search?category=Philosophy" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Philosophy</a>
-    <a href="/search?category=Poetry" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Poetry</a>
-    <a href="/search?category=Biography" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Biography</a>
+    <a href="/categories/classics" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Classics</a>
+    <a href="/categories/science-fiction" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Science Fiction</a>
+    <a href="/categories/history" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">History</a>
+    <a href="/categories/philosophy" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Philosophy</a>
+    <a href="/categories/poetry" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Poetry</a>
+    <a href="/categories/biography" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Biography</a>
     <a href="/categories/african-literature" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">African Literature</a>
+    <a href="/authors" class="px-3 py-1.5 rounded-full border bg-white hover:bg-[#fcfaf7]">Authors</a>
     <a href="/bundles" class="px-3 py-1.5 rounded-full bg-[#0b0b0c] text-white">All bundles →</a>
   </div>
 </section>
@@ -126,31 +129,36 @@
   <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-end justify-between gap-4">
       <div>
-        <p class="text-[11px] tracking-[0.14em] uppercase font-semibold text-[#8a8683]">On the shelf next</p>
-        <h2 class="font-serif text-2xl sm:text-3xl font-semibold tracking-[-0.02em] mt-1">Coming soon</h2>
-        <p class="text-sm text-[#57534e] mt-2 max-w-xl">The library is growing. These services are in the works and will be switched on as they land.</p>
+        <p class="text-[11px] tracking-[0.14em] uppercase font-semibold text-[#8a8683]">Explore the library</p>
+        <h2 class="font-serif text-2xl sm:text-3xl font-semibold tracking-[-0.02em] mt-1">Browse by author, genre & more</h2>
+        <p class="text-sm text-[#57534e] mt-2 max-w-xl">Every feature is live. Dig in.</p>
       </div>
     </div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
       <a href="/authors" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
-        <p class="font-semibold">Author pages</p>
+        <p class="font-semibold">Authors</p>
         <p class="text-sm text-[#57534e] mt-1">Browse the full catalogue for every author in the library.</p>
         <p class="text-xs font-medium mt-3 text-[#0b0b0c]">Browse now →</p>
       </a>
-      <a href="/categories/african-literature" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
+      <a href="/authors/african" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
         <p class="font-semibold">African Literature</p>
-        <p class="text-sm text-[#57534e] mt-1">A curated collection of African and diaspora writing.</p>
+        <p class="text-sm text-[#57534e] mt-1">A curated collection of African and diaspora writing — continent and diaspora authors.</p>
         <p class="text-xs font-medium mt-3 text-[#0b0b0c]">Explore →</p>
+      </a>
+      <a href="/categories/african-literature" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
+        <p class="font-semibold">Genre pages</p>
+        <p class="text-sm text-[#57534e] mt-1">Classics, Sci-Fi, Poetry, Philosophy, History, Romance, and more — each with its own shelf.</p>
+        <p class="text-xs font-medium mt-3 text-[#0b0b0c]">Browse genres →</p>
       </a>
       <a href="/search" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
         <p class="font-semibold">Reviews & ratings</p>
-        <p class="text-sm text-[#57534e] mt-1">Rate and review books you've read.</p>
+        <p class="text-sm text-[#57534e] mt-1">Rate and review books you've read. Every review is from a real reader.</p>
         <p class="text-xs font-medium mt-3 text-[#0b0b0c]">Browse the library →</p>
       </a>
-      <a href="/search" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
+      <a href="/account" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
         <p class="font-semibold">Wishlist</p>
-        <p class="text-sm text-[#57534e] mt-1">Save books to read later.</p>
-        <p class="text-xs font-medium mt-3 text-[#0b0b0c]">Browse the library →</p>
+        <p class="text-sm text-[#57534e] mt-1">Save books to read later. Sign in to start your list.</p>
+        <p class="text-xs font-medium mt-3 text-[#0b0b0c]">Go to account →</p>
       </a>
       <a href="/search" class="block bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
         <p class="font-semibold">Read online</p>
@@ -188,7 +196,7 @@
       const grid=document.getElementById('cover-grid');
       if(!grid) return;
       grid.innerHTML=items.map(b=>{
-        const cover=b.cover_path && /^https?:\/\//.test(b.cover_path) ? `<img src="${b.cover_path}" alt="" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-[#ece9e3] flex items-center justify-center text-[#8a8683] font-serif text-xl">${(b.title||'?').charAt(0)}</div>`;
+        const cover=b.cover_path && /^https?:\/\//.test(b.cover_path) ? `<img src="${b.cover_path}" alt="${b.title||'Book cover'}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-[#ece9e3] flex items-center justify-center text-[#8a8683] font-serif text-xl">${(b.title||'?').charAt(0)}</div>`;
         return `<a href="/books/${b.id}" class="block aspect-[3/4] bg-white border rounded-xl overflow-hidden hover:border-[#0b0b0c] transition">${cover}</a>`;
       }).join('');
     }catch{}
@@ -201,7 +209,7 @@
       if(!items.length){ el.innerHTML='<div class="col-span-full text-center py-12 border rounded-2xl bg-white"><p class="font-medium">No featured bundles</p></div>'; return }
       el.innerHTML=items.map(b=>{
         const n=Array.isArray(b.books)?b.books.length:'?';
-        const cover=b.books&&b.books[0]&&b.books[0].cover_path ? `<img src="${b.books[0].cover_path}" alt="" class="w-full h-24 object-cover rounded-xl border">` : `<div class="w-full h-24 bg-[#ece9e3] rounded-xl"></div>`;
+        const cover=b.books&&b.books[0]&&b.books[0].cover_path ? `<img src="${b.books[0].cover_path}" alt="${b.books[0].title||'Bundle cover'}" class="w-full h-24 object-cover rounded-xl border">` : `<div class="w-full h-24 bg-[#ece9e3] rounded-xl"></div>`;
         return `<a href="/bundles/${b.slug}" class="group bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
           ${cover}
           <h3 class="font-serif text-lg font-semibold leading-tight mt-4 group-hover:underline">${b.name}</h3>

@@ -47,7 +47,7 @@ class DOABSource(BaseSource):
         ][:limit]
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
-        return await self._harvest(limit)
+        return await self._harvest(limit, start_page=start_page)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
         try:
@@ -73,10 +73,13 @@ class DOABSource(BaseSource):
             logger.debug("DOAB download failed: %s", metadata.pdf_url, exc_info=True)
         return None
 
-    async def _harvest(self, limit: int) -> List[BookMetadata]:
+    async def _harvest(self, limit: int, start_page: int = 1) -> List[BookMetadata]:
         """Harvest records, following resumption tokens until `limit` is met."""
         books: List[BookMetadata] = []
         params = {"verb": "ListRecords", "metadataPrefix": "oai_dc"}
+        # ``start_page`` skips earlier records by continuing the token walk
+        # past the earlier pages, so a multi-page run surfaces new books.
+        skip = max(0, (start_page - 1) * max(limit, 1))
 
         while len(books) < limit:
             try:
@@ -89,7 +92,18 @@ class DOABSource(BaseSource):
             batch, token = self._parse(response.text)
             if not batch and not token:
                 break
-            books.extend(batch)
+
+            carried = skip
+            for b in batch:
+                if carried > 0:
+                    carried -= 1
+                    continue
+                books.append(b)
+                if len(books) >= limit:
+                    break
+            skip = 0
+            if len(books) >= limit:
+                break
 
             if not token:
                 break

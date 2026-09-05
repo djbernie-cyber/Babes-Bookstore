@@ -9,8 +9,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/site.css">
+  <meta name="theme-color" content="#0b0b0c">
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
-</head>
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  </head>
 <body class="min-h-screen flex flex-col">
 <nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
   <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
@@ -103,7 +107,7 @@ async function loadWishlist(token){
     if(!items.length){ empty.classList.remove('hidden'); return }
     empty.classList.add('hidden'); list.classList.remove('hidden');
     list.innerHTML=items.map(b=>{
-      const cover=b.cover_url&&/^https?:\/\//.test(b.cover_url)?`<img src="${b.cover_url}" alt="" class="w-full h-28 object-cover rounded-xl border">`:`<div class="w-full h-28 bg-[#ece9e3] rounded-xl grid place-items-center text-[#8a8683] font-serif text-3xl">${(b.title||'?').charAt(0)}</div>`;
+      const cover=b.cover_url&&/^https?:\/\//.test(b.cover_url)?`<img src="${b.cover_url}" alt="${b.title||'Book cover'}" class="w-full h-28 object-cover rounded-xl border">`:`<div class="w-full h-28 bg-[#ece9e3] rounded-xl grid place-items-center text-[#8a8683] font-serif text-3xl">${(b.title||'?').charAt(0)}</div>`;
       return `<a href="/books/${b.id}" class="block bg-white border rounded-2xl p-3 hover:border-[#0b0b0c] transition"><div class="text-right"><button onclick="event.preventDefault();unwish(${b.id});this.closest('a').remove()" class="text-stone-400 hover:text-red-600 text-xs font-semibold">♡ remove</button></div>${cover}<h3 class="font-serif font-semibold leading-tight mt-2">${esc(b.title)}</h3><p class="text-xs text-stone-500 mt-0.5">${esc(b.author)}</p></a>`;
     }).join('');
   }catch(e){ console.error(e) }

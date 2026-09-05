@@ -38,10 +38,10 @@ class StandardEbooksSource(BaseSource):
         return [b for b in books if q in b.title.lower() or q in (b.author or "").lower()][:limit]
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
-        return await self._catalogue(limit)
+        return await self._catalogue(limit, start_page)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
-        for book in await self._catalogue(limit=2000):
+        for book in await self._catalogue(2000, start_page=1):
             if book.source_id == source_id:
                 return book
         return None
@@ -59,12 +59,12 @@ class StandardEbooksSource(BaseSource):
                 logger.debug("Standard Ebooks download failed: %s", url, exc_info=True)
         return None
 
-    async def _catalogue(self, limit: int) -> List[BookMetadata]:
+    async def _catalogue(self, limit: int, start_page: int = 1) -> List[BookMetadata]:
         """Build the catalogue from the public sitemap (no auth required)."""
-        slugs = await self._slugs(limit)
+        slugs = await self._slugs(limit, start_page)
         return [self._from_slug(s) for s in slugs][:limit]
 
-    async def _slugs(self, limit: int) -> List[str]:
+    async def _slugs(self, limit: int, start_page: int = 1) -> List[str]:
         try:
             response = await self.client.get(self.SITEMAP_URL, follow_redirects=True)
             response.raise_for_status()
@@ -85,11 +85,12 @@ class StandardEbooksSource(BaseSource):
                     collected += self._extract_slugs(sub.text)
                 except Exception:
                     logger.debug("sitemap child failed: %s", child, exc_info=True)
-                if len(collected) >= limit:
+                if len(collected) >= start_page * limit:
                     break
-            return collected[:limit]
+            return collected[(start_page - 1) * limit:(start_page - 1) * limit + limit]
 
-        return self._extract_slugs(text)[:limit]
+        all_slugs = self._extract_slugs(text)
+        return all_slugs[(start_page - 1) * limit:(start_page - 1) * limit + limit]
 
     @staticmethod
     def _extract_slugs(xml: str) -> List[str]:

@@ -134,6 +134,71 @@ class PackagingService:
         except Exception as e:
             logger.warning("Failed to cache %s for book %s: %s", key, book.id, e)
 
+    def _resolve_book_text(self, book: Book) -> Optional[str]:
+        """Return plain-text content for the in-browser reader (prefers txt).
+
+        Order of preference (mirrors download logic but text-first):
+          1. Cached plain text for this book.
+          2. A ``text_url`` recorded in source metadata.
+          3. Gutenberg .txt fallbacks derived from ``source_id``.
+        Returns ``None`` when only binary formats (epub/pdf) exist — the caller
+        can then fall back to the epub-centric resolver or the download URL.
+
+        Truncates very large works so the reader stays responsive behind the
+        Netlify /api proxy.
+        """
+        if not book.source:
+            return None
+        source_id = book.source_id or str(book.id)
+
+        # 1. Cached .txt
+        cached = self._try_local_r2(self._cache_key(book, "txt"))
+        if cached:
+            return self._human_text(cached)
+
+        # 2. Remote URL from source metadata
+        url: Optional[str] = None
+        try:
+            meta = book.source_metadata or {}
+            candidate = meta.get("text_url") if isinstance(meta, dict) else None
+            if candidate and isinstance(candidate, str) and candidate.startswith("http"):
+                url = candidate
+        except Exception:
+            pass
+
+        # 3. Gutenberg plain-text mirrors
+        if book.source == "gutenberg" and source_id.isdigit():
+            gid = source_id
+            url = f"https://www.gutenberg.org/ebooks/{gid}.txt.utf-8"
+
+        if not url:
+            return None
+
+        data = self._fetch_remote(url, timeout=60.0)
+        if not data or len(data) < 500:
+            return None
+        self._cache_content(book, "txt", data)
+        return self._human_text(data)
+
+    def _human_text(self, data: bytes, cap: int = 1_500_000) -> str:
+        """Decode reader-facing text, dropping the Gutenberg boilerplate header
+        so the reader starts at the book proper, and cap oversized works."""
+        import re
+        text = data[:cap]
+        for enc in ("utf-8", "utf-16", "latin-1"):
+            try:
+                text = text.decode(enc)
+                break
+            except (UnicodeDecodeError, ValueError):
+                continue
+        # Trim the standard "The Project Gutenberg eBook of ..." preamble, three
+        # asterisk lines, and any licence block up to and including the release date.
+        match = re.search(r"(?im)^\*{3}\s*START OF (THIS|THE) PROJECT GUTENBERG", text)
+        if match:
+            start = text.find("\n", match.end())
+            text = text[start + 1:] if start != -1 else text
+        return text.strip()
+
     def create_bundle_zip(self, bundle: Bundle, books: List[Book]) -> str:
         buffer = io.BytesIO()
         zip_filename = f"{bundle.slug}.zip"

@@ -1,13 +1,27 @@
 /* Babe's Bookstore — Serious Library System */
 :root{
   --paper:#fcfaf7; --paper2:#f6f1e7; --panel:#ffffff;
-  --ink:#0b0b0c; --ink2:#1f1f1f; --muted:#8a8683; --line:#e7e2d9; --line2:#d6d0c2;
+  --ink:#0b0b0c; --ink2:#1f1f1f; --muted:#6b655f; --line:#e7e2d9; --line2:#d6d0c2;
   --maxw:1180px; --r:16px; --r2:20px;
   --font-serif:"EB Garamond", Georgia, serif; --font-sans:"Inter", system-ui, sans-serif;
 }
+
+/* WCAG AA contrast: the CDN Tailwind muted greys are too faint on paper.
+   Default to a dark-enough neutral; keep the warm grey for text that really
+   sits on near-black navs/footers. */
+.text-stone-400{ color:#6e675f }
+nav .text-stone-400, footer .text-stone-400,
+.bg-stone-900 .text-stone-400, .bg-stone-950 .text-stone-400,
+.bg-\[\#0b0b0c\] .text-stone-400{ color:#a8a29e }
+.text-\[\#8a8683\]{ color:#6b655f }
+nav .text-\[\#8a8683\], footer .text-\[\#8a8683\],
+.bg-stone-900 .text-\[\#8a8683\], .bg-stone-950 .text-\[\#8a8683\],
+.bg-\[\#0b0b0c\] .text-\[\#8a8683\]{ color:#a8a29e }
 *{ -webkit-tap-highlight-color:transparent }
 html{ scroll-behavior:smooth }
-body{ background:var(--paper); color:var(--ink); font-family:var(--font-sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+html,body{ overflow-x:clip; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--font-sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; max-width:100%; }
+img{ max-width:100%; height:auto }
 :focus-visible{ outline:2px solid #0b0b0c; outline-offset:2px }
 .container,.max-w-7xl{ max-width:var(--maxw)!important }
 section{ padding-block: clamp(2rem, 4vw, 4rem) }

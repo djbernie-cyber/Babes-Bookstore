@@ -358,7 +358,13 @@ def scrape_african_full_task(limit: int | None = None) -> dict:
 
 
 def _sources_with_pagination() -> List[str]:
-    """Sources that accept ``start_page`` so they can be walked in full."""
+    """Sources that accept ``start_page`` so they can be walked in full.
+
+    Every source in the registry is included — including the military and
+    suppressed/banned-works cannons, whose content is part of the library, never
+    filtered out. Pagination is degenerate (one page) for sources whose
+    ``start_page`` is inert, so the walk stops naturally there.
+    """
     out: List[str] = []
     for name in source_registry.list_names():
         if name in ("gutenberg", "african_ebooks"):

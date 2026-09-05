@@ -1,25 +1,19 @@
 /* Babe's Bookstore — Service Worker
- * Caches static assets for offline browsing. Network-first for API calls
- * and HTML pages so content stays fresh.
+ * Network-first for everything: API calls, HTML pages, and static assets.
+ * Only caches as an offline fallback — never serves stale data when online.
+ * Bump CACHE_NAME to force a fresh install on deploys.
  */
-const CACHE_NAME = 'babes-v2';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'babes-v3';
+const PRECACHE = [
   '/',
   '/static/site.css',
   '/static/icon.svg',
   '/js/store.js',
-  '/js/coming-soon.js',
-  '/bundles',
-  '/search',
-  '/bundles/custom',
-  '/authors',
-  '/authors/african',
-  '/categories/african-literature',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
   );
   self.skipWaiting();
 });
@@ -35,35 +29,21 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
 
-  // Network-first for API calls and HTML pages
-  if (url.pathname.startsWith('/api/') || request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok && request.method === 'GET') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
-    );
-    return;
-  }
+  // Only cache GET requests
+  if (request.method !== 'GET') return;
 
-  // Cache-first for static assets
+  // Network-first for everything: API, HTML, and assets.
+  // Stale data is worse than no data for a live catalogue.
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
-        if (response.ok && request.method === 'GET') {
+    fetch(request)
+      .then((response) => {
+        if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      });
-    })
+      })
+      .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
   );
 });

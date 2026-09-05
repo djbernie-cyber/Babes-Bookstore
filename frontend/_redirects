@@ -19,4 +19,5 @@
 /bundles/*  /bundles/detail.html  200
 /books/*  /books/detail.html  200
 /read/:id  /books/reader.html  200
+/books/:id/read  /books/reader.html  200
 /banned-works  /banned-works.html  200

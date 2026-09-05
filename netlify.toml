@@ -1,6 +1,15 @@
+# Netlify serves the static storefront; /api/* is proxied to Fly.io via
+# frontend/_redirects so browsers only ever talk to one origin (babesbooks.store).
+# There is no JS build step: files ship exactly as committed (skip_processing
+# disables Netlify's HTML/asset rewriting which previously caused stale,
+# unexpected build output).
 [build]
+  base = "."
   publish = "frontend"
   command = "echo 'Static site - no build needed'"
 
 [build.environment]
   NODE_VERSION = "18"
+
+[build.processing]
+  skip_processing = true

@@ -55,19 +55,21 @@ class OAPENSource(BaseSource):
         return None
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
-        return await self._harvest(limit)
+        return await self._harvest(limit, start_page=start_page)
 
-    async def _harvest(self, limit: int) -> List[BookMetadata]:
+    async def _harvest(self, limit: int, start_page: int = 1) -> List[BookMetadata]:
         """Harvest records, following resumption tokens until `limit` is met.
 
         OAPEN's OAI endpoint returns resumption tokens that may be long-lived
         (a UUID) or opaque decimal. Each page must be requested with the token
-        alone. We retry transient failures and stop cleanly either when the
-        limit is reached or the endpoint reports no further token.
+        alone. We retry transient failures, skip earlier records for
+        ``start_page``, and stop cleanly either when the limit is reached or
+        the endpoint reports no further token.
         """
         books: List[BookMetadata] = []
         params = {"verb": "ListRecords", "metadataPrefix": "oai_dc"}
         consecutive_failures = 0
+        skip = max(0, (start_page - 1) * max(limit, 1))
 
         while len(books) < limit:
             try:
@@ -90,7 +92,18 @@ class OAPENSource(BaseSource):
 
             if not batch and not token:
                 break
-            books.extend(batch)
+
+            carried = skip
+            for b in batch:
+                if carried > 0:
+                    carried -= 1
+                    continue
+                books.append(b)
+                if len(books) >= limit:
+                    break
+            skip = 0
+            if len(books) >= limit:
+                break
 
             if not token:
                 break

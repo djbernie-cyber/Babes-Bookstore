@@ -3,15 +3,28 @@
   "short_name": "Babe's Books",
   "description": "Curated public domain and openly-licensed book bundles.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#fbfbfd",
-  "theme_color": "#fbfbfd",
+  "background_color": "#fcfaf7",
+  "theme_color": "#0b0b0c",
   "icons": [
     {
-      "src": "/static/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

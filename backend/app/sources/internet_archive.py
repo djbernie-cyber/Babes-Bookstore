@@ -90,10 +90,13 @@ class InternetArchiveSource(BaseSource):
         return None
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
+        # Solr pages at 50 rows; ``start_page`` requests a later page so
+        # multi-page walks of this source surface genuinely new books.
         params = {
             "q": 'mediatype:texts AND licenseurl:*publicdomain*',
             "fl[]": "identifier,title,creator,date,licenseurl",
-            "rows": limit,
+            "rows": 50,
+            "page": max(1, start_page),
             "sort[]": "downloads desc",
             "output": "json",
         }
@@ -105,7 +108,7 @@ class InternetArchiveSource(BaseSource):
             return []
 
         books: List[BookMetadata] = []
-        for doc in data.get("response", {}).get("docs", []):
+        for doc in data.get("response", {}).get("docs", [])[:limit]:
             books.append(
                 BookMetadata(
                     title=doc.get("title", "Unknown"),

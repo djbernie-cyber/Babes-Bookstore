@@ -84,6 +84,31 @@ async def list_books(
     )
 
 
+@router.get("/{book_id}/text")
+async def book_text(book_id: int, db: AsyncSession = Depends(get_db)):
+    """Plain-text of an approved book for the in-browser reader.
+
+    Only approved, licence-verified public-domain works are exposed as text.
+    Falls back to the book's download URL hint when a plain-text rendering
+    isn't available (epub/pdf-only sources).
+    """
+    book = await db.get(Book, book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    if book.status != BookStatus.APPROVED or not book.license_verified:
+        raise HTTPException(status_code=403, detail="Book not yet verified for reading")
+
+    from ...services.packaging import packaging
+
+    text = packaging._resolve_book_text(book)
+    if not text:
+        raise HTTPException(
+            status_code=422,
+            detail="No plain-text rendering available — download the book instead",
+        )
+    return Response(content=text, media_type="text/plain; charset=utf-8")
+
+
 @router.get("/{book_id}/download")
 async def download_book(book_id: int, db: AsyncSession = Depends(get_db)):
     """Free individual book download — public domain works need no purchase.

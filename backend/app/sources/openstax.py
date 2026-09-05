@@ -37,7 +37,10 @@ class OpenStaxSource(BaseSource):
         ][:limit]
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
-        return await self._catalogue(limit)
+        # ``start_page`` offsets into the OpenStax CMS catalogue (100 per page),
+        # so multi-page walks of this source fetch genuinely different books.
+        offset = (start_page - 1) * 100
+        return await self._catalogue(limit, offset=offset)
 
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
         for book in await self._catalogue(300):
@@ -57,14 +60,15 @@ class OpenStaxSource(BaseSource):
             logger.debug("OpenStax download failed: %s", metadata.pdf_url, exc_info=True)
         return None
 
-    async def _catalogue(self, limit: int) -> List[BookMetadata]:
+    async def _catalogue(self, limit: int, offset: int = 0) -> List[BookMetadata]:
         """Fetch the book list, paging through the CMS API.
 
         The API rejects unknown field names with 400, so we request a
         conservative set and read the rest from each item's `meta` block.
+        Closing can resume from ``offset`` so a long walk collects new titles.
         """
         books: List[BookMetadata] = []
-        offset = 0
+        offset = max(offset, 0)
         page_size = 100
 
         while len(books) < limit:

@@ -1,10 +1,6 @@
 app = 'babes-bookstore'
 primary_region = 'lhr'
 
-[processes]
-  app = ''
-  worker = ''
-
 [build]
   dockerfile = 'backend/Dockerfile'
 
@@ -12,11 +8,16 @@ primary_region = 'lhr'
   PORT = '8000'
   WEB_CONCURRENCY = '2'
   DEBUG = 'false'
+  APP_NAME = 'Babe\u0027s Bookstore'
+  FRONTEND_URL = 'https://babesbooks.store'
+  CELERY_CONCURRENCY = '4'
 
 [http_service]
   internal_port = 8000
   force_https = true
-  auto_stop_machines = 'suspend'
+  # Keep machines warm: an 'off' (always-on) policy avoids cold starts that
+  # otherwise make the storefront look broken through the Netlify /api proxy.
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']

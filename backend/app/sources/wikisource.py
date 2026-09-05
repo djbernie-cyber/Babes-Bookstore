@@ -46,11 +46,15 @@ class WikisourceSource(BaseSource):
         return [b for b in (self._parse(h.get("title")) for h in hits) if b][:limit]
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
+        # ``start_page`` skips earlier titles by continuing the category walk
+        # past the earlier pages, so a multi-page run fetches new works.
+        skip = max(0, (start_page - 1) * limit)
         books: List[BookMetadata] = []
         for category in self.QUALITY_CATEGORIES:
             if len(books) >= limit:
                 break
-            books.extend(await self._category(category, limit - len(books)))
+            books.extend(await self._category(category, limit - len(books), skip=skip))
+            skip = 0  # only skip for the first category walk
             await asyncio.sleep(self.rate_limit)
         return books[:limit]
 
@@ -70,15 +74,16 @@ class WikisourceSource(BaseSource):
             logger.debug("Wikisource export failed: %s", metadata.epub_url, exc_info=True)
         return None
 
-    async def _category(self, category: str, limit: int) -> List[BookMetadata]:
+    async def _category(self, category: str, limit: int, skip: int = 0) -> List[BookMetadata]:
         books: List[BookMetadata] = []
         cont: Optional[str] = None
+        seen = 0
 
         while len(books) < limit:
             params: Dict[str, Any] = {
                 "action": "query", "list": "categorymembers",
                 "cmtitle": category, "cmnamespace": "0",
-                "cmlimit": min(limit - len(books), 500),
+                "cmlimit": min(limit - len(books) + skip, 500),
                 "format": "json", "formatversion": "2",
             }
             if cont:
@@ -93,9 +98,14 @@ class WikisourceSource(BaseSource):
                 break
 
             for member in payload.get("query", {}).get("categorymembers", []):
+                if seen < skip:
+                    seen += 1
+                    continue
                 book = self._parse(member.get("title"))
                 if book:
                     books.append(book)
+                if len(books) >= limit:
+                    break
 
             cont = payload.get("continue", {}).get("cmcontinue")
             if not cont:
