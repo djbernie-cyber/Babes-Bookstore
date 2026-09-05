@@ -52,4 +52,41 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function() {});
   }
+
+  // ─── Cookie consent (GDPR / CCPA) ─────────────────────────────────────────
+  var CK_KEY = 'cookie-consent-v1';
+  function cookieBanner(){
+    if(document.getElementById('cookie-banner')) return;      // already injected
+    var saved = localStorage.getItem(CK_KEY);                  // 'all' | 'necessary'
+    if(saved) return;                                          // already decided
+    var div = document.createElement('div');
+    div.id = 'cookie-banner';
+    div.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;'+
+      'background:#0b0b0c;color:#f5f5f4;padding:16px 20px;font-family:Inter,sans-serif;'+
+      'font-size:14px;line-height:1.5;box-shadow:0 -6px 24px rgba(0,0,0,.18)';
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;'+
+      'gap:12px;align-items:center;justify-content:space-between';
+    var txt = document.createElement('p');
+    txt.style.cssText = 'max-width:720px;margin:0;color:#d6d3d1';
+    txt.innerHTML = 'We use essential cookies to keep your cart, purchases and sign-in secure, and optional'+
+      ' analytics cookies to improve the site. You can change your choice anytime in our '+
+      '<a href="/legal/cookie-policy.html" style="color:#fff;text-decoration:underline">Cookie Policy</a>.';
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap';
+    function mk(label, val, primary){
+      var b=document.createElement('button');
+      b.textContent=label; b.type='button';
+      b.style.cssText = 'padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;'+
+        (primary ? 'background:#fff;color:#0b0b0c;border:1px solid #fff'
+                 : 'background:transparent;color:#e7e5e4;border:1px solid #57534e');
+      b.onclick=function(){ try{ localStorage.setItem(CK_KEY, val); }catch(_){} div.remove(); };
+      return b;
+    }
+    btns.appendChild(mk('Accept all', 'all', true));
+    btns.appendChild(mk('Essential only', 'necessary', false));
+    wrap.appendChild(txt); wrap.appendChild(btns); div.appendChild(wrap);
+    document.body.appendChild(div);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',cookieBanner); else cookieBanner();
 })();

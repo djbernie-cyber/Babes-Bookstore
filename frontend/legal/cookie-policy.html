@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Policy - Babe's Bookstore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; } .font-serif { font-family: 'Playfair Display', serif; }</style>
+    <link rel="stylesheet" href="/static/site.css">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#fbfbfd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="/static/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+</head>
+<body class="bg-stone-50 text-stone-900">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                <div class="hidden md:flex ml-10 space-x-8">
+                    <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                    <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
+                </div>
+            </div>
+            <a href="/account" class="text-stone-700 hover:text-amber-700 text-sm font-medium">Account</a>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="font-serif text-4xl font-bold text-stone-900 mb-4">Cookie Policy</h1>
+        <p class="text-stone-500 text-sm mb-10">Last updated: 5 September 2026</p>
+
+        <div class="space-y-8 text-stone-700 leading-relaxed">
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">The short version</h2>
+                <p>Babe's Bookstore uses cookies and local storage to keep your session, cart and purchases working correctly. We don't use intrusive advertising trackers or sell your data. You can choose to allow only essential cookies or opt in to optional analytics.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">What cookies we use</h2>
+                <p class="mb-4">We categorise cookies as essential or optional.</p>
+                <p class="font-semibold mb-2">Essential (always on)</p>
+                <ul class="list-disc pl-6 space-y-1">
+                    <li><strong>Session / auth tokens</strong> — keep you signed in and let your purchases and wishlist load. Stored in your browser's local storage.</li>
+                    <li><strong>Cart &amp; bundle state</strong> — remember the books you've added to a bundle as you build it.</li>
+                    <li><strong>Reader preferences</strong> — remember your text size and reading theme.</li>
+                    <li><strong>Cookie consent choice</strong> — remember what you selected so we don't ask again.</li>
+                </ul>
+                <p class="font-semibold mt-4 mb-2">Optional (off until you accept)</p>
+                <ul class="list-disc pl-6 space-y-1">
+                    <li>Anonymous analytics that help us understand how the library is used, so we can improve it.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">How to control cookies</h2>
+                <p>When you first visit, we show a consent banner. Choose <em>Accept all</em> to enable optional analytics, or <em>Essential only</em> to continue without them. You can clear or change your stored choice at any time through your browser settings, or by clearing this site's local storage.</p>
+                <p class="mt-3">You can also delete cookies via your browser — see the help for Chrome, Firefox, Safari or Edge. Doing so may sign you out and clear in-progress bundles.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">Third-party services</h2>
+                <p>Payments (card, PayPal, Apple Pay, Google Pay, M-Pesa) are processed by our payment providers on their own domains. Their privacy policies apply to anything you enter on those sites. We never receive or store your full card details.</p>
+            </section>
+
+            <section>
+                <h2 class="font-serif text-2xl font-bold text-stone-900 mb-3">Contact</h2>
+                <p>Questions about cookies or this policy? Email <a href="mailto:support@babesbooks.store" class="text-amber-700 hover:underline">support@babesbooks.store</a>.</p>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-stone-900 text-stone-300">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-sm">
+            &copy; 2026 Babe's Bookstore &middot; <a href="/privacy" class="hover:text-white">Privacy</a> &middot; <a href="/terms" class="hover:text-white">Terms</a> &middot; <a href="/refunds" class="hover:text-white">Refunds</a>
+        </div>
+    </footer>
+
+    <script src="/js/store.js"></script>
+</body>
+</html>

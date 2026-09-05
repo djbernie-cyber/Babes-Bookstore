@@ -1200,12 +1200,9 @@ class AfricanEbooksSource(BaseSource):
         Tagged ``Revolutionary``."""
         if not author:
             return False
-        normalized_author = AfricanEbooksSource._normalize(author)
         for candidate in CONDEMNED_REVOLUTIONARY_AUTHORS:
-            normalized = AfricanEbooksSource._normalize(candidate)
-            if normalized and (normalized_author == normalized
-                               or normalized_author in normalized
-                               or normalized in normalized_author):
+            if (AfricanEbooksSource._name_matches(author, candidate)
+                    or AfricanEbooksSource._name_matches(candidate, author)):
                 return True
         return False
 
@@ -1217,12 +1214,9 @@ class AfricanEbooksSource(BaseSource):
         shelf."""
         if not author:
             return False
-        normalized_author = AfricanEbooksSource._normalize(author)
         for candidate in list(COLONIAL_AUTHORS) + list(COLONIAL_COLLABORATORS):
-            normalized = AfricanEbooksSource._normalize(candidate)
-            if normalized and (normalized_author == normalized
-                               or normalized_author in normalized
-                               or normalized in normalized_author):
+            if (AfricanEbooksSource._name_matches(author, candidate)
+                    or AfricanEbooksSource._name_matches(candidate, author)):
                 return True
         return False
 
@@ -1234,16 +1228,15 @@ class AfricanEbooksSource(BaseSource):
         irrelevant — a work belongs on the shelf only when an African or
         African-diaspora author wrote it. Names are normalised (punctuation,
         spacing, initials vs full names collapsed) so "W.E.B. Du Bois" and
-        "William Edward Burghardt Du Bois" both match.
+        "William Edward Burghardt Du Bois" both match, and Gutenberg's
+        "Surname, Given (aliases)" records match the list's given-name-first
+        form.
         """
         if not author:
             return False
-        normalized_author = AfricanEbooksSource._normalize(author)
         for candidate in AFRICAN_AUTHORS:
-            normalized = AfricanEbooksSource._normalize(candidate)
-            if normalized and normalized_author == normalized:
-                return True
-            if normalized and (normalized_author in normalized or normalized in normalized_author):
+            if (AfricanEbooksSource._name_matches(author, candidate)
+                    or AfricanEbooksSource._name_matches(candidate, author)):
                 return True
         return False
 
@@ -1256,12 +1249,9 @@ class AfricanEbooksSource(BaseSource):
         """
         if not author:
             return False
-        normalized_author = AfricanEbooksSource._normalize(author)
         for candidate in AFRICAN_CONTINENT_AUTHORS:
-            normalized = AfricanEbooksSource._normalize(candidate)
-            if normalized and (normalized_author == normalized
-                               or normalized_author in normalized
-                               or normalized in normalized_author):
+            if (AfricanEbooksSource._name_matches(author, candidate)
+                    or AfricanEbooksSource._name_matches(candidate, author)):
                 return True
         return False
 
@@ -1271,3 +1261,39 @@ class AfricanEbooksSource(BaseSource):
         s = (name or "").lower()
         s = re.sub(r"[^a-z0-9]+", "", s)
         return s.strip()
+
+    @staticmethod
+    def _name_tokens(name: str) -> set:
+        """Lowercased alphanumeric tokens of a name, e.g.
+        ``"Haggard, H. Rider (Henry Rider)"`` -> ``{"haggard","h","rider","henry"}``."""
+        import re
+        return set(re.findall(r"[a-z0-9]+", (name or "").lower()))
+
+    @staticmethod
+    def _name_matches(record: Optional[str], candidate: str) -> bool:
+        """True when a stored author string ``record`` refers to ``candidate``.
+
+        Two passes so every source's name format is handled:
+
+        1. Normalised equality / substring (collapses punctuation, spacing and
+           middle names; preserves accented letters minimally). This is the
+           match that already worked for given-name-first records.
+        2. Token-subset in either direction, which makes ``Surname, Given``
+           records (Gutenberg's ``"Haggard, H. Rider (Henry Rider)"``) match
+           the ``"H. Rider Haggard"`` form used by the curated lists.
+
+        Curated lists are actual people, so a shared token set — even with
+        extra initials or alias parentheses on the record side — reliably
+        identifies the same person.
+        """
+        if not record or not candidate:
+            return False
+        nr = AfricanEbooksSource._normalize(record)
+        nc = AfricanEbooksSource._normalize(candidate)
+        if nr and nc and (nr == nc or nr in nc or nc in nr):
+            return True
+        rt = AfricanEbooksSource._name_tokens(record)
+        ct = AfricanEbooksSource._name_tokens(candidate)
+        if not rt or not ct:
+            return False
+        return bool(ct <= rt or rt <= ct)

@@ -14,6 +14,8 @@ from ...sources.african_ebooks import (
 
 router = APIRouter(prefix="/authors", tags=["authors"])
 
+_AGGREGATE_CREDITS: list[str] = ["Various", "Anonymous", "Unknown"]
+
 
 @router.get("")
 async def list_authors(
@@ -31,6 +33,7 @@ async def list_authors(
             Book.license_verified == True,
             Book.author.isnot(None),
             Book.author != "",
+            Book.author.notin_(_AGGREGATE_CREDITS),
         )
         .group_by(Book.author)
         .order_by(func.count(Book.id).desc())
@@ -79,12 +82,13 @@ async def list_african_authors(
             Book.license_verified == True,
             Book.author.isnot(None),
             Book.author != "",
+            Book.author.notin_(_AGGREGATE_CREDITS),
             tag_filter,
             colonial_filter,
         )
         .group_by(Book.author)
         .order_by(
-            case((continent_filter, 0), else_=1),
+            func.max(case((continent_filter, 1), else_=0)).desc(),
             func.count(Book.id).desc(),
         )
     )
@@ -102,6 +106,7 @@ async def list_african_authors(
             Book.license_verified == True,
             Book.author.isnot(None),
             Book.author != "",
+            Book.author.notin_(_AGGREGATE_CREDITS),
             tag_filter,
             colonial_filter,
             continent_filter,

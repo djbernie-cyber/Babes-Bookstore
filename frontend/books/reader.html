@@ -86,9 +86,8 @@ function tidy(html){
   var paras=[];
   body.querySelectorAll('p').forEach(function(p){ paras.push(p.textContent) });
   if(!paras.length) paras=[body.textContent];
-  return paras.map(function(t){ return t.replace(/^\s+|\s+$/g,'') }).filter(Boolean).map(escPara).join('\n\n');
+  return paras.map(function(t){ return t.replace(/^\s+|\s+$/g,'') }).filter(Boolean);
 }
-function escPara(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 async function load(){
   var id=bookId();
   var loading=document.getElementById('loading'), err=document.getElementById('err'), content=document.getElementById('content');

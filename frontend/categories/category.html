@@ -102,17 +102,27 @@ function card(b){
 var curPage=1;
 var slug=slugFromUrl();
 var catName=titleFromSlug(slug);
+var realName=catName;
 
 document.getElementById('cat-title').textContent=catName;
 document.getElementById('cat-eyebrow').textContent='Category';
 document.title=catName+' — Babe\'s Bookstore';
 document.getElementById('cat-desc').textContent=descFor(slug);
 
+async function resolveCategory(){
+  try{
+    var r=await fetch('/api/v1/categories'); if(!r.ok) return;
+    var d=await r.json();
+    var hit=(d||[]).find(function(c){ return c.slug===slug; });
+    if(hit && hit.name){ realName=hit.name; }
+  }catch{}
+}
+
 async function load(page){
   if(page) curPage=page;
   var loading=document.getElementById('loading'), err=document.getElementById('error'), res=document.getElementById('results'), empty=document.getElementById('empty'), meta=document.getElementById('meta'), pag=document.getElementById('pagination');
   loading.classList.remove('hidden'); err.classList.add('hidden'); res.innerHTML=''; empty.classList.add('hidden'); meta.classList.add('hidden'); pag.innerHTML='';
-  var params=new URLSearchParams(); params.set('category',catName); params.set('page',curPage); params.set('page_size','24');
+  var params=new URLSearchParams(); params.set('category',realName); params.set('page',curPage); params.set('page_size','24');
   try{
     var r=await fetch('/api/v1/books?'+params.toString()); if(!r.ok) throw new Error(r.status);
     var d=await r.json(); var items=d.items||[]; var total=d.total||0;
@@ -128,7 +138,7 @@ async function load(page){
     }
   }catch(e){ loading.classList.add('hidden'); err.textContent='Could not load: '+e.message; err.classList.remove('hidden') }
 }
-document.addEventListener('DOMContentLoaded',function(){ load(1); });
+document.addEventListener('DOMContentLoaded',function(){ resolveCategory().then(function(){ load(1); }); });
 </script>
 </body>
 </html>

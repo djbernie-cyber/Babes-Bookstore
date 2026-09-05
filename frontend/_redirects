@@ -1,6 +1,7 @@
 /terms  /legal/terms.html  200
 /privacy  /legal/privacy.html  200
 /refunds  /legal/refunds.html  200
+/cookies  /legal/cookie-policy.html  200
 /api/*  https://babes-bookstore.fly.dev/api/:splat  200
 /login  /account/login.html  200
 /register  /account/register.html  200
@@ -17,7 +18,7 @@
 /admin/purchases  /admin/purchases.html  200
 /bundles/custom  /bundles/custom.html  200
 /bundles/*  /bundles/detail.html  200
-/books/*  /books/detail.html  200
-/read/:id  /books/reader.html  200
 /books/:id/read  /books/reader.html  200
+/books/*  /books/detail.html  200
+/read/*  /books/reader.html  200
 /banned-works  /banned-works.html  200
