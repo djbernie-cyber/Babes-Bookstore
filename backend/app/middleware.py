@@ -7,6 +7,7 @@ workers, consider using `slowapi` or a Redis-backed limiter.
 """
 
 import time
+import os
 import logging
 from collections import defaultdict
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -51,6 +52,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             del self._hits[k]
 
     async def dispatch(self, request: Request, call_next):
+        # Tokenless CI/test runs saturate in-memory limits; skip when disabled.
+        if os.environ.get("DISABLE_RATE_LIMITING") == "1":
+            return await call_next(request)
+
         # Only rate-limit API routes
         path = request.url.path
         if not path.startswith("/api/"):

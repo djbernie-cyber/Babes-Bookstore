@@ -14,11 +14,13 @@
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
-  </head>
+    <link rel="stylesheet" href="/static/theme.css">
+  <script src="/js/theme.js"></script>
+</head>
 <body class="min-h-screen flex flex-col">
 <nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
   <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
-    <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/bundles" class="text-stone-600">Bundles</a><a href="/search" class="text-stone-600">Library</a></div></div>
+    <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/account" class="text-stone-600">My Library</a><a href="/bundles" class="text-stone-600">Bundles</a><a href="/search" class="text-stone-600">Library</a></div></div>
   <div class="flex items-center gap-3"><button onclick="logout()" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Sign out</button>
     <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
 </div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="#" onclick="logout()" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Sign out</a></div></nav>
@@ -47,8 +49,8 @@
           <div class="bg-white text-[#0b0b0c] rounded-full px-4 py-2 text-xs font-semibold">90,000 volumes</div>
         </div>
         <div class="mt-6 grid grid-cols-3 gap-3 text-center">
-          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold" data-live-books>15,744</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">In your library</p></div>
-          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold" id="vault-bundles">19</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">Bundles</p></div>
+          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold" id="vault-saved">0</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">In your library</p></div>
+          <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold" id="vault-bundles">0</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">Bundles</p></div>
           <div class="bg-[#1a1a1c] border border-[#2a2a2e] rounded-xl p-3"><p class="font-serif text-xl font-semibold">∞</p><p class="text-[10px] uppercase tracking-wide font-semibold text-[#a8a29e]">Downloads</p></div>
         </div>
         <div class="mt-6 flex flex-wrap gap-3">
@@ -116,7 +118,16 @@ async function unwish(id){
   const t=localStorage.getItem('token');
   try{ await fetch(`/api/v1/wishlist/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+t}}); }catch(e){}
 }
+async function loadVault(apiToken){
+  try{
+    const r=await fetch('/api/v1/library/summary',{headers:{'Authorization':'Bearer '+apiToken}}); if(!r.ok) return;
+    const d=await r.json();
+    const sv=document.getElementById('vault-saved'); if(sv) sv.textContent=(d.total_saved||0).toLocaleString();
+    const vb=document.getElementById('vault-bundles'); if(vb) vb.textContent=(d.bundle_count||0).toLocaleString();
+  }catch(e){}
+}
 async function load(token){
+  loadVault(token);
   try{
     const r=await fetch('/api/v1/purchases',{headers:{'Authorization':'Bearer '+token}}); if(!r.ok) throw new Error();
     const arr=await r.json(); if(!Array.isArray(arr)||!arr.length) return;

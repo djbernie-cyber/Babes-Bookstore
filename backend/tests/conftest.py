@@ -4,6 +4,7 @@ import os
 os.environ.setdefault("DEBUG", "true")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-long-enough-000000")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("DISABLE_RATE_LIMITING", "1")
 # Test-only Stripe config so checkout endpoints take the provider branch
 # rather than returning 500. The actual Stripe SDK is patched in tests.
 os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_dummy")

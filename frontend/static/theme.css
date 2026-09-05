@@ -1,0 +1,48 @@
+/* Whole-site themes for Babe's Bookstore.
+   Base palette is the warm sepia-paper design. Themes:
+     sepia  — default warm paper (no overrides needed)
+     light  — pure white paper
+     dark   — the reader's invert trick, with media counter-inverted so
+              covers/artwork keep their natural colours.
+   The switcher lives in js/theme.js; chosen theme is saved per-account for
+   signed-in users, falling back to localStorage for guests.
+   Attribute selectors ([class~="bg-[#...]"]) are used because the storefront
+   styles with Tailwind arbitrary-value classes. */
+
+/* ── Light ─────────────────────────────────────────────────────────── */
+[data-theme="light"] body{ background:#ffffff; color:#161616 }
+[data-theme="light"] [class~="bg-[#fcfaf7]"]{ background:#ffffff }
+[data-theme="light"] [class~="bg-[#f6f1e7]"]{ background:#fafaf8 }
+[data-theme="light"] .bundle-card .cover{ background:#fbfbfa }
+[data-theme="light"] #african-toggle{ background:#ffffff }
+
+/* ── Dark ──────────────────────────────────────────────────────────── */
+[data-theme="dark"]{ filter:invert(92%) hue-rotate(180deg); background:#0b0b0c }
+[data-theme="dark"] body{ background:#101013; color:#e5e3e1 }
+
+/* keep photographic art natural-coloured on the inverted page */
+[data-theme="dark"] img,
+[data-theme="dark"] video,
+[data-theme="dark"] picture img,
+[data-theme="dark"] [class~="bg-[#0b0b0c]"] img{ filter:invert(92%) hue-rotate(180deg) }
+
+/* selection & focus stay legible under inversion */
+[data-theme="dark"] ::selection{ background:#b08a4a; color:#1a1206 }
+[data-theme="dark"] :focus-visible{ outline-color:#e0b468 }
+
+/* ── Theme switcher (floating) ─────────────────────────────────────── */
+.babes-theme-switcher{ position:fixed; right:18px; bottom:18px; z-index:9998;
+  display:flex; gap:4px; padding:4px; border-radius:999px;
+  background:rgba(11,11,12,.9); border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 6px 24px rgba(0,0,0,.25); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px) }
+[data-theme="dark"] .babes-theme-switcher{ background:rgba(244,240,232,.92); border-color:rgba(0,0,0,.14) }
+.babes-theme-switcher button{ min-width:38px; height:34px; border:0; border-radius:999px;
+  font-family:Inter,system-ui,sans-serif; font-size:12px; font-weight:600; cursor:pointer;
+  color:#e7e5e4; background:transparent; transition:background .15s }
+.babes-theme-switcher button:hover{ background:rgba(255,255,255,.12) }
+.babes-theme-switcher button.active{ background:#fff; color:#0b0b0c }
+[data-theme="dark"] .babes-theme-switcher button:hover{ background:rgba(0,0,0,.08) }
+[data-theme="dark"] .babes-theme-switcher button.active{ background:#0b0b0c; color:#fff }
+.babes-theme-switcher b{ display:flex; align-items:center; padding:0 6px 0 4px;
+  font-family:Inter,system-ui,sans-serif; font-size:11px; font-weight:600; letter-spacing:.06em;
+  text-transform:uppercase; color:#a8a29e }

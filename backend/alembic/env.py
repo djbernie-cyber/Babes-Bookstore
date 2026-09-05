@@ -10,7 +10,7 @@ from app.config import settings
 
 # Import every model module so Base.metadata is fully populated for
 # --autogenerate. Without these imports Alembic would emit empty migrations.
-from app.models import book, bundle, user, purchase, audit  # noqa: F401
+from app.models import book, bundle, user, purchase, audit, review, wishlist, library  # noqa: F401
 
 config = context.config
 

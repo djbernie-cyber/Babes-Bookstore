@@ -190,51 +190,55 @@
             }
         }
 
+        async function adminPost(url, okMsg, failMsg) {
+            const res = await fetch(url, { method: 'POST', headers: authHeaders() });
+            if (!res.ok) {
+                let detail = '';
+                try { detail = (await res.json()).detail || ''; } catch (e) {}
+                throw new Error((res.status === 401 || res.status === 403) ? 'Not authorised — sign in as admin'
+                    : (typeof detail === 'string' ? detail : JSON.stringify(detail)));
+            }
+            const data = await res.json().catch(() => ({}));
+            showToast((data.task_id ? okMsg + ' · Task: ' + data.task_id.substring(0, 8) : okMsg));
+        }
+
         async function scrapeSource() {
             const source = document.getElementById('scrape-source').value;
             const limit = document.getElementById('scrape-limit').value;
             const startPage = document.getElementById('scrape-start-page').value;
             showToast(`Starting scrape of ${source}...`);
             try {
-                const res = await fetch(`/api/v1/admin/scrape/source/${source}?limit=${limit}&start_page=${startPage}`, {
-                    method: 'POST', headers: authHeaders()
-                });
-                const data = await res.json();
-                showToast(`Scrape started: ${source} (limit=${limit}, start_page=${startPage}) · Task: ${data.task_id?.substring(0,8)}`);
+                await adminPost(`/api/v1/admin/scrape/source/${source}?limit=${limit}&start_page=${startPage}`,
+                    `Scrape started: ${source} (limit=${limit}, start_page=${startPage})`, 'Failed to start scrape');
             } catch (e) {
-                showToast('Failed to start scrape');
+                showToast(e.message || 'Failed to start scrape');
             }
         }
 
         async function scrapeAll() {
             showToast('Starting full scrape...');
             try {
-                const res = await fetch('/api/v1/admin/scrape/all?limit_per_source=50', { method: 'POST', headers: authHeaders() });
-                const data = await res.json();
-                showToast('Full scrape initiated · Task: ' + (data.task_id?.substring(0,8)));
+                await adminPost('/api/v1/admin/scrape/all?limit_per_source=50', 'Full scrape initiated', 'Failed to start scrape');
             } catch (e) {
-                showToast('Failed to start scrape');
+                showToast(e.message || 'Failed to start scrape');
             }
         }
 
         async function scrapePopular() {
             showToast('Scraping popular books...');
             try {
-                const res = await fetch('/api/v1/admin/scrape/popular?limit_per_source=100', { method: 'POST', headers: authHeaders() });
-                const data = await res.json();
-                showToast('Popular scrape initiated · Task: ' + (data.task_id?.substring(0,8)));
+                await adminPost('/api/v1/admin/scrape/popular?limit_per_source=100', 'Popular scrape initiated', 'Failed to start scrape');
             } catch (e) {
-                showToast('Failed to start scrape');
+                showToast(e.message || 'Failed to start scrape');
             }
         }
 
         async function reverifyAll() {
             showToast('Re-verifying licenses...');
             try {
-                const res = await fetch('/api/v1/admin/verify/licenses', { method: 'POST', headers: authHeaders() });
-                showToast('Re-verification initiated');
+                await adminPost('/api/v1/admin/verify/licenses', 'Re-verification initiated', 'Failed to start re-verification');
             } catch (e) {
-                showToast('Failed to start re-verification');
+                showToast(e.message || 'Failed to start re-verification');
             }
         }
 
@@ -242,11 +246,9 @@
             if (!confirm('Expands the African Literature shelf to the full set of Africa-themed Gutenberg works. Continue?')) return;
             showToast('Starting full African Literature harvest...');
             try {
-                const res = await fetch('/api/v1/admin/scrape/african-full', { method: 'POST', headers: authHeaders() });
-                const data = await res.json();
-                showToast('African full harvest started · Task: ' + (data.task_id?.substring(0,8)));
+                await adminPost('/api/v1/admin/scrape/african-full', 'African full harvest started', 'Failed to start African harvest');
             } catch (e) {
-                showToast('Failed to start African harvest');
+                showToast(e.message || 'Failed to start African harvest');
             }
         }
 
@@ -254,9 +256,7 @@
             if (!confirm('Kicks off the full Gutenberg (~74k) + African shelf + all other sources in parallel to drive the catalogue toward its honest ceiling. This takes a long time. Continue?')) return;
             showToast('Starting ~90k catalogue harvest...');
             try {
-                const res = await fetch('/api/v1/admin/scrape/full', { method: 'POST', headers: authHeaders() });
-                const data = await res.json();
-                showToast('Full catalogue harvest started · Task: ' + (data.task_id?.substring(0,8)));
+                await adminPost('/api/v1/admin/scrape/full', 'Full catalogue harvest started', 'Failed to start catalogue harvest');
             } catch (e) {
                 showToast('Failed to start catalogue harvest');
             }
@@ -265,11 +265,9 @@
         async function retagAfrican() {
             showToast('Tagging existing African books...');
             try {
-                const res = await fetch('/api/v1/admin/retag/african-literature', { method: 'POST', headers: authHeaders() });
-                const data = await res.json();
-                showToast('Tagging started · Task: ' + (data.task_id?.substring(0,8)));
+                await adminPost('/api/v1/admin/retag/african-literature', 'Tagging started', 'Failed to start tagging');
             } catch (e) {
-                showToast('Failed to start tagging');
+                showToast(e.message || 'Failed to start tagging');
             }
         }
 
@@ -277,9 +275,7 @@
             if (!confirm('This harvests ~74,000 books and may take a long time. Continue?')) return;
             showToast('Starting full Gutenberg catalogue harvest...');
             try {
-                const res = await fetch('/api/v1/admin/scrape/gutenberg-full', { method: 'POST', headers: authHeaders() });
-                const data = await res.json();
-                showToast('Gutenberg full harvest started · Task: ' + (data.task_id?.substring(0,8)));
+                await adminPost('/api/v1/admin/scrape/gutenberg-full', 'Gutenberg full harvest started', 'Failed to start Gutenberg harvest');
             } catch (e) {
                 showToast('Failed to start Gutenberg harvest');
             }

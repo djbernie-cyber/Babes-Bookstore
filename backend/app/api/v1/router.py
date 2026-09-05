@@ -10,6 +10,7 @@ from .categories import router as categories_router
 from .authors import router as authors_router
 from .reviews import router as reviews_router
 from .wishlist import router as wishlist_router
+from .library import router as library_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -24,3 +25,4 @@ api_router.include_router(categories_router)
 api_router.include_router(authors_router)
 api_router.include_router(reviews_router)
 api_router.include_router(wishlist_router)
+api_router.include_router(library_router)

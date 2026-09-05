@@ -5,15 +5,30 @@ from sqlalchemy import select, func, delete as sa_delete
 from .deps import get_db, get_current_user
 from ...models.book import Book, BookStatus
 from ...models.user import User
-from ...models.wishlist import WishlistItem
+from ...models.library import Shelf, ShelfItem
 
 router = APIRouter(prefix="/wishlist", tags=["wishlist"])
+
+DEFAULT_SHELF = "Saved"
 
 
 def _require(user: User | None) -> User:
     if not user:
         raise HTTPException(status_code=401, detail="Login required to use your wishlist")
     return user
+
+
+async def _default_shelf(db: AsyncSession, user_id: int) -> Shelf:
+    """The wishlist is the user's default shelf — created on first use."""
+    shelf = (await db.execute(
+        select(Shelf).where(Shelf.user_id == user_id, Shelf.is_default.is_(True))
+    )).scalar_one_or_none()
+    if shelf:
+        return shelf
+    shelf = Shelf(user_id=user_id, name=DEFAULT_SHELF, is_default=True)
+    db.add(shelf)
+    await db.commit()
+    return shelf
 
 
 @router.get("")
@@ -25,19 +40,20 @@ async def list_wishlist(
 ):
     """List the current user's wishlisted books (newest first)."""
     user = _require(current_user)
+    shelf = await _default_shelf(db, user.id)
 
     count_stmt = (
         select(func.count())
-        .select_from(WishlistItem)
-        .where(WishlistItem.user_id == user.id)
+        .select_from(ShelfItem)
+        .where(ShelfItem.shelf_id == shelf.id)
     )
     total = (await db.execute(count_stmt)).scalar() or 0
 
     stmt = (
         select(Book)
-        .join(WishlistItem, WishlistItem.book_id == Book.id)
-        .where(WishlistItem.user_id == user.id)
-        .order_by(WishlistItem.created_at.desc())
+        .join(ShelfItem, ShelfItem.book_id == Book.id)
+        .where(ShelfItem.shelf_id == shelf.id)
+        .order_by(ShelfItem.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -73,16 +89,17 @@ async def add_to_wishlist(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
+    shelf = await _default_shelf(db, user.id)
     existing = (await db.execute(
-        select(WishlistItem).where(
-            WishlistItem.user_id == user.id,
-            WishlistItem.book_id == book_id,
+        select(ShelfItem.id).where(
+            ShelfItem.shelf_id == shelf.id,
+            ShelfItem.book_id == book_id,
         )
     )).scalar_one_or_none()
     if existing:
         return {"wishlisted": True, "already": True}
 
-    db.add(WishlistItem(user_id=user.id, book_id=book_id))
+    db.add(ShelfItem(shelf_id=shelf.id, book_id=book_id))
     await db.commit()
     return {"wishlisted": True, "already": False}
 
@@ -95,11 +112,12 @@ async def remove_from_wishlist(
 ):
     """Remove a book from the current user's wishlist."""
     user = _require(current_user)
+    shelf = await _default_shelf(db, user.id)
 
     result = await db.execute(
-        sa_delete(WishlistItem).where(
-            WishlistItem.user_id == user.id,
-            WishlistItem.book_id == book_id,
+        sa_delete(ShelfItem).where(
+            ShelfItem.shelf_id == shelf.id,
+            ShelfItem.book_id == book_id,
         )
     )
     await db.commit()
@@ -116,10 +134,11 @@ async def wishlist_status(
     if not current_user:
         return {"wishlisted": False, "anonymous": True}
 
+    shelf = await _default_shelf(db, current_user.id)
     existing = (await db.execute(
-        select(WishlistItem.id).where(
-            WishlistItem.user_id == current_user.id,
-            WishlistItem.book_id == book_id,
+        select(ShelfItem.id).where(
+            ShelfItem.shelf_id == shelf.id,
+            ShelfItem.book_id == book_id,
         )
     )).scalar_one_or_none()
     return {"wishlisted": existing is not None, "anonymous": False}
