@@ -24,6 +24,7 @@ async def list_books(
     source: Optional[str] = None,
     license_type: Optional[str] = None,
     tag: Optional[str] = None,
+    exclude_tag: Optional[str] = None,
     status_filter: Optional[BookStatus] = Query(None, alias="status"),
     search: Optional[str] = None,
     approved_only: bool = True,
@@ -58,6 +59,8 @@ async def list_books(
     if tag:
         # Portable JSON-array membership across Postgres and SQLite.
         stmt = stmt.where(func.cast(Book.tags, String).ilike(f'%"{tag}"%'))
+    if exclude_tag:
+        stmt = stmt.where(~func.cast(Book.tags, String).ilike(f'%"{exclude_tag}"%'))
 
     if search:
         search_filter = or_(

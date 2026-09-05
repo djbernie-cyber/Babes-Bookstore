@@ -28,7 +28,7 @@
   <div class="max-w-3xl">
     <p class="eyebrow mt-4">A growing shelf</p>
     <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 leading-[.95]">African Literature</h1>
-    <p class="text-stone-600 mt-3 leading-7">A dedicated, curated canon of African-authored and African-diaspora writing — from Olaudah Equiano's pioneering narrative to Olive Schreiner and Sol T. Plaatje, and the great voices of the diaspora. Gathered from the public domain into one shelf.</p>
+    <p class="text-stone-600 mt-3 leading-7">A dedicated, curated canon of African-authored and African-diaspora writing — from Olaudah Equiano's pioneering narrative to Sol T. Plaatje's <em>Mhudi</em>, Phillis Wheatley and the great voices of the diaspora. Gathered from the public domain into one shelf. Colonial-era (coloniser) works are out of the default view — reveal them any time with the toggle below.</p>
     <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="px-3 py-1.5 rounded-full bg-white border font-medium">Public domain · licence-verified</span><span class="px-3 py-1.5 rounded-full bg-white border font-medium"><span data-live-books>18,000</span> works in the wider library</span></div>
   </div>
 
@@ -94,17 +94,25 @@ function card(b){
   </div>`;
 }
 let curPage=1;
+function colonialHidden(){
+  var cb=document.getElementById('hide-colonial');
+  return !cb || cb.checked;
+}
 async function load(page){
   if(page) curPage=page;
   const loading=document.getElementById('loading'), err=document.getElementById('error'), res=document.getElementById('results'), empty=document.getElementById('empty'), meta=document.getElementById('meta'), pag=document.getElementById('pagination');
   loading.classList.remove('hidden'); err.classList.add('hidden'); res.innerHTML=""; empty.classList.add('hidden'); meta.classList.add('hidden'); pag.innerHTML="";
-  const params=new URLSearchParams(); params.set('tag','African Literature'); params.set('page',curPage); params.set('page_size','24');
+  const hideColonial=colonialHidden();
+  const params=new URLSearchParams(); params.set('tag','African Literature'); if(hideColonial) params.set('exclude_tag','Colonial Sauce'); params.set('page',curPage); params.set('page_size','24');
   try{
     const r=await fetch(`/api/v1/books?${params.toString()}`); if(!r.ok) throw new Error(r.status);
     const d=await r.json(); const items=d.items||[]; const total=d.total||0;
     loading.classList.add('hidden');
     if(!items.length){ empty.classList.remove('hidden'); return }
-    meta.textContent=`${items.length} of ${total.toLocaleString()} African titles shown`; meta.classList.remove('hidden');
+    meta.textContent=hideColonial
+      ? `${total.toLocaleString()} African titles shown · Colonial Sauce works hidden`
+      : `${total.toLocaleString()} African titles, including Colonial Sauce (coloniser) works`;
+    meta.classList.remove('hidden');
     res.innerHTML=items.map(card).join('');
     const tp=Math.ceil(total/24);
     if(tp>1){ let h=""; h+=`<button onclick="load(${curPage-1})" ${curPage<=1?'disabled':''} class="px-4 py-2 rounded-full border bg-white text-sm ${curPage<=1?'opacity-40':''}">Previous</button>`;
@@ -114,6 +122,7 @@ async function load(page){
     }
   }catch(e){ loading.classList.add('hidden'); err.textContent="Could not load: "+e.message; err.classList.remove('hidden') }
 }
+function hideColonial(){ load(1); }
 document.addEventListener('DOMContentLoaded',()=>load(1));
 </script>
 </body>
