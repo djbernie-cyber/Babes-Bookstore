@@ -16,6 +16,33 @@ from ...services.audit import log_action
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+def _task_in_flight(name: str, first_arg: str | None = None) -> str | None:
+    """Return the id of a worker task that is active or queued (reserved).
+
+    Guards against stacking duplicate scraping/retag jobs from repeated
+    dashboard clicks while a run is still in progress. Best-effort: if the
+    broker is unreachable we err on the side of allowing the enqueue.
+    """
+    try:
+        from celery import current_app as _celery
+        insp = _celery.control.inspect()
+        for bucket in (insp.active(), insp.reserved()):
+            if not bucket:
+                continue
+            for _worker, tasks in bucket.items():
+                for t in tasks or []:
+                    if t.get("name") != name:
+                        continue
+                    if first_arg is not None:
+                        args = t.get("args") or []
+                        if not args or args[0] != first_arg:
+                            continue
+                    return t.get("id")
+    except Exception:
+        return None
+    return None
+
+
 class BulkBookAction(BaseModel):
     book_ids: List[int]
     action: str  # approve, reject, delete
@@ -79,6 +106,9 @@ async def trigger_source_scrape(
         raise HTTPException(status_code=404, detail=f"Source '{source_name}' not found")
 
     from ...tasks.scrape import scrape_source_task
+    existing = _task_in_flight("scrape.source", source_name)
+    if existing:
+        return {"task_id": existing, "source": source_name, "already_running": True}
     task = scrape_source_task.delay(source_name, query, limit, start_page)
     await log_action(
         db, action="scrape.source", entity_type="source",
@@ -95,6 +125,9 @@ async def trigger_all_scrape(
     admin: User = Depends(require_admin),
 ):
     from ...tasks.scrape import scrape_all_sources_task
+    existing = _task_in_flight("scrape.all_sources")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = scrape_all_sources_task.delay(query, limit_per_source)
     await log_action(
         db, action="scrape.all", entity_type="source",
@@ -110,6 +143,9 @@ async def trigger_popular_scrape(
     admin: User = Depends(require_admin),
 ):
     from ...tasks.scrape import scrape_popular_task
+    existing = _task_in_flight("scrape.popular")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = scrape_popular_task.delay(limit_per_source)
     await log_action(
         db, action="scrape.popular", entity_type="source",
@@ -131,6 +167,9 @@ async def trigger_gutenberg_full(
     testing.
     """
     from ...tasks.scrape import scrape_gutenberg_full_task
+    existing = _task_in_flight("scrape.gutenberg_full")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = scrape_gutenberg_full_task.delay(limit)
     await log_action(
         db, action="scrape.gutenberg_full", entity_type="source",
@@ -148,6 +187,9 @@ async def trigger_african_full(
     """Expand the African Literature shelf from the curated canon to the full
     set of English public-domain Africa-themed Gutenberg works."""
     from ...tasks.scrape import scrape_african_full_task
+    existing = _task_in_flight("scrape.african_full")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = scrape_african_full_task.delay(limit)
     await log_action(
         db, action="scrape.african_full", entity_type="source",
@@ -168,6 +210,9 @@ async def trigger_full_catalogue(
     honestly — the licensed public-domain English corpus tops out in the high
     seventies to mid-eighties thousands, not a guaranteed flat 90,000."""
     from ...tasks.scrape import scrape_full_catalogue_task
+    existing = _task_in_flight("scrape.full_catalogue")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = scrape_full_catalogue_task.delay(pages_per_source=pages_per_source)
     await log_action(
         db, action="scrape.full", entity_type="source",
@@ -182,6 +227,9 @@ async def trigger_license_verification(
     admin: User = Depends(require_admin),
 ):
     from ...tasks.verify_licenses import verify_all_licenses_task
+    existing = _task_in_flight("verify.licenses.all")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = verify_all_licenses_task.delay()
     await log_action(db, action="verify.licenses", entity_type="book", user_id=admin.id)
     return {"task_id": task.id}
@@ -194,6 +242,9 @@ async def trigger_african_retag(
 ):
     """Backfill 'African Literature' tags on existing approved books."""
     from ...tasks.scrape import retag_african_literature_task
+    existing = _task_in_flight("retag.african_literature")
+    if existing:
+        return {"task_id": existing, "already_running": True}
     task = retag_african_literature_task.delay()
     await log_action(db, action="retag.african_literature", entity_type="book", user_id=admin.id)
     return {"task_id": task.id}
