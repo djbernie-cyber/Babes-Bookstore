@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>African Authors — Babe's Bookstore</title>
+  <meta name="description" content="Browse the African and African-diaspora authors in the library — every anthology carries the African Literature tag and is licence-verified, free to download.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+</head>
+<body class="min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-[.92rem] font-medium"><a href="/bundles" class="text-stone-600 hover:text-stone-900">Bundles</a><a href="/search" class="text-stone-600 hover:text-stone-900">Library</a><a href="/authors" class="text-stone-900">Authors</a></div></div>
+  <div class="flex items-center gap-3"><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
+    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="/authors" class="block px-3 py-2.5 rounded-xl bg-stone-100 font-medium">Authors</a><a href="/categories/african-literature" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">African Literature</a></div></nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
+  <!-- Hero -->
+  <div class="bg-[#0b0b0c] text-stone-100 rounded-[26px] p-8 sm:p-12 relative overflow-hidden">
+    <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-amber-500/10 blur-2xl"></div>
+    <div class="absolute -bottom-20 -left-10 w-80 h-80 rounded-full bg-emerald-500/10 blur-2xl"></div>
+    <div class="relative max-w-2xl">
+      <p class="eyebrow !text-amber-400">Africa &amp; its diaspora</p>
+      <h1 class="font-serif text-4xl sm:text-6xl font-bold tracking-[-.03em] mt-3 leading-[.95]">African Authors</h1>
+      <p class="text-stone-300 mt-4 leading-7 text-[15px] sm:text-base">The voices of the continent and its diaspora — from the first African novelists to the pioneering writers who carried Africa onto the world's shelves. Every work here is public domain, licence-verified, and free to download. <span id="hero-total" class="text-white font-semibold"></span></p>
+      <div class="flex flex-wrap gap-3 mt-7">
+        <a href="/categories/african-literature" class="inline-flex px-6 py-3 rounded-full bg-white text-stone-900 font-semibold hover:bg-stone-200">Browse African Literature</a>
+        <a href="/authors" class="inline-flex px-6 py-3 rounded-full border border-white/25 text-stone-100 font-medium hover:bg-white/10">All authors</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured spotlight -->
+  <section class="mt-12">
+    <div class="flex items-end justify-between gap-4">
+      <div><p class="eyebrow">Spotlight</p><h2 class="font-serif text-2xl sm:text-3xl font-bold tracking-[-.02em] mt-1">Trailblazing voices</h2></div>
+    </div>
+    <div id="featured" class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- Search + full list -->
+  <section class="mt-12">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div><p class="eyebrow">Browse by author</p><h2 class="font-serif text-2xl sm:text-3xl font-bold tracking-[-.02em] mt-1">Every African author in the library</h2><p class="text-stone-500 mt-1 text-sm">Ranked by number of works. Tap a name to read their catalogue.</p></div>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <input id="q" type="search" placeholder="Search authors…" class="flex-1 sm:w-64 px-4 py-2.5 rounded-full border bg-white text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();load(1)}">
+        <button onclick="load(1)" class="px-5 py-2.5 rounded-full bg-[#0b0b0c] text-white text-sm font-medium hover:bg-black">Search</button>
+      </div>
+    </div>
+    <div id="meta" class="hidden mt-4 text-sm text-stone-500"></div>
+    <div id="loading" class="text-center py-16"><div class="inline-block w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div></div>
+    <div id="error" class="hidden mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
+    <div id="grid" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+    <div id="empty" class="hidden text-center py-16"><p class="font-serif text-xl font-bold">No African authors found</p><p class="text-stone-500 mt-2 text-sm">Try a different search.</p></div>
+    <div id="pagination" class="flex justify-center items-center gap-3 mt-10"></div>
+  </section>
+</main>
+
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid sm:grid-cols-2 md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">90,000 books promised — curated with care.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">All bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li><li><a href="/account">Purchases</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/authors/african" class="hover:text-white">African Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/search" class="hover:text-white">All books</a></li></ul></div></div></div></footer>
+
+<script src="/js/store.js"></script>
+<script>
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+var curPage=1;
+function authorCard(a){
+  return '<a href="/authors/'+a.slug+'" class="block bg-white border rounded-2xl p-5 hover:border-stone-900 transition group">'+
+    '<div class="w-14 h-14 rounded-full bg-[#f6efe1] border grid place-items-center font-serif text-xl text-stone-800 mb-3">'+esc((a.name||'?').charAt(0).toUpperCase())+'</div>'+
+    '<p class="font-serif font-semibold leading-tight group-hover:underline">'+esc(a.name)+'</p>'+
+    '<p class="text-xs text-stone-500 mt-1">'+a.book_count+' work'+(a.book_count===1?'':'s')+'</p>'+
+  '</a>';
+}
+function featuredCard(a){
+  var initials=esc((a.name||'?').split(/\s+/).map(function(w){return w.charAt(0)}).slice(0,2).join('').toUpperCase());
+  return '<div class="bg-white border rounded-2xl p-6 flex flex-col">'+
+    '<div class="w-16 h-16 rounded-full bg-gradient-to-br from-stone-800 to-stone-600 text-white grid place-items-center font-serif text-xl mb-4">'+initials+'</div>'+
+    '<p class="font-serif text-xl font-bold leading-tight">'+esc(a.name)+'</p>'+
+    '<p class="text-sm text-stone-500 mt-1">'+a.book_count+' work'+(a.book_count===1?'':'s')+' in the library</p>'+
+    '<div class="mt-4 pt-4 border-t"><a href="/authors/'+a.slug+'" class="text-sm font-semibold text-stone-900 hover:underline">Browse catalogue →</a></div>'+
+  '</div>';
+}
+async function load(page){
+  if(page) curPage=page;
+  var loading=document.getElementById('loading'), err=document.getElementById('error'), grid=document.getElementById('grid'), empty=document.getElementById('empty'), pag=document.getElementById('pagination'), meta=document.getElementById('meta');
+  loading.classList.remove('hidden'); err.classList.add('hidden'); grid.innerHTML=''; empty.classList.add('hidden'); pag.innerHTML=''; meta.classList.add('hidden');
+  var q=document.getElementById('q').value.trim();
+  var params=new URLSearchParams(); params.set('page',curPage); params.set('page_size','48'); if(q) params.set('q',q);
+  try{
+    var r=await fetch('/api/v1/authors/african?'+params.toString()); if(!r.ok) throw new Error(r.status);
+    var d=await r.json(); var items=d.items||[];
+    loading.classList.add('hidden');
+    if(typeof d.total_african_books==='number'){ var htc=document.getElementById('hero-total'); if(htc){ var cc=(typeof d.total_continent_books==='number')?(' — '+d.total_continent_books.toLocaleString()+' by Black African (continent) authors.'):'.'; htc.textContent='Now spanning '+d.total_african_books.toLocaleString()+' African works'+cc; } }
+    if(q){ meta.textContent=items.length+' African author'+(items.length===1?'':'s')+' matching “'+esc(q)+'”'; meta.classList.remove('hidden'); }
+    if(!items.length){ empty.classList.remove('hidden'); return }
+    grid.innerHTML=items.map(authorCard).join('');
+    var tp=Math.ceil(d.total/48);
+    if(tp>1){ var h='';
+      h+='<button onclick="load('+(curPage-1)+')" '+(curPage<=1?'disabled':'')+' class="px-4 py-2 rounded-full border bg-white text-sm '+(curPage<=1?'opacity-40':'')+'">Previous</button>';
+      for(var i=Math.max(1,curPage-2);i<=Math.min(tp,curPage+2);i++) h+='<button onclick="load('+i+')" class="w-10 h-10 rounded-full text-sm '+(i===curPage?'bg-stone-900 text-white':'border bg-white')+'">'+i+'</button>';
+      if(curPage+2<tp) h+='<span class="text-stone-400">…</span><button onclick="load('+tp+')" class="w-10 h-10 rounded-full border bg-white text-sm">'+tp+'</button>';
+      h+='<button onclick="load('+(curPage+1)+')" '+(curPage>=tp?'disabled':'')+' class="px-4 py-2 rounded-full border bg-white text-sm '+(curPage>=tp?'opacity-40':'')+'">Next</button>';
+      pag.innerHTML=h;
+    }
+  }catch(e){ loading.classList.add('hidden'); err.textContent='Could not load: '+e.message; err.classList.remove('hidden') }
+}
+async function loadFeatured(){
+  var el=document.getElementById('featured'); if(!el) return;
+  try{
+    var r=await fetch('/api/v1/authors/african?page_size=5'); if(!r.ok) return;
+    var d=await r.json(); var ft=d.featured||[]; el.innerHTML=ft.map(featuredCard).join('')||'';
+  }catch(e){}
+}
+document.addEventListener('DOMContentLoaded',function(){ loadFeatured(); load(1); });
+</script>
+</body>
+</html>

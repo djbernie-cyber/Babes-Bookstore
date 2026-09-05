@@ -62,9 +62,16 @@
     <div id="list" class="hidden mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
 
     <div class="mt-8 grid sm:grid-cols-2 gap-4">
-      <div data-coming-soon="wishlist"></div>
+      <div class="bg-white rounded-2xl border p-5 sm:col-span-2">
+        <div class="flex items-baseline justify-between"><h2 class="font-serif text-xl font-bold">Wishlist</h2><a href="/search" class="text-sm font-medium underline">Browse the library</a></div>
+        <div id="wishlist-empty" class="mt-3 text-sm text-stone-500 hidden">Nothing saved yet. Tap ♡ on any book to keep it here.</div>
+        <div id="wishlist-list" class="hidden mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
       <div data-coming-soon="subscriptions"></div>
-      <div data-coming-soon="reader" class="sm:col-span-2"></div>
+      <div class="bg-white rounded-2xl border p-5 flex items-center justify-between gap-4 sm:col-span-2">
+        <div><h2 class="font-serif text-xl font-bold">Read online</h2><p class="text-sm text-stone-500 mt-1">Every public-domain book can be read in a clean browser view — no download needed.</p></div>
+        <a href="/search" class="shrink-0 text-sm font-medium underline">Open the library →</a>
+      </div>
     </div>
   </div>
 </main>
@@ -75,6 +82,7 @@
 <script src="/js/store.js"></script>
 <script>
 function logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); location.href='/login' }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function check(){
   const t=localStorage.getItem('token'), s=localStorage.getItem('user');
   if(!t||!s){ document.getElementById('logged-out').classList.remove('hidden'); return }
@@ -85,6 +93,24 @@ function check(){
   document.getElementById('avatar').textContent=(u.name||u.email||'U').charAt(0).toUpperCase();
   if(u.is_admin) document.getElementById('badge-admin').classList.remove('hidden');
   load(t);
+  loadWishlist(t);
+}
+async function loadWishlist(token){
+  try{
+    const r=await fetch('/api/v1/wishlist',{headers:{'Authorization':'Bearer '+token}}); if(!r.ok) throw new Error();
+    const d=await r.json(); const items=d.items||[];
+    const empty=document.getElementById('wishlist-empty'), list=document.getElementById('wishlist-list');
+    if(!items.length){ empty.classList.remove('hidden'); return }
+    empty.classList.add('hidden'); list.classList.remove('hidden');
+    list.innerHTML=items.map(b=>{
+      const cover=b.cover_url&&/^https?:\/\//.test(b.cover_url)?`<img src="${b.cover_url}" alt="" class="w-full h-28 object-cover rounded-xl border">`:`<div class="w-full h-28 bg-[#ece9e3] rounded-xl grid place-items-center text-[#8a8683] font-serif text-3xl">${(b.title||'?').charAt(0)}</div>`;
+      return `<a href="/books/${b.id}" class="block bg-white border rounded-2xl p-3 hover:border-[#0b0b0c] transition"><div class="text-right"><button onclick="event.preventDefault();unwish(${b.id});this.closest('a').remove()" class="text-stone-400 hover:text-red-600 text-xs font-semibold">♡ remove</button></div>${cover}<h3 class="font-serif font-semibold leading-tight mt-2">${esc(b.title)}</h3><p class="text-xs text-stone-500 mt-0.5">${esc(b.author)}</p></a>`;
+    }).join('');
+  }catch(e){ console.error(e) }
+}
+async function unwish(id){
+  const t=localStorage.getItem('token');
+  try{ await fetch(`/api/v1/wishlist/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+t}}); }catch(e){}
 }
 async function load(token){
   try{
@@ -95,7 +121,7 @@ async function load(token){
       const d=p.created_at?new Date(p.created_at).toLocaleDateString():'';
       const st=p.status||'completed'; const cls=st==='completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':st==='failed'?'bg-red-50 text-red-700 border-red-200':'bg-amber-50 text-amber-700 border-amber-200';
       const dl=p.download_available?`<button onclick="dl(${p.id},'${p.download_token||''}')" class="mt-3 w-full py-2.5 rounded-full bg-stone-900 text-white text-sm font-medium">Download</button>`:'';
-      return `<div class="bg-white rounded-2xl border p-5"><h3 class="font-serif font-bold leading-tight">${p.bundle_name||'Bundle'}</h3><div class="flex items-center justify-between mt-1"><p class="text-sm text-stone-500">${d}</p><span class="text-xs font-medium px-2 py-1 rounded-full border ${cls}">${st}</span></div><p class="text-sm font-semibold mt-2">${formatPrice(p.amount_cents,p.currency)}</p>${dl}</div>`;
+      return `<div class="bg-white rounded-2xl border p-5"><h3 class="font-serif font-bold leading-tight">${esc(p.bundle_name)||'Bundle'}</h3><div class="flex items-center justify-between mt-1"><p class="text-sm text-stone-500">${d}</p><span class="text-xs font-medium px-2 py-1 rounded-full border ${cls}">${esc(st)}</span></div><p class="text-sm font-semibold mt-2">${formatPrice(p.amount_cents,p.currency)}</p>${dl}</div>`;
     }).join('');
   }catch(e){ console.error(e) }
 }

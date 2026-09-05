@@ -247,6 +247,7 @@
                             <div class="flex gap-2">
                                 ${bundle.slug ? `<a href="/bundles/${bundle.slug}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>` : `<a href="/bundles/${bundle.id}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>`}
                                 <button onclick="toggleBundle('${bundle.id}', ${!bundle.active})" class="text-xs font-medium ${bundle.active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'}">${bundle.active ? 'Deactivate' : 'Activate'}</button>
+                                <button onclick="rebuildBundle('${bundle.id}')" class="text-xs font-medium text-blue-600 hover:text-blue-800" title="Regenerate the download ZIP from current contents">Rebuild ZIP</button>
                             </div>
                         </td>
                     `;
@@ -296,6 +297,21 @@
                 loadBundles();
             } catch (e) {
                 alert('Failed to update bundle');
+            }
+        }
+
+        async function rebuildBundle(id) {
+            if (!confirm('Rebuild this bundle\'s download ZIP from its current contents? (Uses cached files where available.)')) return;
+            try {
+                const res = await fetch(`/api/v1/admin/bundles/${id}/rebuild`, {
+                    method: 'POST',
+                    headers: authHeaders()
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed');
+                alert('Rebuild queued · Task ID: ' + (data.task_id || '').substring(0, 12));
+            } catch (e) {
+                alert('Failed to queue rebuild: ' + e.message);
             }
         }
 

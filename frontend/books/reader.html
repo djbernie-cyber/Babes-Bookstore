@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Reader — Babe's Bookstore</title>
+  <style>
+    :root{ --paper:#f7f2e9; --ink:#1c1917; --muted:#83807b; --serif:"EB Garamond","Georgia",serif }
+    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent }
+    body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--serif); -webkit-font-smoothing:antialiased }
+    .toolbar{ position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:10px 16px; background:rgba(247,242,233,.92); backdrop-filter:blur(8px); border-bottom:1px solid #e5ded3 }
+    .toolbar a{ text-decoration:none; color:var(--ink); font-family:"Inter",system-ui,sans-serif; font-size:13px; font-weight:600 }
+    .toolbar .spacer{ flex:1 }
+    .toolbar button{ font-family:"Inter",system-ui,sans-serif; font-size:12px; padding:6px 12px; border-radius:999px; border:1px solid #d8d0c2; background:#fff; cursor:pointer; color:var(--ink) }
+    .toolbar button.active{ background:var(--ink); color:#fff; border-color:var(--ink) }
+    .toolbar select{ font-family:"Inter",system-ui,sans-serif; font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid #d8d0c2; background:#fff; color:var(--ink) }
+    .title{ margin:0; font-size:15px; font-weight:600 }
+    .reader-wrap{ max-width:760px; margin:0 auto; padding:40px 22px 80px }
+    .chap-title{ font-size:28px; font-weight:700; margin:0 0 24px; line-height:1.2 }
+    .book-title{ text-align:center; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin-bottom:28px }
+    .text-body{ font-size:22px; line-height:1.75; white-space:pre-wrap; }
+    .text-body p{ margin:0 0 1.1em }
+    .loading,.err{ text-align:center; padding:120px 20px; color:var(--muted); font-size:18px }
+    .err{ color:#b91c1c }
+    .btt{ position:fixed; bottom:22px; right:22px; width:44px; height:44px; border-radius:50%; background:var(--ink); color:#fff; border:0; font-size:18px; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.2); display:none }
+    .fs-btn{ }
+    /* font sizes */
+    html[data-size="s"] .text-body{ font-size:18px } html[data-size="m"] .text-body{ font-size:22px } html[data-size="l"] .text-body{ font-size:27px }
+    /* sepia / light themes */
+    html[data-theme="sepia"]{ } html[data-theme="light"] body{ background:#ffffff }
+    html[data-theme="light"] .toolbar{ background:rgba(255,255,255,.92) }
+    html[data-theme="dark"]{ filter:invert(92%) hue-rotate(180deg) }
+    html[data-theme="dark"] img,html[data-theme="dark"] .toolbar{ filter:invert(100%) hue-rotate(180deg) }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <a href="#" onclick="history.back();return false">← Back</a>
+    <div class="spacer"></div>
+    <span id="toc" style="display:none"></span>
+    <div class="fs-btn">
+      <button data-size="s">A−</button>
+      <button data-size="m" class="active">A</button>
+      <button data-size="l">A+</button>
+    </div>
+    <select id="theme">
+      <option value="sepia">Sepia</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  </div>
+
+  <div id="loading" class="loading">Loading text…</div>
+  <div id="err" class="err" style="display:none"></div>
+
+  <div class="reader-wrap" id="content" style="display:none">
+    <p class="book-title" id="book-title"></p>
+    <h1 class="chap-title" id="chap-title"></h1>
+    <div class="text-body" id="text-body"></div>
+  </div>
+
+  <button class="btt" id="btt" onclick="scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+function bookId(){
+  var p=location.pathname.split('/').filter(Boolean);
+  // /read/{id} -> last is id ; /books/{id}/read -> second-to-last is id
+  if(p[p.length-1]==='read' && p.length>=3) return p[p.length-2];
+  return p[p.length-1];
+}function setPrefs(){
+  var s=localStorage.getItem('reader-size')||'m', t=localStorage.getItem('reader-theme')||'sepia';
+  document.documentElement.setAttribute('data-size',s);
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.fs-btn button').forEach(function(b){ b.classList.toggle('active', b.dataset.size===s) });
+  document.getElementById('theme').value=t;
+}
+function tidy(html){
+  // render as paragraphs in a fixed font-size container, stripping inline frames but keeping <p>
+  var doc=new DOMParser().parseFromString(html,'text/html');
+  var body=doc.body||doc;
+  var paras=[];
+  body.querySelectorAll('p').forEach(function(p){ paras.push(p.textContent) });
+  if(!paras.length) paras=[body.textContent];
+  return paras.map(function(t){ return t.replace(/^\s+|\s+$/g,'') }).filter(Boolean).map(escPara).join('\n\n');
+}
+function escPara(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+async function load(){
+  var id=bookId();
+  var loading=document.getElementById('loading'), err=document.getElementById('err'), content=document.getElementById('content');
+  try{
+    var r=await fetch('/api/v1/books/'+id+'/text');
+    if(!r.ok) throw new Error((await r.json().catch(()=>({}))).detail||('HTTP '+r.status));
+    var html=await r.text();
+    // Fetch book meta for the title in parallel just for display
+    var meta={title:'',author:''};
+    try{ var m=await (await fetch('/api/v1/books/'+id)).json(); meta=m; }catch(e){}
+    document.getElementById('book-title').textContent=(meta.title||'') + (meta.author? ' — '+meta.author : '');
+    document.documentElement.title=(meta.title||'Read')+" — Babe's Bookstore";
+    var paras=tidy(html);
+    document.getElementById('text-body').textContent=paras.length? paras.slice(0,400).join('\n\n') : 'No extractable text.';
+    loading.style.display='none'; content.style.display='block';
+    // back-to-top visibility
+    addEventListener('scroll',function(){ document.getElementById('btt').style.display=scrollY>600?'block':'none'; },{passive:true});
+  }catch(e){ loading.style.display='none'; err.style.display='block'; err.textContent='Could not load the text: '+e.message+'  —  try downloading the book instead.'; }
+}
+document.querySelectorAll('.fs-btn button').forEach(function(b){ b.addEventListener('click',function(){ localStorage.setItem('reader-size',b.dataset.size); setPrefs(); }); });
+document.getElementById('theme').addEventListener('change',function(){ localStorage.setItem('reader-theme',this.value); setPrefs(); });
+setPrefs(); load();
+</script>
+</body>
+</html>

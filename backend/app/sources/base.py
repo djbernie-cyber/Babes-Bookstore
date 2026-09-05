@@ -56,7 +56,7 @@ class BaseSource(ABC):
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(60.0, connect=15.0),
             follow_redirects=True,
-            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+            limits=httpx.Limits(max_connections=30, max_keepalive_connections=15),
             headers={
                 "User-Agent": self.USER_AGENT,
                 "Accept": "application/json, application/xml, text/xml, text/html;q=0.9, */*;q=0.8",

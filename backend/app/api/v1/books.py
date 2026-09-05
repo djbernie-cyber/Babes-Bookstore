@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, func, String
+from sqlalchemy import select, or_, func, String, case
 from typing import List, Optional
 import re
+
+from ...sources.african_ebooks import AFRICAN_CONTINENT_TAG
 
 from .deps import get_db, require_admin, get_current_user
 from ...models.book import Book, BookStatus

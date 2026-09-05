@@ -14,11 +14,13 @@ one before it.
 | Part | Status |
 |---|---|
 | Storefront + admin pages (incl. mobile) | ✅ Built |
-| Book catalogue — 8 legal sources, ~96,000 books | ✅ Working |
+| Book catalogue — 8 legal sources (~96k, incl. full Gutenberg ~74k) | ✅ Working |
+| Reader reviews & ratings (per book) | ✅ Live |
+| Wishlist / save-for-later | ✅ Live |
 | Payments — 5 providers, per-bundle prices | ✅ Built, needs your keys |
 | Legal pages (/terms /privacy /refunds) | ✅ Built |
 | Review queue for unclear licences | ✅ Built |
-| Automated tests | ✅ 41/41 passing |
+| Automated tests | ✅ 48/48 passing |
 | Hosting, payments, storage, sign-in | ⬜ Steps 1–6 below — **only you can do these** (they need your ID, bank account and logins) |
 
 Code: https://github.com/djbernie-cyber/Babes-Bookstore
@@ -253,7 +255,14 @@ Sign in as admin on your Netlify site. Do this in order:
 
 1. **Admin Dashboard → "Scrape Popular Books"** — pulls books in from
    all 8 sources. Wait a few minutes (the worker is fetching them).
-2. **Admin → Manage Books** — this is your review queue. Books from
+2. **For the full English Gutenberg catalogue (~74,000 books)**, use
+   **Admin → "Scrape Full Gutenberg Catalogue"** (newer copies of the
+   code). It pages through Gutendex concurrently and commits in chunks,
+   so it can run for a while — the worker machine handles it. You can
+   start with a `limit` (e.g. 5,000) to test before letting it run to
+   completion. Prefer "Scrape Popular Books" if you just want a curated
+   starter set.
+3. **Admin → Manage Books** — this is your review queue. Books from
    trusted sources (Gutenberg, Standard Ebooks, Wikisource, OpenStax)
    auto-approve. Books from academic sources (DOAB, OAPEN) arrive as
    **pending** — the page shows each book's licence with a link.
@@ -266,7 +275,7 @@ Sign in as admin on your Netlify site. Do this in order:
      formatting counts as a derivative.
    - Unsure? **Reject** and move on. There are 96,000 books; err on
      the side of caution.
-3. **Admin → Manage Bundles → New Bundle** — pick 10–20 approved books
+4. **Admin → Manage Bundles → New Bundle** — pick 10–20 approved books
    around a theme, give it a name, set its price. It appears on the
    storefront immediately.
 
@@ -362,6 +371,8 @@ URL. Until then, the free addresses work fine.
   Also email them — see `/refunds` for what you promised.
 - **Something looks broken?** `fly logs -a babes-bookstore-api` first;
   `fly status` to confirm both `app` and `worker` machines are running.
+- **Reader reviews** appear on each book page (ratings 1–5). Deal with
+  spam or abusive posts via the database/admin if needed.
 - **Checklist each week:** pending review queue empty, worker machine
   running, Stripe payouts landing.
 

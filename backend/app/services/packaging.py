@@ -20,9 +20,15 @@ class PackagingService:
     Each book is fetched from its remote source URL (Gutenberg, etc) when
     not already cached in R2/local storage. The ZIP always contains a
     README and metadata.json even if some book downloads fail.
+
+    To keep repeated packaging fast and rate-limit-safe, every fetched file
+    is written to a per-book cache (keyed by source + source_id). A later
+    package request reuses the cached bytes instead of hitting the archive
+    again, so building the same bundle twice is near-instant.
     """
 
     BUNDLE_ZIP_PREFIX = "bundles/"
+    BOOK_CACHE_PREFIX = "book-cache/"
 
     # Gutenberg blocks generic clients without a browser-like UA
     USER_AGENT = "Mozilla/5.0 (compatible; BabesBookstore/1.0; +https://babesbooks.store) bundle-packer"
@@ -55,22 +61,42 @@ class PackagingService:
             logger.debug("R2 download failed for %s: %s", key, e)
         return None
 
+    def _cache_key(self, book: Book, ext: str) -> str:
+        """Stable storage key for a single book's fetched file."""
+        sid = book.source_id or str(book.id)
+        return f"{self.BOOK_CACHE_PREFIX}{book.source}/{sid}.{ext}"
+
     def _resolve_book_content(self, book: Book) -> Tuple[Optional[bytes], str]:
-        """Return (bytes, extension) for the best available file for a book."""
-        # 1. Try local/R2 cache if the path is not a URL
+        """Return (bytes, extension) for the best available file for a book.
+
+        Order of preference:
+          1. The per-book cache (persisted across runs) — makes repeat
+             packaging near-instant and avoids hammering remote sources.
+          2. A locally-stored path on the book record (legacy direct paths).
+          3. A remote URL, which is fetched once and then cached.
+        """
+        # 1. Local/R2 cached copy first (covers both direct-stored and fetched)
+        # Try the cache whenever we have a source identity.
+        source_id = book.source_id or (str(book.id) if book.source else None)
+        if book.source and source_id:
+            for ext in ("epub", "pdf", "txt"):
+                cached = self._try_local_r2(self._cache_key(book, ext))
+                if cached:
+                    return cached, ext
+
+        # 2. Legacy direct-stored paths (R2 keys, not URLs)
         for attr, ext in [(book.epub_path, "epub"), (book.pdf_path, "pdf"), (book.cover_path, "jpg")]:
             if attr and not attr.startswith("http"):
                 data = self._try_local_r2(attr)
                 if data:
                     return data, ext
 
-        # 2. Try remote URLs in priority order
+        # 3. Remote URLs in priority order (fetch once, then cache)
         candidates: List[Tuple[str, str]] = []
         if book.epub_path and book.epub_path.startswith("http"):
             candidates.append((book.epub_path, "epub"))
         if book.pdf_path and book.pdf_path.startswith("http"):
             candidates.append((book.pdf_path, "pdf"))
-        # text_url is in source_metadata
         try:
             meta = book.source_metadata or {}
             text_url = meta.get("text_url") if isinstance(meta, dict) else None
@@ -78,7 +104,6 @@ class PackagingService:
                 candidates.append((text_url, "txt"))
         except Exception:
             pass
-        # cover as fallback content? prefer not to use cover as book content, but keep as extra
         # Gutenberg fallback URLs based on source_id
         if book.source == "gutenberg" and book.source_id and book.source_id.isdigit():
             gid = book.source_id
@@ -88,17 +113,26 @@ class PackagingService:
             candidates.append((f"https://www.gutenberg.org/ebooks/{gid}.epub3.images", "epub"))
             candidates.append((f"https://www.gutenberg.org/ebooks/{gid}.epub.images", "epub"))
 
-        # Also try source_url if it's a direct file (unlikely but safe)
-        # source_url is usually https://www.gutenberg.org/ebooks/<id> HTML page, not direct file, skip
-
         for url, ext in candidates:
             data = self._fetch_remote(url)
             if data and len(data) > 500:  # avoid tiny error pages
+                self._cache_content(book, ext, data)
                 return data, ext
 
-        # 3. Last resort: try to fetch via Gutenberg HTML page and scrape? skip
         logger.warning("No downloadable file found for book %s (id=%s, source=%s/%s)", book.title, book.id, book.source, book.source_id)
         return None, "txt"
+
+    def _cache_content(self, book: Book, ext: str, data: bytes) -> None:
+        """Persist a fetched file to the per-book cache for future reuse."""
+        if not book.source:
+            return
+        sid = book.source_id or str(book.id)
+        key = self._cache_key(book, ext)
+        try:
+            storage.upload_bytes(key, data, "application/octet-stream")
+            logger.debug("Cached %s for book %s", key, book.id)
+        except Exception as e:
+            logger.warning("Failed to cache %s for book %s: %s", key, book.id, e)
 
     def create_bundle_zip(self, bundle: Bundle, books: List[Book]) -> str:
         buffer = io.BytesIO()

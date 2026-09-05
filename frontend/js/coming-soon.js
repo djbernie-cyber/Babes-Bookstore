@@ -7,35 +7,10 @@
   'use strict';
 
   var SERVICES = {
-    authors: {
-      title: 'Author pages',
-      copy: 'Dedicated pages for every author — browse their whole catalogue — are on the way.',
-      to: '/search'
-    },
-    categories: {
-      title: 'Category & genre browsing',
-      copy: 'Landing pages for each genre are being built so you can explore by category.',
-      to: '/search'
-    },
-    reviews: {
-      title: 'Reviews & ratings',
-      copy: 'Reader reviews and ratings are coming — share what you thought of each work.',
-      to: '/search'
-    },
-    wishlist: {
-      title: 'Wishlist & save for later',
-      copy: 'A wishlist to save books and bundles for later is coming soon.',
-      to: '/search'
-    },
     subscriptions: {
       title: 'Membership & subscriptions',
       copy: 'A membership tier for unlimited access is in development. For now it is one price, yours forever.',
       to: '/bundles'
-    },
-    reader: {
-      title: 'In-browser full-text reader',
-      copy: 'A proper page-turn reading experience is coming soon. Basic text previews are still available.',
-      to: '/search'
     }
   };
 

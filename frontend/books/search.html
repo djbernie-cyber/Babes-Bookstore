@@ -36,9 +36,17 @@
     </select>
   </form>
 
-  <div id="csoon" class="mt-4 grid sm:grid-cols-2 gap-3">
-    <div data-coming-soon="authors"></div>
-    <div data-coming-soon="categories"></div>
+  <div class="mt-4 grid sm:grid-cols-2 gap-3">
+    <a href="/authors" class="block bg-white border rounded-2xl p-4 hover:border-stone-900 transition">
+      <p class="font-semibold text-sm">Author pages</p>
+      <p class="text-xs text-stone-500 mt-1">Browse the catalogue by author.</p>
+      <p class="text-xs font-medium mt-2 text-stone-900">Browse now →</p>
+    </a>
+    <a href="/categories/african-literature" class="block bg-white border rounded-2xl p-4 hover:border-stone-900 transition">
+      <p class="font-semibold text-sm">African Literature</p>
+      <p class="text-xs text-stone-500 mt-1">A curated collection of African and diaspora writing.</p>
+      <p class="text-xs font-medium mt-2 text-stone-900">Explore →</p>
+    </a>
   </div>
 
   <div id="meta" class="hidden mt-6 text-sm text-stone-500"></div>
@@ -49,7 +57,7 @@
   <div id="pagination" class="flex justify-center items-center gap-3 mt-10"></div>
 </main>
 
-<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Coming soon</h4><ul class="space-y-2 text-sm"><li><span class="text-stone-400">Author pages</span></li><li><span class="text-stone-400">Genre pages</span></li><li><span class="text-stone-400">Reviews &amp; wishlist</span></li><li><span class="text-stone-400">Full-text reader</span></li></ul></div></div></div></footer>
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/search" class="hover:text-white">All books</a></li></ul></div></div></div></footer>
 
 <script src="/js/coming-soon.js"></script>
 <script src="/js/store.js"></script>

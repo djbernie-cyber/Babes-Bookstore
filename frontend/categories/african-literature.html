@@ -30,7 +30,22 @@
 
   <div class="mt-6 bg-stone-900 text-white rounded-[22px] p-6 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div><p class="font-serif text-xl font-bold">Curate your own African set</p><p class="text-sm text-stone-300 mt-1">Pick any books into a custom bundle for £10 — EPUB + PDF, yours forever.</p></div>
-    <a href="/bundles/custom" class="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-stone-900 font-semibold hover:bg-stone-100">✊ Build a set →</a>
+    <div class="flex flex-wrap gap-2">
+      <a href="/authors/african" class="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-stone-900 font-semibold hover:bg-stone-100">🌍 Meet the authors →</a>
+      <a href="/bundles/custom" class="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-600 text-white font-semibold hover:bg-emerald-700">✊ Build a set →</a>
+    </div>
+  </div>
+
+  <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">🌍 African Author (continent)</span>
+      <span class="px-3 py-1.5 rounded-full bg-stone-50 text-stone-600 border font-medium">Diaspora</span>
+      <span class="px-3 py-1.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">Colonial Sauce (coloniser framing)</span>
+    </div>
+    <label class="inline-flex items-center gap-2 text-sm font-medium cursor-pointer select-none">
+      <input type="checkbox" id="hide-colonial" onchange="hideColonial()" checked class="accent-stone-900 w-4 h-4">
+      Hide Colonial Sauce
+    </label>
   </div>
 
   <div id="meta" class="hidden mt-6 text-sm text-stone-500"></div>
@@ -41,7 +56,7 @@
   <div id="pagination" class="flex justify-center items-center gap-3 mt-10"></div>
 </main>
 
-<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li><li><a href="/categories/african-literature">African Literature</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Coming soon</h4><ul class="space-y-2 text-sm"><li><span class="text-stone-400">Author pages</span></li><li><span class="text-stone-400">Genre pages</span></li><li><span class="text-stone-400">Reviews &amp; wishlist</span></li><li><span class="text-stone-400">Full-text reader</span></li></ul></div></div></div></footer>
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li><li><a href="/categories/african-literature">African Literature</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/authors/african" class="hover:text-white">African Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/search" class="hover:text-white">All books</a></li></ul></div></div></div></footer>
 
 <script src="/js/coming-soon.js"></script>
 <script src="/js/store.js"></script>
@@ -54,10 +69,17 @@ function coverHtml(b){
   return `<div class="w-full h-56 bg-[#f6f1e7] border-b flex flex-col items-center justify-center p-4"><span class="font-serif text-5xl text-[#0b0b0c]">${letter}</span><span class="text-[11px] tracking-wide uppercase font-medium text-[#8a8683] mt-2 text-center line-clamp-2">${b.title}</span></div>`;
 }
 function card(b){
+  const isColonial = Array.isArray(b.tags) && b.tags.indexOf('Colonial Sauce') !== -1;
+  const isContinent = Array.isArray(b.tags) && b.tags.indexOf('African Author') !== -1;
+  const badge = isColonial
+    ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200 font-medium" title="Colonial-era / coloniser framing">Colonial Sauce</span>'
+    : (isContinent
+      ? '<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">African Author</span>'
+      : '<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-medium">Diaspora</span>');
   return `<div class="book-card group overflow-hidden flex flex-col">
     <a href="/books/${b.id}" class="block">${coverHtml(b)}</a>
     <div class="p-4 flex-1 flex flex-col">
-      <a href="/books/${b.id}" class="font-serif font-semibold leading-tight line-clamp-2 hover:underline">${b.title}</a>
+      <div class="flex items-start justify-between gap-2"><a href="/books/${b.id}" class="font-serif font-semibold leading-tight line-clamp-2 hover:underline">${b.title}</a>${badge}</div>
       <p class="text-sm text-[#57534e] mt-1">${b.author||'Unknown author'}</p>
       <div class="flex flex-wrap gap-1.5 mt-2">${b.category?`<span class="text-[11px] px-2 py-1 rounded-full bg-white border text-[#57534e]">${b.category}</span>`:''}${b.publication_year?`<span class="text-xs text-[#8a8683]">${b.publication_year}</span>`:''}</div>
       <div class="mt-3 flex gap-2">

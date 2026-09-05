@@ -3,6 +3,8 @@ from .bundle import Bundle, BundleBook
 from .user import User
 from .purchase import Purchase
 from .audit import AuditLog
+from .review import Review
+from .wishlist import WishlistItem
 
 __all__ = [
     "Book",
@@ -11,4 +13,6 @@ __all__ = [
     "User",
     "Purchase",
     "AuditLog",
+    "Review",
+    "WishlistItem",
 ]

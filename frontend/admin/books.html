@@ -89,7 +89,10 @@
 
             <div id="review-banner" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
                 <p class="text-amber-800"><span id="pending-count" class="font-bold">0</span> book(s) waiting for review.</p>
-                <button onclick="showPending()" class="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 transition">Review now →</button>
+                <div class="flex gap-2">
+                    <button onclick="approveAllPending()" id="approve-all-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Approve all pending</button>
+                    <button onclick="showPending()" class="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 transition">Review now →</button>
+                </div>
             </div>
 
             <div class="flex flex-wrap gap-4 mb-6">
@@ -344,6 +347,33 @@
                 loadPendingCount();
             } catch (e) {
                 alert('Failed to reject book');
+            }
+        }
+
+        async function approveAllPending() {
+            const pending = parseInt(document.getElementById('pending-count').textContent, 10) || 0;
+            if (pending === 0) return;
+            if (!confirm(`Approve all ${pending} pending book(s)? Each will be marked approved and licence-verified.`)) return;
+            const btn = document.getElementById('approve-all-btn');
+            btn.disabled = true;
+            btn.textContent = 'Approving…';
+            try {
+                const res = await fetch('/api/v1/admin/books/approve-all', { method: 'POST', headers: authHeaders() });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                loadBooks(currentPage);
+                loadPendingCount();
+                const notice = document.createElement('div');
+                notice.className = 'mb-6 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-4';
+                notice.textContent = `Approved ${data.affected} book(s).`;
+                const banner = document.getElementById('review-banner');
+                banner.parentNode.insertBefore(notice, banner.nextSibling);
+                setTimeout(() => notice.remove(), 5000);
+            } catch (e) {
+                alert('Failed to approve all pending books');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Approve all pending';
             }
         }
 

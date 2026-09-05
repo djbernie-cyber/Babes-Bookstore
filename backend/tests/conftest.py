@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models import book, bundle, user, purchase, audit  # noqa: F401
+from app.models import book, bundle, user, purchase, audit, review, wishlist  # noqa: F401,E501
 
 
 @pytest_asyncio.fixture

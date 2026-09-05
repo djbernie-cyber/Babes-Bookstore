@@ -34,7 +34,18 @@ primary_region = 'lhr'
     path = '/health'
 
 [[vm]]
-  size = 'shared-cpu-1x'
-  memory = '512mb'
-  cpus = 1
+  # App process: serving the API + storefront.
+  size = 'shared-cpu-2x'
+  memory = '1gb'
+  cpus = 2
   cpu_kind = 'shared'
+  processes = ['app']
+
+[[vm]]
+  # Worker process: Celery (scrapes, licence verification, periodic cleanup).
+  # Scaled up to comfortably run the ~74k-book Gutenberg full-catalogue harvest.
+  size = 'shared-cpu-2x'
+  memory = '1gb'
+  cpus = 2
+  cpu_kind = 'shared'
+  processes = ['worker']

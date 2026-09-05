@@ -17,6 +17,8 @@ from .open_library import OpenLibrarySource
 from .openstax import OpenStaxSource
 from .standard_ebooks import StandardEbooksSource
 from .wikisource import WikisourceSource
+from .military import MilitarySource
+from .suppressed import SuppressedClassicsSource
 
 #: Registered in rough order of catalogue quality.
 SOURCE_CLASSES: tuple[Type[BaseSource], ...] = (
@@ -29,6 +31,8 @@ SOURCE_CLASSES: tuple[Type[BaseSource], ...] = (
     OAPENSource,            # open access academic
     OpenLibrarySource,      # metadata + public scans
     AfricanEbooksSource,    # curated African & diaspora literature
+    MilitarySource,         # public-domain military training & strategy
+    SuppressedClassicsSource,  # banned / burned classical & erotic canon
 )
 
 

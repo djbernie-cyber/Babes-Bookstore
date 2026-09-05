@@ -23,8 +23,8 @@
   <div class="max-w-3xl">
     <p class="eyebrow">Your syllabus, your rules</p>
     <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 leading-[.95]">Build your own bundle</h1>
-    <p class="text-stone-600 mt-3 leading-7">Pick any <span class="font-semibold text-stone-900">3–100 books</span> from the library of <span data-live-books>1065</span> — we'll bundle them as a beautiful EPUB + PDF for <span class="font-semibold text-stone-900">£10</span>, yours forever. No admin needed. No subscription.</p>
-    <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="px-3 py-1.5 rounded-full bg-white border font-medium">Live catalogue · licence-verified</span><span class="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-medium">Only £10 — any 3–40 books</span></div>
+    <p class="text-stone-600 mt-3 leading-7">Pick any <span class="font-semibold text-stone-900">3–100 books</span> from the library of <span data-live-books>1065</span> — we'll bundle them as a beautiful EPUB + PDF for <span id="h-price" class="font-semibold text-stone-900">£10</span>, yours forever. No admin needed. No subscription.</p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="px-3 py-1.5 rounded-full bg-white border font-medium">Live catalogue · licence-verified</span><span id="h-price2" class="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-medium">Only £10 — any 3–100 books</span></div>
   </div>
 
   <div class="grid lg:grid-cols-[1.15fr_.85fr] gap-6 lg:gap-8 mt-8 items-start">
@@ -67,7 +67,7 @@
         </div>
 
         <div class="mt-6 bg-stone-50 rounded-2xl border p-4 flex items-center justify-between">
-          <div><p class="text-xs uppercase tracking-wide font-semibold text-stone-500">Price</p><p class="font-serif text-2xl font-bold">£10.00</p><p class="text-xs text-stone-500">Any 3–100 books · EPUB + PDF</p></div>
+          <div><p class="text-xs uppercase tracking-wide font-semibold text-stone-500">Price</p><p id="b-price" class="font-serif text-2xl font-bold">£10.00</p><p class="text-xs text-stone-500">Any 3–100 books · EPUB + PDF</p></div>
           <div class="text-right"><p class="text-sm font-medium"><span id="preview-n">0</span> books</p><p class="text-xs text-stone-500">Ready when you are</p></div>
         </div>
 
@@ -77,7 +77,7 @@
       </div>
 
       <div class="bg-stone-900 text-stone-300 rounded-[22px] p-5">
-        <p class="font-serif font-bold text-white">How custom bundles work</p><ul class="mt-3 space-y-2 text-sm leading-6 text-stone-400"><li>• You curate, we package — professionally formatted EPUB + PDF.</li><li>• £10 flat, no matter if you pick 3 or 40 books.</li><li>• Download instantly after purchase — same as our curated bundles.</li><li>• Signed in? Your bundle is saved to your account.</li></ul>
+        <p class="font-serif font-bold text-white">How custom bundles work</p><ul class="mt-3 space-y-2 text-sm leading-6 text-stone-400"><li>• You curate, we package — professionally formatted EPUB + PDF.</li><li id="how-price">• £10 flat, no matter if you pick 3 or 100 books.</li><li>• Download instantly after purchase — same as our curated bundles.</li><li>• Signed in? Your bundle is saved to your account.</li></ul>
       </div>
     </div>
   </div>
@@ -169,7 +169,7 @@ async function createBundle(){
   if(name.length<3) { err.textContent='Bundle name must be at least 3 characters.'; err.classList.remove('hidden'); return }
   if(picks.length<3) { err.textContent='Add at least 3 books.'; err.classList.remove('hidden'); return }
   const btn=document.getElementById('create'); const orig=btn.textContent; btn.textContent='Creating…'; btn.disabled=true;
-  const payload={ name, slug: slug||name, description: desc||`A custom bundle of ${picks.length} hand-picked books.`, long_description: desc||'', price_cents:1000, currency:'gbp', category:'Custom', bundle_type:'custom', book_ids: picks.map(p=>p.id) };
+  const payload={ name, slug: slug||name, description: desc||`A custom bundle of ${picks.length} hand-picked books.`, long_description: desc||'', price_cents: BUNDLE_PRICE_PENCE||1000, currency:'gbp', category:'Custom', bundle_type:'custom', book_ids: picks.map(p=>p.id) };
   const headers={'Content-Type':'application/json'}; const t=localStorage.getItem('token'); if(t) headers['Authorization']='Bearer '+t;
   try{
     const r=await fetch('/api/v1/bundles/custom',{method:'POST',headers,body:JSON.stringify(payload)});
@@ -177,7 +177,22 @@ async function createBundle(){
     location.href='/bundles/'+encodeURIComponent(d.slug);
   }catch(e){ err.textContent=e.message; err.classList.remove('hidden'); btn.textContent=orig; btn.disabled=false }
 }
-document.addEventListener('DOMContentLoaded',()=>{ doSearch(1); renderTray(); });
+var BUNDLE_PRICE_PENCE=1000, SYM='£';
+async function loadConfig(){
+  try{
+    const r=await fetch('/api/v1/checkout/config?_='+Date.now()); if(!r.ok) return;
+    const c=await r.json();
+    if(typeof c.price_pence==='number'&&c.price_pence>0) BUNDLE_PRICE_PENCE=c.price_pence;
+    if(c.currency_symbol) SYM=c.currency_symbol;
+    const disp=SYM+(BUNDLE_PRICE_PENCE/100).toFixed(2);
+    var hp=document.getElementById('h-price'); if(hp) hp.textContent=' for '+disp;
+    var hp2=document.getElementById('h-price2'); if(hp2) hp2.textContent='Only '+disp+' — any 3–100 books';
+    var bp=document.getElementById('b-price'); if(bp) bp.textContent=disp;
+    var hw=document.getElementById('how-price'); if(hw) hw.innerHTML=hw.innerHTML.replace(/£[0-9]+(?:\.[0-9]{2})?/, ' '+disp+' ');
+    // button text uses formatPrice already; update create label dynamically via renderTray
+  }catch(e){}
+}
+document.addEventListener('DOMContentLoaded',()=>{ doSearch(1); renderTray(); loadConfig(); });
 </script>
 </body>
 </html>

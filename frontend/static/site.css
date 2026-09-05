@@ -14,6 +14,8 @@ section{ padding-block: clamp(2rem, 4vw, 4rem) }
 .line-clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
 a{ text-underline-offset:2px }
 
+#african-toggle.active{ background:#0b0b0c; color:#fff; border-color:#0b0b0c }
+
 /* nav is handled per-page (dark on homepage, light elsewhere) */
 nav{ backdrop-filter:saturate(1.1) blur(8px); -webkit-backdrop-filter:saturate(1.1) blur(8px) }
 nav input[type="search"]{ font-size:14px }

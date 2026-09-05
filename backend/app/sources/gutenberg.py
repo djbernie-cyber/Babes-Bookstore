@@ -50,6 +50,80 @@ class GutenbergSource(BaseSource):
             logger.warning("Gutenberg metadata fetch failed for %s", source_id, exc_info=True)
             return None
 
+    async def harvest_catalogue(
+        self,
+        limit: Optional[int] = None,
+        languages: str = "",
+        batch_size: int = 8,
+        max_concurrency: int = 8,
+    ) -> List[BookMetadata]:
+        """Fetch the full public-domain catalogue (Gutendex).
+
+        Gutendex pages at a fixed 32 books/page. To scale to the full
+        catalogue we discover the page count from the first request, then
+        fetch pages concurrently through a semaphore-bounded gather so
+        at most ``max_concurrency`` requests are in flight at once.
+
+        Args:
+            limit: Cap on total books returned; ``None`` for the whole
+                catalogue.
+            languages: ISO-639-2 language code(s) forwarded to Gutendex.
+                Empty (default) means ALL languages. Pass ``"en"`` for the
+                English-only subset.
+            batch_size: Number of pages per wave (may be reduced by the
+                semaphore if the wave is larger than max_concurrency).
+            max_concurrency: Parallel page fetches allowed at once.
+        """
+        sem = asyncio.Semaphore(max_concurrency)
+        query: dict = {"copyright": "false"}
+        if languages:
+            query["languages"] = languages
+
+        async def _fetch(page_num: int) -> dict:
+            async with sem:
+                result = await self._get_page(query, page_num)
+                await asyncio.sleep(self.rate_limit)
+                return result
+
+        first = await _fetch(1)
+        total = (first.get("count") or 0)
+        page_size = 32
+        total_pages = -(-total // page_size)  # ceil
+
+        pages_to_fetch = total_pages
+        if limit is not None:
+            pages_to_fetch = min(total_pages, -(-limit // page_size))
+
+        logger.info(
+            "Gutenberg full harvest: ~%d books across %d pages (conc=%d)",
+            total, total_pages, max_concurrency,
+        )
+
+        books: List[BookMetadata] = []
+        page = 1
+
+        while page <= pages_to_fetch:
+            wave = list(range(page, min(page + batch_size, pages_to_fetch) + 1))
+            results = await asyncio.gather(
+                *(_fetch(p) for p in wave),
+                return_exceptions=True,
+            )
+
+            for payload in results:
+                if isinstance(payload, BaseException):
+                    logger.warning("Gutenberg page skipped: %s", payload)
+                    continue
+                for raw in payload.get("results", []):
+                    book = self._parse(raw)
+                    if book:
+                        books.append(book)
+                        if limit is not None and len(books) >= limit:
+                            return books[:limit]
+
+            page += len(wave)
+
+        return books[:limit]
+
     async def download(self, metadata: BookMetadata) -> Optional[bytes]:
         """Fetch the best available file, preferring EPUB then PDF then text."""
         candidates = [metadata.epub_url, metadata.pdf_url]
@@ -199,8 +273,8 @@ class GutenbergSource(BaseSource):
                 break
 
         languages = raw.get("languages") or ["en"]
-        if "en" not in languages:
-            return None  # keep the store English-only and clean
+        if not languages:
+            return None
 
         return BookMetadata(
             title=title[:500],
@@ -213,6 +287,7 @@ class GutenbergSource(BaseSource):
                 "download_count": raw.get("download_count"),
                 "subjects": (raw.get("subjects") or [])[:8],
                 "text_url": pick("text/plain"),
+                "languages": languages,
             },
             license_type="public_domain",
             license_url=LICENSE_URL,
@@ -221,6 +296,6 @@ class GutenbergSource(BaseSource):
             cover_url=pick("image/jpeg"),
             category=self._categorise(raw.get("bookshelves"), raw.get("subjects")),
             tags=[s for s in (raw.get("subjects") or [])[:5]],
-            language=languages[0],
+            language=languages[0] if languages else "en",
             publication_year=year,
         )

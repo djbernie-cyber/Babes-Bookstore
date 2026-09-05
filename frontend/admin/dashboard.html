@@ -106,8 +106,10 @@
                         <button onclick="scrapeSource()" class="w-full bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Scrape this source</button>
                     <div class="border-t border-stone-200 pt-4">
                         <button onclick="scrapeAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm mb-2">Scrape all sources (50 ea)</button>
-                        <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Scrape popular titles</button>
-                        <button onclick="scrapeAfrican()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Ingest African Literature</button>
+                        <button onclick="scrapePopular()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm mb-2">Scrape popular titles</button>
+                        <button onclick="scrapeGutenbergFull()" class="w-full bg-amber-50 text-amber-800 border border-amber-200 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-100 transition text-sm mb-2">Full Gutenberg catalogue (~74k)</button>
+                        <button onclick="scrapeAfrican()" class="w-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-100 transition text-sm mb-2">Full African Literature shelf</button>
+                        <button onclick="scrapeFull()" class="w-full bg-stone-900 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-black transition text-sm mb-2">Bull path → ~90k catalogue</button>
                         <button onclick="retagAfrican()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Tag existing African books</button>
                         <button onclick="reverifyAll()" class="w-full bg-stone-100 text-stone-700 px-4 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Re-verify all licenses</button>
                     </div>
@@ -237,13 +239,26 @@
         }
 
         async function scrapeAfrican() {
-            showToast('Ingesting African Literature...');
+            if (!confirm('Expands the African Literature shelf to the full set of Africa-themed Gutenberg works. Continue?')) return;
+            showToast('Starting full African Literature harvest...');
             try {
-                const res = await fetch('/api/v1/admin/scrape/source/african_ebooks?limit=200', { method: 'POST', headers: authHeaders() });
+                const res = await fetch('/api/v1/admin/scrape/african-full', { method: 'POST', headers: authHeaders() });
                 const data = await res.json();
-                showToast('African Literature ingest started · Task: ' + (data.task_id?.substring(0,8)));
+                showToast('African full harvest started · Task: ' + (data.task_id?.substring(0,8)));
             } catch (e) {
-                showToast('Failed to start African ingestion');
+                showToast('Failed to start African harvest');
+            }
+        }
+
+        async function scrapeFull() {
+            if (!confirm('Kicks off the full Gutenberg (~74k) + African shelf + all other sources in parallel to drive the catalogue toward its honest ceiling. This takes a long time. Continue?')) return;
+            showToast('Starting ~90k catalogue harvest...');
+            try {
+                const res = await fetch('/api/v1/admin/scrape/full', { method: 'POST', headers: authHeaders() });
+                const data = await res.json();
+                showToast('Full catalogue harvest started · Task: ' + (data.task_id?.substring(0,8)));
+            } catch (e) {
+                showToast('Failed to start catalogue harvest');
             }
         }
 
@@ -255,6 +270,18 @@
                 showToast('Tagging started · Task: ' + (data.task_id?.substring(0,8)));
             } catch (e) {
                 showToast('Failed to start tagging');
+            }
+        }
+
+        async function scrapeGutenbergFull() {
+            if (!confirm('This harvests ~74,000 books and may take a long time. Continue?')) return;
+            showToast('Starting full Gutenberg catalogue harvest...');
+            try {
+                const res = await fetch('/api/v1/admin/scrape/gutenberg-full', { method: 'POST', headers: authHeaders() });
+                const data = await res.json();
+                showToast('Gutenberg full harvest started · Task: ' + (data.task_id?.substring(0,8)));
+            } catch (e) {
+                showToast('Failed to start Gutenberg harvest');
             }
         }
     </script>
