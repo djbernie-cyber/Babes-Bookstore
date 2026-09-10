@@ -68,6 +68,11 @@ class Book(Base):
 
     __table_args__ = (
         Index("ix_books_source_source_id", "source", "source_id", unique=True),
+        # Storefront hot path: approved+verified lists sorted newest-first.
+        Index("ix_books_status_license_created", "status", "license_verified", "created_at"),
+        # Browse-by filters used on the catalog pages.
+        Index("ix_books_category_status", "category", "status", "license_verified"),
+        Index("ix_books_source_status", "source", "status", "license_verified"),
     )
     # Note: `title` is indexed via Column(index=True) above. The Postgres
     # trigram (GIN) indexes for fuzzy title/author search are created in the
