@@ -51,6 +51,18 @@ fly launch
 fly deploy
 ```
 
+### Backend (Kubernetes — production rolling updates)
+
+The `infra/kubernetes/` bundle deploys the API + Celery worker + Postgres +
+Redis with zero-downtime rolling updates (health-gated, PDB-protected,
+autoscaled). Pushing to `main` runs the GitHub Actions pipeline
+(`.github/workflows/deploy-kubernetes.yml`) that builds a new image and rolls
+it through the cluster. See `infra/kubernetes/README.md`.
+
+```bash
+kubectl apply -k infra/kubernetes   # build image & push ghcr first
+```
+
 ### Frontend (Netlify)
 
 ```bash

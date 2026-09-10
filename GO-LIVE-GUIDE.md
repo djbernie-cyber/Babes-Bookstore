@@ -3,6 +3,11 @@
 Everything below takes you from "code finished" to "first real sale".
 Written in plain language — no coding knowledge needed.
 
+> **Hosting note:** this guide walks the Fly.io path below. If you prefer
+> Kubernetes — managed rolling updates, autoscaling, no vendor lock-in — the
+> same app deploys in one command via `infra/kubernetes/` (see its README).
+> The Git-to-live workflow is already wired up in GitHub Actions.
+
 **Total time:** ~2 hours of your attention + a few days waiting on
 identity/bank checks. **Order matters** — each step uses something from the
 one before it.
