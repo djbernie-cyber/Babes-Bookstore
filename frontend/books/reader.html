@@ -62,6 +62,9 @@
     <p class="book-title" id="book-title"></p>
     <h1 class="chap-title" id="chap-title"></h1>
     <div class="text-body" id="text-body"></div>
+    <div style="text-align:center;margin-top:32px">
+      <button id="more" class="btt" style="position:static;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:0 22px;height:46px;font-size:14px" onclick="loadMore()">Continue reading ↓</button>
+    </div>
   </div>
 
   <button class="btt" id="btt" onclick="scrollTo({top:0,behavior:'smooth'})">↑</button>
@@ -132,12 +135,40 @@ async function load(){
     try{ var m=await (await fetch('/api/v1/books/'+id)).json(); meta=m; }catch(e){}
     document.getElementById('book-title').textContent=(meta.title||'') + (meta.author? ' — '+meta.author : '');
     document.documentElement.title=(meta.title||'Read')+" — Babe's Bookstore";
-    var paras=tidy(html);
-    document.getElementById('text-body').textContent=paras.length? paras.slice(0,400).join('\n\n') : 'No extractable text.';
+    paras=tidy(html);
+    if(!paras.length) paras=['No extractable text.'];
+    rendered=0;
+    document.getElementById('text-body').innerHTML='';
     loading.style.display='none'; content.style.display='block';
+    renderChunk(); renderChunk();
     // back-to-top visibility
     addEventListener('scroll',function(){ document.getElementById('btt').style.display=scrollY>600?'block':'none'; },{passive:true});
+    // turn the manual loader into an automatic one once the reader settles
+    scoreMore();
   }catch(e){ loading.style.display='none'; err.style.display='block'; err.textContent='Could not load the text: '+e.message+'  —  try downloading the book instead.'; }
+}
+var paras=[], rendered=0, CHUNK=120, _busy=false;
+function renderChunk(){
+  var next=paras.slice(rendered, rendered+CHUNK);
+  if(!next.length){ _busy=false; document.getElementById('more').style.display='none'; return; }
+  rendered+=next.length;
+  var p=document.createElement('div');
+  p.textContent=next.join('\n\n');
+  document.getElementById('text-body').appendChild(p);
+  _busy=false;
+  if(rendered>=paras.length) document.getElementById('more').style.display='none';
+}
+function loadMore(){ document.getElementById('more').style.display='inline-flex'; renderChunk(); }
+function scoreMore(){
+  addEventListener('scroll',function(){
+    if(_busy||document.getElementById('more').style.display==='none') return;
+    _busy=true;
+    requestAnimationFrame(function(){
+      var more=document.getElementById('more');
+      if(more.getBoundingClientRect().top < window.innerHeight+500) renderChunk();
+      else _busy=false;
+    });
+  },{passive:true});
 }
 document.querySelectorAll('.fs-btn button').forEach(function(b){ b.addEventListener('click',function(){ localStorage.setItem('reader-size',b.dataset.size); setPrefs(); saveAccountPrefs(); }); });
 document.getElementById('theme').addEventListener('change',function(){ localStorage.setItem('reader-theme',this.value); setPrefs(); saveAccountPrefs(); });

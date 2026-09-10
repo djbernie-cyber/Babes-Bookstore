@@ -123,6 +123,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('q').value=q; document.getElementById('category').value=c;
   search(1);
   document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); search(1)} });
+  let debT=null;
+  document.getElementById('q').addEventListener('input',function(){ clearTimeout(debT); debT=setTimeout(function(){ search(1); },400); });
 });
 </script>
 </body>
