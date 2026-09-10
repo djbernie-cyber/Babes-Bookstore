@@ -1,0 +1,55 @@
+# Celery worker (scraping, licence verification, bundle packaging, beat).
+# Runs one replica with embedded beat so the nightly licence re-verify
+# (03:00 UTC) and hourly expiry cleanup keep firing on schedule.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: babes-worker
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+    app: babes-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: babes-worker
+  template:
+    metadata:
+      labels:
+        app: babes-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: worker
+          image: ghcr.io/djbernie-cyber/babes-bookstore:latest
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "exec celery -A app.celery_app:celery_app worker --beat --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2} --prefetch-multiplier=1"]
+          envFrom:
+            - configMapRef: { name: babes-config }
+          env:
+            - { name: DATABASE_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: database-url } } }
+            - { name: SYNC_DATABASE_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: sync-database-url } } }
+            - { name: REDIS_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: redis-url } } }
+            - { name: SECRET_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: secret-key } } }
+            - { name: R2_ACCOUNT_ID, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-account-id } } }
+            - { name: R2_ACCESS_KEY_ID, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-access-key-id } } }
+            - { name: R2_SECRET_ACCESS_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-secret-access-key } } }
+            - { name: R2_BUCKET_NAME, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-bucket-name } } }
+            - { name: GOOGLE_CLIENT_ID, valueFrom: { secretKeyRef: { name: babes-secrets, key: google-client-id } } }
+            - { name: GOOGLE_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: babes-secrets, key: google-client-secret } } }
+            - { name: GOOGLE_REDIRECT_URI, valueFrom: { secretKeyRef: { name: babes-secrets, key: google-redirect-uri } } }
+            - { name: BHL_API_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: bhl-api-key } } }
+          volumeMounts:
+            - name: storage
+              mountPath: /app/storage
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "2", memory: "4Gi" }
+      volumes:
+        # Generated bundle files / on-demand reader text. Prefer a real
+        # writable PVC (ReadWriteMany) in production; R2 is the source of
+        # truth for the biggest files.
+        - name: storage
+          emptyDir: {}

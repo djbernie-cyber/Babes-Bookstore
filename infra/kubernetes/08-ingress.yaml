@@ -1,0 +1,36 @@
+# Ingress for the API host. Terminates TLS with cert-manager and only ever
+# routes /api, /health and /docs (the static storefront is served from
+# Netlify/CDN and does NOT need to go through this cluster).
+#
+# Swap the host for your real API domain (e.g. api.babesbooks.store). If you
+# are not using cert-manager, remove the cert-manager annotation and supply a
+# TLS secret in `spec.tls[].secretName`.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: babes-api
+  namespace: babes-bookstore
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.babes-bookstore.example
+      secretName: babes-api-tls
+  rules:
+    - host: api.babes-bookstore.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: babes-api
+                port:
+                  name: http

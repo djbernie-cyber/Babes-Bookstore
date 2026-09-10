@@ -1,0 +1,89 @@
+# Build → push image → rolling-update the cluster on every push to main.
+#
+# This is how the site "updates for all users": a deploy is a new image tag
+# that the API Deployment rolls through one pod at a time (maxUnavailable 0),
+# gated on /health, so nobody ever sees a dropped or broken request.
+#
+# Prerequisites:
+#   1. A cluster reachable from GitHub Actions (or use kubeconfig secret).
+#      Secrets to configure in repo settings:
+#        REGISTRY_USER      — GitHub user with write access to the package
+#        REGISTRY_TOKEN     — a GitHub PAT (or actions token) for ghcr.io
+#        KUBECONFIG_B64     — base64 of your kubeconfig with namespace rights
+#   2. Edit "image" tags in infra/kubernetes/*.yaml to your registry/org.
+name: deploy-kubernetes
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/djbernie-cyber/babes-bookstore
+  REGISTRY: ghcr.io
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Extract commit tag
+        id: meta
+        run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE }}:latest
+
+  rolling-update:
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure cluster access
+        run: |
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      # Point every Deployment/initContainer at the freshly built tag so the
+      # rollout is deterministic, then let the ReplicaSet controller roll.
+      - name: Pin image tag
+        run: |
+          grep -rl "ghcr.io/djbernie-cyber/babes-bookstore:latest" infra/kubernetes \
+            | xargs sed -i "s|ghcr.io/djbernie-cyber/babes-bookstore:latest|ghcr.io/djbernie-cyber/babes-bookstore:${{ needs.build-push.outputs.tag }}|g"
+
+      - name: Apply manifests
+        run: kubectl apply -k infra/kubernetes
+
+      - name: Rollout API (rolling update, health-gated)
+        run: |
+          kubectl -n babes-bookstore rollout status deployment/babes-api --timeout=5m
+          kubectl -n babes-bookstore rollout status deployment/babes-worker --timeout=5m
+
+      - name: Verify health
+        run: |
+          kubectl -n babes-bookstore get deploy,pods,hpa
+          kubectl -n babes-bookstore rollout status deploy/babes-api

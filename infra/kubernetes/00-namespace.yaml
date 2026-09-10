@@ -1,0 +1,10 @@
+# Babe's Bookstore — Kubernetes namespace.
+# Everything for the storefront lives in one namespace so a full install is a
+# single `kubectl apply` and a teardown is `kubectl delete namespace`.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+    app.kubernetes.io/part-of: babes-bookstore

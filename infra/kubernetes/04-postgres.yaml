@@ -1,0 +1,89 @@
+# Self-contained PostgreSQL so the whole stack runs on any cluster
+# (minikube / k3s / kind / production). Point the DATABASE_URL secrets at
+# this service, or replace it with a managed database entirely — the API only
+# ever talks to the DATABASE_URL/SYNC_DATABASE_URL secrets, it does not care
+# where Postgres lives.
+apiVersion: v1
+kind: Service
+metadata:
+  name: babes-postgres
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+spec:
+  selector:
+    app: babes-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: babes-postgres
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+    app: babes-postgres
+spec:
+  serviceName: babes-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: babes-postgres
+  template:
+    metadata:
+      labels:
+        app: babes-postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: babes-secrets, key: postgres-user }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: babes-secrets, key: postgres-password }
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef: { name: babes-secrets, key: postgres-db }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "1", memory: "2Gi" }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            # ~90k books with rich metadata — allow headroom for growth.
+            storage: 20Gi

@@ -1,0 +1,31 @@
+# Horizontal Pod Autoscaler: keep the API comfortably ahead of traffic so
+# readers never wait. Scales on CPU; the pod-level PDB in 05-api.yaml
+# guarantees removals never drop below one ready copy.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: babes-api
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: babes-api
+  minReplicas: 2
+  maxReplicas: 8
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

@@ -1,0 +1,116 @@
+# API service + deployment.
+#
+# Rolling update (the "updates for all users" guarantee):
+#   strategy maxSurge=1 / maxUnavailable=0 means every deploy replaces one
+#   pod at a time and new pods only join traffic after /health passes, so an
+#   update never drops users and never double-serves a broken build.
+# The HPA (07-hpa.yaml) then keeps replicas matched to demand.
+apiVersion: v1
+kind: Service
+metadata:
+  name: babes-api
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+spec:
+  selector:
+    app: babes-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: babes-api
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+    app: babes-api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: babes-api
+  template:
+    metadata:
+      labels:
+        app: babes-api
+    spec:
+      securityContext:
+        # Matches the unprivileged appuser in the Docker image.
+        runAsNonRoot: true
+      initContainers:
+        # Applies schema migrations before the API accepts traffic. Safe to
+        # run alongside old pods because Alembic migrations are additive.
+        - name: migrate
+          image: ghcr.io/djbernie-cyber/babes-bookstore:latest
+          command: ["sh", "-c", "python -m alembic upgrade head"]
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: babes-config }
+          env:
+            - { name: DATABASE_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: database-url } } }
+            - { name: SYNC_DATABASE_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: sync-database-url } } }
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "1Gi" }
+      containers:
+        - name: api
+          image: ghcr.io/djbernie-cyber/babes-bookstore:latest
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --proxy-headers --forwarded-allow-ips='*'"]
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: babes-config }
+          env:
+            - { name: DATABASE_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: database-url } } }
+            - { name: SYNC_DATABASE_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: sync-database-url } } }
+            - { name: REDIS_URL, valueFrom: { secretKeyRef: { name: babes-secrets, key: redis-url } } }
+            - { name: SECRET_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: secret-key } } }
+            - { name: STRIPE_SECRET_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: stripe-secret-key } } }
+            - { name: STRIPE_PUBLISHABLE_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: stripe-publishable-key } } }
+            - { name: STRIPE_WEBHOOK_SECRET, valueFrom: { secretKeyRef: { name: babes-secrets, key: stripe-webhook-secret } } }
+            - { name: R2_ACCOUNT_ID, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-account-id } } }
+            - { name: R2_ACCESS_KEY_ID, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-access-key-id } } }
+            - { name: R2_SECRET_ACCESS_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-secret-access-key } } }
+            - { name: R2_BUCKET_NAME, valueFrom: { secretKeyRef: { name: babes-secrets, key: r2-bucket-name } } }
+            - { name: GOOGLE_CLIENT_ID, valueFrom: { secretKeyRef: { name: babes-secrets, key: google-client-id } } }
+            - { name: GOOGLE_CLIENT_SECRET, valueFrom: { secretKeyRef: { name: babes-secrets, key: google-client-secret } } }
+            - { name: GOOGLE_REDIRECT_URI, valueFrom: { secretKeyRef: { name: babes-secrets, key: google-redirect-uri } } }
+            - { name: SENDGRID_API_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: sendgrid-api-key } } }
+            - { name: BHL_API_KEY, valueFrom: { secretKeyRef: { name: babes-secrets, key: bhl-api-key } } }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "1", memory: "2Gi" }
+---
+# Never let a node draining/maintenance take the whole API down.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: babes-api
+  namespace: babes-bookstore
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: babes-api

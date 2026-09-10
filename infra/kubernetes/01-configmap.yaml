@@ -1,0 +1,34 @@
+# Non-secret configuration shared by the API and worker pods.
+# Anything sensitive (database password, JWT secret, Stripe/R2 keys) lives in
+# 02-secrets.yaml and MUST be replaced before first production deploy.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: babes-config
+  namespace: babes-bookstore
+  labels:
+    app.kubernetes.io/name: babes-bookstore
+data:
+  # ── App core ──────────────────────────────────────────────────────────
+  APP_NAME: "Babe's Bookstore"
+  APP_VERSION: "1.0.0"
+  DEBUG: "false"
+  PORT: "8000"
+
+  # ── Public URLs ────────────────────────────────────────────────────────
+  # PRODUCTION_URL feeds OAuth redirects and webhook URLs.
+  PRODUCTION_URL: "https://api.babes-bookstore.example"
+  # Where customers land after paying (the static frontend host).
+  FRONTEND_URL: "https://babesbooks.store"
+  CORS_ORIGINS: '["https://babesbooks.store","https://www.babesbooks.store"]'
+
+  # ── Worker tuning ──────────────────────────────────────────────────────
+  CELERY_CONCURRENCY: "2"
+
+  # ── Admin accounts (real accounts are only added via Secret on prod) ──
+  ADMIN_EMAILS: "[]"
+
+  # ── Storage / downloads ───────────────────────────────────────────────
+  # Local fallback when Cloudflare R2 is not configured. Mounted on a PVC
+  # below so generated bundle files outlive pod restarts.
+  LOCAL_STORAGE_PATH: "/app/storage"

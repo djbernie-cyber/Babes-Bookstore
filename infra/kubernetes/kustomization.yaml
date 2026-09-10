@@ -1,0 +1,21 @@
+# Kustomize bundle — the whole cluster in one command:
+#
+#   kubectl apply -k infra/kubernetes
+#
+# Order follows the file prefixes (00 → 08). The migration job in 05-api.yaml
+# runs as an initContainer on each new API pod, so schema upgrades happen
+# before new code serves traffic, and old pods keep serving until the new ones
+# pass /health — that is the rolling "updates for all users" contract.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: babes-bookstore
+resources:
+  - 00-namespace.yaml
+  - 01-configmap.yaml
+  - 02-secrets.yaml
+  - 04-postgres.yaml
+  - 04-redis.yaml
+  - 05-api.yaml
+  - 06-worker.yaml
+  - 07-hpa.yaml
+  - 08-ingress.yaml
