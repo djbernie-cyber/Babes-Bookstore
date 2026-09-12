@@ -36,8 +36,12 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
-  </head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  
+  <link rel="preconnect" href="https://babes-bookstore.fly.dev" crossorigin>
+  <link rel="dns-prefetch" href="https://babes-bookstore.fly.dev">
+  <link rel="stylesheet" href="/static/tailwind.css">
+</head>
 <body>
   <div class="toolbar">
     <a href="#" onclick="history.back();return false">← Back</a>

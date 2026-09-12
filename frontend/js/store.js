@@ -19,25 +19,33 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',chrome); else chrome();
 
+   var TOTAL_CK='babes-books-total-v1';
+   function applyTotal(n,target){
+     if(!n) return;
+     var fmt=n.toLocaleString();
+     document.querySelectorAll('[data-live-books]').forEach(function(el){
+       if(el.hasAttribute('data-live-plain')){ el.textContent=fmt; return }
+       var hasSuffix=/\b(book|titles?|works?|volumes?)\b\s*$/i.test(el.textContent);
+       el.textContent=fmt+(hasSuffix?'':(el.tagName==='P'&&el.classList.contains('font-serif')? '': n===1?' book':' books'));
+     });
+     // hero count
+     var h=document.getElementById('hero-live-count'); if(h) h.textContent=fmt+' books live';
+     var pc=document.getElementById('progress-count'); if(pc) pc.textContent=fmt;
+     var pp=document.getElementById('progress-pct'); if(pp) pp.textContent=(n/target*100).toFixed(1)+'% complete';
+     var pf=document.getElementById('progress-fill'); if(pf) pf.style.width=Math.min(100, n/target*100).toFixed(1)+'%';
+     // search placeholder
+     document.querySelectorAll('input[placeholder*="62,000"]').forEach(function(i){ i.placeholder='Search '+fmt+' books…'; });
+   }
    function live(){
      var target=90000;
      var tel=document.body&&document.body.dataset.liveTarget?Number(document.body.dataset.liveTarget):0;
      if(tel>0) target=tel;
+     var cached=parseInt(localStorage.getItem(TOTAL_CK),10);
+     if(cached>0) applyTotal(cached,target);
      fetch('/api/v1/books?page_size=1&_='+Date.now()).then(function(r){return r.json()}).then(function(d){
        var n=d&&d.total; if(typeof n!=='number') return;
-       var fmt=n.toLocaleString();
-       document.querySelectorAll('[data-live-books]').forEach(function(el){
-         if(el.hasAttribute('data-live-plain')){ el.textContent=fmt; return }
-         var hasSuffix=/\b(book|titles?|works?|volumes?)\b\s*$/i.test(el.textContent);
-         el.textContent=fmt+(hasSuffix?'':(el.tagName==='P'&&el.classList.contains('font-serif')? '': n===1?' book':' books'));
-       });
-       // hero count
-       var h=document.getElementById('hero-live-count'); if(h) h.textContent=fmt+' books live';
-       var pc=document.getElementById('progress-count'); if(pc) pc.textContent=fmt;
-       var pp=document.getElementById('progress-pct'); if(pp) pp.textContent=(n/target*100).toFixed(1)+'% complete';
-       var pf=document.getElementById('progress-fill'); if(pf) pf.style.width=Math.min(100, n/target*100).toFixed(1)+'%';
-       // search placeholder
-       document.querySelectorAll('input[placeholder*="62,000"]').forEach(function(i){ i.placeholder='Search '+fmt+' books…'; });
+       applyTotal(n,target);
+       try{ localStorage.setItem(TOTAL_CK,String(n)); }catch(e){}
      }).catch(function(){});
 
      fetch('/api/v1/checkout/config?_='+Date.now()).then(function(r){return r.json()}).then(function(c){

@@ -3,10 +3,11 @@
  * Only caches as an offline fallback — never serves stale data when online.
  * Bump CACHE_NAME to force a fresh install on deploys.
  */
-const CACHE_NAME = 'babes-v3';
+const CACHE_NAME = 'babes-v4';
 const PRECACHE = [
   '/',
   '/static/site.css',
+  '/static/tailwind.css',
   '/static/icon.svg',
   '/js/store.js',
 ];

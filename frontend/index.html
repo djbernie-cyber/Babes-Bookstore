@@ -7,17 +7,20 @@
     <meta http-equiv="Expires" content="0">
   <title>Babe's Bookstore — The Public Domain Library</title>
   <meta name="description" content="A scholarly public-domain library. Thousands of works catalogued and growing. Curated bundles from £10. Public domain, openly licensed, print-ready.">
-  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script>tailwind.config={theme:{extend:{fontFamily:{serif:['EB Garamond','Georgia','serif'],sans:['Inter','system-ui','sans-serif']}}}}</script>
+  
   <link rel="stylesheet" href="/static/site.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#0b0b0c">
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <link rel="stylesheet" href="/static/theme.css">
   <script src="/js/theme.js"></script>
+
+  <link rel="preconnect" href="https://babes-bookstore.fly.dev" crossorigin>
+  <link rel="dns-prefetch" href="https://babes-bookstore.fly.dev">
+  <link rel="stylesheet" href="/static/tailwind.css">
 </head>
 <body class="bg-[#fcfaf7] text-[#121212] antialiased" data-live-target="90000">
 <nav class="sticky top-0 z-50 bg-[#0b0b0c] text-[#fcfaf7] border-b border-[#1f1f1f]">
