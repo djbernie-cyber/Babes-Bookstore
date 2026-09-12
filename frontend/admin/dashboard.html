@@ -154,15 +154,22 @@
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-        if (!token || !user.is_admin) {
+        if (!token) {
             document.getElementById('access-denied').classList.remove('hidden');
         } else {
             document.getElementById('admin-content').classList.remove('hidden');
+            // Trust the token, not the cached user object: loadStats() validates
+            // admin access server-side (401 = expired → clear session, 403 = not admin).
             loadStats();
         }
 
         function authHeaders() {
             return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+        }
+
+        function showAccessDenied() {
+            document.getElementById('admin-content').classList.add('hidden');
+            document.getElementById('access-denied').classList.remove('hidden');
         }
 
         function showToast(msg) {
@@ -175,6 +182,15 @@
         async function loadStats() {
             try {
                 const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
+                // The token may come from a cached session: re-validate against
+                // the API rather than trusting localStorage. 401 = expired
+                // token, 403 = signed in but not an admin.
+                if (res.status === 401 || res.status === 403) {
+                    if (res.status === 401) localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    showAccessDenied();
+                    return;
+                }
                 if (!res.ok) throw new Error('Failed to load stats');
                 const data = await res.json();
                 document.getElementById('stat-total').textContent = data.books?.total ?? '—';
@@ -182,8 +198,9 @@
                 document.getElementById('stat-pending').textContent = data.books?.pending ?? '—';
                 document.getElementById('stat-rejected').textContent = data.books?.rejected ?? '—';
                 document.getElementById('stat-purchases').textContent = data.purchases?.total ?? '—';
-                document.getElementById('stat-revenue').textContent = data.purchases?.revenue_cents
-                    ? '£' + (data.purchases.revenue_cents / 100).toFixed(2)
+                const rev = data.purchases?.revenue_cents;
+                document.getElementById('stat-revenue').textContent = (rev != null && !isNaN(rev))
+                    ? '£' + (rev / 100).toFixed(2)
                     : '—';
             } catch (e) {
                 showToast('Error loading stats');

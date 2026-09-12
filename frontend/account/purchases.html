@@ -89,6 +89,10 @@
 <script>
 function logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); location.href='/login' }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function firstName(u){
+  const raw=(u.name||(u.email||'').split('@')[0]||'Reader').trim().split(/\s+/)[0]||'Reader';
+  return raw.charAt(0).toUpperCase()+raw.slice(1);
+}
 function check(){
   const t=localStorage.getItem('token'), s=localStorage.getItem('user');
   if(!t||!s){ document.getElementById('logged-out').classList.remove('hidden'); return }
@@ -97,6 +101,7 @@ function check(){
   document.getElementById('uname').textContent=u.name||u.email||'User';
   document.getElementById('uemail').textContent=u.email||'';
   document.getElementById('avatar').textContent=(u.name||u.email||'U').charAt(0).toUpperCase();
+  document.getElementById('jones-name').textContent=firstName(u);
   if(u.is_admin) document.getElementById('badge-admin').classList.remove('hidden');
   load(t);
   loadWishlist(t);
