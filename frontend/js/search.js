@@ -22,6 +22,9 @@ function card(b) {
   </div>`;
 }
 let curPage = 1, lastQ = "", lastCat = "";
+// Category dropdown entries that are shelves backed by a book *tag* rather
+// than the subject ``category`` column.
+const TAG_OPS = { 'African Literature': 'African Literature', 'Revolutionary': 'Revolutionary', 'Banned & Suppressed': 'Suppressed Classics' };
 async function search(p) {
   if (p) curPage = p;
   const q = document.getElementById('q').value.trim();
@@ -29,7 +32,7 @@ async function search(p) {
   lastQ = q; lastCat = cat;
   const loading = document.getElementById('loading'), err = document.getElementById('error'), res = document.getElementById('results'), empty = document.getElementById('empty'), meta = document.getElementById('meta'), pag = document.getElementById('pagination');
   loading.classList.remove('hidden'); err.classList.add('hidden'); res.innerHTML = ""; empty.classList.add('hidden'); meta.classList.add('hidden'); pag.innerHTML = "";
-  const params = new URLSearchParams(); if (q) params.set('search', q); if (cat) params.set('category', cat); params.set('page', curPage); params.set('page_size', '24');
+  const params = new URLSearchParams(); if (q) params.set('search', q); if (cat) params.set(TAG_OPS[cat] ? 'tag' : 'category', TAG_OPS[cat] || cat); params.set('page', curPage); params.set('page_size', '24');
   try {
     const r = await fetch(`/api/v1/books?${params.toString()}`); if (!r.ok) throw new Error(r.status);
     const d = await r.json(); const items = d.items || []; const total = d.total || 0;

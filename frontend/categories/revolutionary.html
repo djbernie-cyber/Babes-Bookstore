@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Revolutionary — Babe's Bookstore</title>
+  <meta name="description" content="Writers banned, imprisoned, exiled or killed by their own states — the public-domain political canon.">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <link rel="stylesheet" href="/static/theme.css">
+  <script src="/js/theme.js"></script>
+
+  <link rel="preconnect" href="https://babes-bookstore.fly.dev" crossorigin>
+  <link rel="dns-prefetch" href="https://babes-bookstore.fly.dev">
+  <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+    <div class="hidden md:flex gap-7 text-[.92rem] font-medium"><a href="/bundles" class="text-stone-600 hover:text-stone-900">Bundles</a><a href="/search" class="text-stone-900">Library</a></div></div>
+  <div class="flex items-center gap-3"><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
+    <button class="md:hidden p-2 -mr-2" data-action="menu-toggle" data-menu-id="m"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a></div></nav>
+
+<main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
+  <a href="/search" class="inline-flex items-center gap-1.5 text-sm text-[#8a8683] hover:text-[#0b0b0c]">← Back to catalogue</a>
+  <div class="max-w-3xl">
+    <p class="eyebrow mt-4" id="cat-eyebrow">Category</p>
+    <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 leading-[.95]" id="cat-title">Loading…</h1>
+    <p class="text-stone-600 mt-3 leading-7" id="cat-desc"></p>
+    <div class="mt-4 flex flex-wrap gap-2 text-xs">
+      <span class="px-3 py-1.5 rounded-full bg-white border font-medium">Public domain · licence-verified</span>
+      <span class="px-3 py-1.5 rounded-full bg-white border font-medium"><span data-live-books data-live-plain>0</span> works in the wider library</span>
+    </div>
+  </div>
+
+  <div id="meta" class="hidden mt-6 text-sm text-stone-500"></div>
+  <div id="loading" class="text-center py-16"><div class="inline-block w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div><p class="text-sm text-stone-500 mt-3">Loading books…</p></div>
+  <div id="error" class="hidden mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
+  <div id="results" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mt-6"></div>
+  <div id="empty" class="hidden text-center py-16"><p class="font-serif text-xl font-bold">No books found</p><p class="text-stone-500 mt-2 text-sm">This category doesn't have any approved books yet.</p></div>
+  <div id="pagination" class="flex justify-center items-center gap-3 mt-10"></div>
+</main>
+
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/categories/revolutionary" class="hover:text-white">Revolutionary</a></li><li><a href="/search" class="hover:text-white">All books</a></li></ul></div></div></div></footer>
+
+<script src="/js/store.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/category.js"></script>
+</body>
+</html>

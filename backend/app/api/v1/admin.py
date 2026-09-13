@@ -235,6 +235,28 @@ async def trigger_license_verification(
     return {"task_id": task.id}
 
 
+@router.post("/audit/license-sources")
+async def trigger_license_source_audit(
+    source: Optional[str] = Query(None, description="Restrict to one source, e.g. standard_ebooks"),
+    limit: int = Query(200, ge=1, le=5000, description="Max books to re-check in this pass"),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Re-verify approved books against their declared source URL.
+
+    Fabricated source ids (modern novels passed off as public domain) fail the
+    check and are hard-rejected. Runs synchronously for the bounded ``limit``;
+    the full sweep is run from the prod container script.
+    """
+    from ...services.license_audit import audit_approved_books
+    report = await audit_approved_books(db, source=source, limit=limit)
+    await log_action(
+        db, action="audit.license_sources", entity_type="book",
+        user_id=admin.id, details={"source": source, "limit": limit, **report},
+    )
+    return report
+
+
 @router.post("/retag/african-literature")
 async def trigger_african_retag(
     db: AsyncSession = Depends(get_db),

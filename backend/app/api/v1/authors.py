@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, String, cast, case
 from typing import Optional
+import re
 
 from .deps import get_db
 from ...models.book import Book, BookStatus
@@ -20,6 +21,34 @@ _AGGREGATE_CREDITS: list[str] = ["Various", "Anonymous", "Unknown"]
 #: Revolutionary writers explicitly banned/imprisoned by their own states —
 #: surfaced with a badge so readers can find the political canon.
 _banned_lookup = {n.strip().lower(): n for n in CONDEMNED_REVOLUTIONARY_AUTHORS}
+
+
+def _display_name(name: str) -> str:
+    """``"Surname, Given (alias)"`` -> ``"Given Surname"``; others unchanged."""
+    part = (name or "").split("(")[0].strip()
+    if "," in part:
+        head, _, tail = part.partition(",")
+        head, tail = head.strip(), tail.strip()
+        if head and tail and not any(ch.isdigit() for ch in head):
+            return f"{tail} {head}"
+    return part
+
+
+def _author_key(name: str) -> str:
+    """Normalised merge key so ``"Equiano, Olaudah"`` and ``"Olaudah Equiano"``
+    collapse onto the same shelf entry."""
+    return re.sub(r"[^a-z0-9]+", "", _display_name(name).lower())
+
+
+def _identifiable_author(name: str) -> bool:
+    """Skip initials-only and lone-single-token credits that can never identify
+    a real author (stale auto-tags from anonymous Gutenberg records)."""
+    tokens = re.findall(r"[a-z0-9]+", (name or "").lower())
+    if not tokens or all(len(t) == 1 for t in tokens):
+        return False
+    if len(tokens) == 1:
+        return False
+    return True
 
 
 def _banned(name: str) -> bool:
@@ -101,7 +130,7 @@ async def list_african_authors(
     colonial_filter = ~cast(Book.tags, String).ilike(f'%"{COLONIAL_SOURCE_TAG}"%')
     continent_filter = cast(Book.tags, String).ilike(f'%"{AFRICAN_CONTINENT_TAG}"%')
 
-    stmt = (
+    base = (
         select(Book.author, func.count(Book.id).label("book_count"))
         .where(
             Book.status == BookStatus.APPROVED,
@@ -113,66 +142,57 @@ async def list_african_authors(
             colonial_filter,
         )
         .group_by(Book.author)
-        .order_by(
-            func.max(case((continent_filter, 1), else_=0)).desc(),
-            func.count(Book.id).desc(),
-        )
     )
 
+    rows = (await db.execute(base.order_by(func.count(Book.id).desc()))).all()
     if search:
-        stmt = stmt.where(Book.author.ilike(f"%{search}%"))
+        like = f"%{search.lower()}%"
+        rows = [r for r in rows if like in r[0].lower() or like in _author_key(r[0])]
 
-    count_stmt = select(func.count()).select_from(stmt.subquery())
-    total = (await db.execute(count_stmt)).scalar() or 0
+    # Merge duplicated name spellings, drop degenerate credits.
+    merged: dict = {}
+    continent_keys: set = set()
+    continent_rows = (await db.execute(
+        base.where(continent_filter).order_by(func.count(Book.id).desc())
+    )).all()
+    for r in continent_rows:
+        continent_keys.add(_author_key(r[0]))
 
-    continent_stmt = (
-        select(Book.author, func.count(Book.id).label("book_count"))
-        .where(
-            Book.status == BookStatus.APPROVED,
-            Book.license_verified == True,
-            Book.author.isnot(None),
-            Book.author != "",
-            Book.author.notin_(_AGGREGATE_CREDITS),
-            tag_filter,
-            colonial_filter,
-            continent_filter,
-        )
-        .group_by(Book.author)
-        .order_by(func.count(Book.id).desc())
+    for name, count in rows:
+        if not _identifiable_author(name):
+            continue
+        key = _author_key(name)
+        entry = merged.get(key)
+        display = _display_name(name)
+        if entry is None:
+            merged[key] = {"name": display, "slug": _slugify(display), "book_count": count, "banned": _banned(name)}
+        else:
+            entry["book_count"] += count
+            if len(re.sub(r"[^a-z]+", "", display)) > len(re.sub(r"[^a-z]+", "", entry["name"])):
+                entry["name"] = display
+            entry["banned"] = entry["banned"] or _banned(name)
+
+    ordered = sorted(
+        merged.values(),
+        key=lambda a: (
+            _author_key(a["name"]) not in continent_keys,
+            -a["book_count"],
+            a["name"].lower(),
+        ),
     )
-    if search:
-        continent_stmt = continent_stmt.where(Book.author.ilike(f"%{search}%"))
+    total = len(ordered)
+    paged = ordered[(page - 1) * page_size: page * page_size]
 
-    result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
-    rows = result.all()
-
-    items = [
-        {
-            "name": r[0],
-            "book_count": r[1],
-            "slug": _slugify(r[0]),
-            "banned": _banned(r[0]),
-        }
-        for r in rows
-    ]
-
-    # Featured: lead with continent (Black African) authors.
-    continent_result = await db.execute(continent_stmt.limit(5))
-    continent_rows = continent_result.all()
-    featured = [
-        {
-            "name": r[0],
-            "book_count": r[1],
-            "slug": _slugify(r[0]),
-            "banned": _banned(r[0]),
-        }
-        for r in continent_rows
-    ]
+    featured = [a for a in ordered if _author_key(a["name"]) in continent_keys][:5]
     if not featured:
-        featured = items[:5]
+        featured = ordered[:5]
+
+    continent_total = sum(
+        1 for r in continent_rows if _identifiable_author(r[0]) and len(_author_key(r[0])) > 2
+    )
 
     return {
-        "items": items,
+        "items": paged,
         "featured": featured,
         "total_african_books": (await db.execute(
             select(func.count(Book.id)).where(

@@ -1270,30 +1270,50 @@ class AfricanEbooksSource(BaseSource):
         return set(re.findall(r"[a-z0-9]+", (name or "").lower()))
 
     @staticmethod
+    def _tokens_are_degenerate(tokens: set) -> bool:
+        """True when a token set cannot identity a real person on its own.
+
+        A lone single token ("vera", "yvonne"), initials only ("e m"), or an
+        empty set are far too weak a signal — they let short single names and
+        initials false-positive onto full names ("Vera" ⊂ "Yvonne Vera").
+        """
+        if not tokens:
+            return True
+        if len(tokens) == 1:
+            return True
+        if all(len(t) == 1 for t in tokens):
+            return True
+        return False
+
+    @staticmethod
     def _name_matches(record: Optional[str], candidate: str) -> bool:
         """True when a stored author string ``record`` refers to ``candidate``.
 
-        Two passes so every source's name format is handled:
+        Three guarded passes so every source's name format is handled without
+        letting initials or short given names false-positive onto full names:
 
-        1. Normalised equality / substring (collapses punctuation, spacing and
-           middle names; preserves accented letters minimally). This is the
-           match that already worked for given-name-first records.
-        2. Token-subset in either direction, which makes ``Surname, Given``
+        1. Normalised equality — collapses punctuation and spacing, e.g.
+           ``"Césaire, Aimé"`` == ``"Aime Cesaire"``.
+        2. Safe containment — a full name may contain a fragment only when the
+           fragment is comfortably long (>= 7 chars), blocking single-initial
+           and short-given-name collisions ("em", "vera", "yvonne").
+        3. Token-subset in either direction, which makes ``Surname, Given``
            records (Gutenberg's ``"Haggard, H. Rider (Henry Rider)"``) match
-           the ``"H. Rider Haggard"`` form used by the curated lists.
-
-        Curated lists are actual people, so a shared token set — even with
-        extra initials or alias parentheses on the record side — reliably
-        identifies the same person.
+           the ``"H. Rider Haggard"`` form used by the curated lists. A side
+           that is initials-only or a lone short word is never used to match.
         """
         if not record or not candidate:
             return False
         nr = AfricanEbooksSource._normalize(record)
         nc = AfricanEbooksSource._normalize(candidate)
-        if nr and nc and (nr == nc or nr in nc or nc in nr):
+        if nr and nc and nr == nc:
             return True
+        if nr and nc:
+            shorter, longer = (nr, nc) if len(nr) < len(nc) else (nc, nr)
+            if len(shorter) >= 7 and shorter in longer:
+                return True
         rt = AfricanEbooksSource._name_tokens(record)
         ct = AfricanEbooksSource._name_tokens(candidate)
-        if not rt or not ct:
+        if AfricanEbooksSource._tokens_are_degenerate(rt) or AfricanEbooksSource._tokens_are_degenerate(ct):
             return False
         return bool(ct <= rt or rt <= ct)

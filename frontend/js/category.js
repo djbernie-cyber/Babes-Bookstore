@@ -22,7 +22,14 @@ var CATEGORY_DESCS = {
   'adventure': 'Sea voyages, explorations and swashbuckling tales from the age of adventure.',
   'children-fairy-tales': 'Fables, fairy tales and children\'s classics — Andersen, Grimm, Carroll and beyond.',
   'drama': 'Plays and dramatic works from Sophocles to Shaw.',
-  'non-fiction': 'Essays, science, travel writing and general non-fiction from the public domain.'
+  'non-fiction': 'Essays, science, travel writing and general non-fiction from the public domain.',
+  'revolutionary': 'Writers banned, imprisoned, exiled or killed by their own states — Marx, Luxemburg, McKay, Goldman, Fanon, Sankara and the political canon that official systems declared dangerous. Each work is public-domain or openly licensed.'
+};
+
+//: Categories backed by a book *tag* (the ``category`` column is a subject
+//: shelf; the political shelves live in tags).
+var TAG_CATS = {
+  'revolutionary': 'Revolutionary'
 };
 
 function descFor(slug) {
@@ -74,7 +81,7 @@ async function load(page) {
   if (page) curPage = page;
   var loading = document.getElementById('loading'), err = document.getElementById('error'), res = document.getElementById('results'), empty = document.getElementById('empty'), meta = document.getElementById('meta'), pag = document.getElementById('pagination');
   loading.classList.remove('hidden'); err.classList.add('hidden'); res.innerHTML = ''; empty.classList.add('hidden'); meta.classList.add('hidden'); pag.innerHTML = '';
-  var params = new URLSearchParams(); params.set('category', realName); params.set('page', curPage); params.set('page_size', '24');
+  var params = new URLSearchParams(); if (TAG_CATS[slug]) params.set('tag', TAG_CATS[slug]); else params.set('category', realName); params.set('page', curPage); params.set('page_size', '24');
   try {
     var r = await fetch('/api/v1/books?' + params.toString()); if (!r.ok) throw new Error(r.status);
     var d = await r.json(); var items = d.items || []; var total = d.total || 0;

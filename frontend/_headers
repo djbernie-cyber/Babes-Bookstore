@@ -2,6 +2,8 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), browsing-topics=(), interest-cohort=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   Cache-Control: no-cache, no-store, must-revalidate
 
 /static/*

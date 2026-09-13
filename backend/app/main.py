@@ -11,7 +11,7 @@ from .models.user import User
 from .models.book import Book, BookStatus
 from .models.bundle import Bundle
 from .api.v1.router import api_router
-from .middleware import RateLimitMiddleware
+from .middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -110,6 +110,9 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 _origins = list(settings.CORS_ORIGINS)
@@ -124,6 +127,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
 app.include_router(api_router)
@@ -131,9 +135,12 @@ app.include_router(api_router)
 
 @app.get("/", include_in_schema=False)
 async def root():
-    """The API host is not the storefront. Redirect browsers to the docs
-    so anyone reaching it directly lands on something useful."""
-    return RedirectResponse(url="/docs")
+    """The API host is not the storefront. Redirect browsers to the storefront
+    (or the docs in debug) so anyone reaching it directly lands somewhere
+    useful instead of an empty endpoint."""
+    if settings.DEBUG:
+        return RedirectResponse(url="/docs")
+    return RedirectResponse(url=settings.FRONTEND_URL)
 
 
 @app.get("/health")
