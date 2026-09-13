@@ -152,6 +152,8 @@ async def get_book(book_id: int, db: AsyncSession = Depends(get_db)):
     book = await db.get(Book, book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
+    if book.status != BookStatus.APPROVED:
+        raise HTTPException(status_code=404, detail="Book not available")
     return BookResponse.model_validate(book)
 
 
