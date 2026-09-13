@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <link rel="stylesheet" href="/static/theme.css">
   <script src="/js/theme.js"></script>
 
@@ -25,7 +25,7 @@
   <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
     <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/bundles" class="text-stone-900">Bundles</a><a href="/search" class="text-stone-600 hover:text-stone-900">Library</a></div></div>
   <div class="flex items-center gap-3"><form action="/search" class="hidden sm:block"><input type="search" name="q" placeholder="Search…"></form><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
-    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    <button class="md:hidden p-2 -mr-2" data-action="menu-toggle" data-menu-id="m"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
 </div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl bg-stone-100">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a></div></nav>
 
 <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
@@ -49,15 +49,15 @@
         <div class="bg-white rounded-[22px] border p-6 sm:p-7 shadow-sm">
           <p class="text-xs uppercase tracking-wide font-semibold text-stone-500 text-center">Bundle price</p>
           <p class="text-center font-serif text-5xl font-bold tracking-[-.02em] mt-1" id="price">—</p><p class="text-center text-sm text-stone-500">One-time · No subscription</p>
-          <div id="free-section" class="hidden mt-6"><button onclick="freeDownload()" class="w-full py-3.5 rounded-full bg-emerald-600 text-white font-semibold hover:bg-emerald-700">🎁 Download free (admin)</button><p class="text-xs text-emerald-700 text-center mt-2">Free downloads enabled for your account</p></div>
+          <div id="free-section" class="hidden mt-6"><button data-action="freeDownload" class="w-full py-3.5 rounded-full bg-emerald-600 text-white font-semibold hover:bg-emerald-700">🎁 Download free (admin)</button><p class="text-xs text-emerald-700 text-center mt-2">Free downloads enabled for your account</p></div>
           <div id="paid" class="mt-6 space-y-2.5">
-            <button onclick="pay('stripe')" class="w-full py-3.5 rounded-full bg-[#635bff] text-white font-medium hover:bg-[#5346e0] flex items-center justify-center gap-2"><img src="https://cdn.simpleicons.org/stripe/FFFFFF" class="w-6 h-6" alt="" loading="lazy"> Pay with Stripe</button>
-            <button onclick="pay('paypal')" class="w-full py-3.5 rounded-full bg-[#ffc439] text-[#003087] font-semibold border border-[#e6b12e] hover:bg-[#f2bb36] flex items-center justify-center gap-2"><img src="https://cdn.simpleicons.org/paypal/003087" class="w-6 h-6" alt="" loading="lazy"> Pay with PayPal</button>
-            <button onclick="pay('square')" class="w-full py-3.5 rounded-full bg-white border border-stone-300 font-medium hover:bg-stone-50 flex items-center justify-center gap-2"><img src="https://cdn.simpleicons.org/square/000000" class="w-5 h-5" alt="" loading="lazy"> Pay with Square</button>
-            <button onclick="pay('mpesa')" id="mpesa-btn" class="hidden w-full py-3.5 rounded-full bg-[#43B02A] text-white font-semibold hover:bg-[#2e7d1f] flex items-center justify-center gap-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg> Pay with M-Pesa</button>
+            <button data-action="pay" data-arg-1="stripe" class="w-full py-3.5 rounded-full bg-[#635bff] text-white font-medium hover:bg-[#5346e0] flex items-center justify-center gap-2"><img src="https://cdn.simpleicons.org/stripe/FFFFFF" class="w-6 h-6" alt="" loading="lazy"> Pay with Stripe</button>
+            <button data-action="pay" data-arg-1="paypal" class="w-full py-3.5 rounded-full bg-[#ffc439] text-[#003087] font-semibold border border-[#e6b12e] hover:bg-[#f2bb36] flex items-center justify-center gap-2"><img src="https://cdn.simpleicons.org/paypal/003087" class="w-6 h-6" alt="" loading="lazy"> Pay with PayPal</button>
+            <button data-action="pay" data-arg-1="square" class="w-full py-3.5 rounded-full bg-white border border-stone-300 font-medium hover:bg-stone-50 flex items-center justify-center gap-2"><img src="https://cdn.simpleicons.org/square/000000" class="w-5 h-5" alt="" loading="lazy"> Pay with Square</button>
+            <button data-action="pay" data-arg-1="mpesa" id="mpesa-btn" class="hidden w-full py-3.5 rounded-full bg-[#43B02A] text-white font-semibold hover:bg-[#2e7d1f] flex items-center justify-center gap-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg> Pay with M-Pesa</button>
             <div class="grid grid-cols-2 gap-2.5">
-              <button onclick="pay('apple_pay')" class="py-3 rounded-full bg-black text-white text-sm font-medium flex items-center justify-center gap-1.5"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C10.5 2 9.2 2.7 8.5 3.9 7.8 2.7 6.5 2 5 2 2.7 2 1 3.8 1 6c0 2.1 1.6 3.9 3.7 5.1L12 20l7.3-8.9C21.4 9.9 23 8.1 23 6c0-2.2-1.7-4-4-4-1.5 0-2.8.7-3.5 1.9C14.8 2.7 13.5 2 12 2z"/></svg> Apple Pay</button>
-              <button onclick="pay('google_pay')" class="py-3 rounded-full bg-white border border-stone-300 text-sm font-medium flex items-center justify-center gap-1.5"><img src="https://cdn.simpleicons.org/googlepay/000000" class="w-6 h-6" alt="" loading="lazy"> Google Pay</button>
+              <button data-action="pay" data-arg-1="apple_pay" class="py-3 rounded-full bg-black text-white text-sm font-medium flex items-center justify-center gap-1.5"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C10.5 2 9.2 2.7 8.5 3.9 7.8 2.7 6.5 2 5 2 2.7 2 1 3.8 1 6c0 2.1 1.6 3.9 3.7 5.1L12 20l7.3-8.9C21.4 9.9 23 8.1 23 6c0-2.2-1.7-4-4-4-1.5 0-2.8.7-3.5 1.9C14.8 2.7 13.5 2 12 2z"/></svg> Apple Pay</button>
+              <button data-action="pay" data-arg-1="google_pay" class="py-3 rounded-full bg-white border border-stone-300 text-sm font-medium flex items-center justify-center gap-1.5"><img src="https://cdn.simpleicons.org/googlepay/000000" class="w-6 h-6" alt="" loading="lazy"> Google Pay</button>
             </div>
             <p class="text-[11px] leading-4 text-stone-500 text-center">By paying you consent to the download starting immediately. Faulty files are repaired or refunded — <a href="/refunds" class="underline">Refund Policy</a>.</p>
             <p id="mpesa-hint" class="hidden text-xs text-center text-emerald-700">M-Pesa: you’ll get an STK push on your phone — enter PIN to complete. Funds settle directly to the configured shortcode.</p>
@@ -74,68 +74,7 @@
 <footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">Curated, verified, yours.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/search" class="hover:text-white">All books</a></li></ul></div></div></div></footer>
 
 <script src="/js/store.js"></script>
-<script>
-const ORBS=["📚","🌙","💌","🧭","🧚","⚗️","🏛️","🎭","🦇","🗝️","🌊","✒️"];
-function orb(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return ORBS[h%ORBS.length]}
-let bundle=null;
-function slug(){ const p=location.pathname.split('/').filter(Boolean); return p[p.length-1] }
-async function load(){
-  const s=slug(); if(!s) return showErr();
-  try{ const r=await fetch(`/api/v1/bundles/${encodeURIComponent(s)}`); if(!r.ok) throw new Error(); bundle=await r.json(); render(bundle) }catch(e){ showErr() }
-}
-function render(b){
-  document.getElementById('loading').classList.add('hidden'); document.getElementById('content').classList.remove('hidden');
-  document.getElementById('name').textContent=b.name; document.title=b.name+" — Babe's Bookstore";
-  document.getElementById('orb').textContent=orb(b.slug||b.name);
-  document.getElementById('cat').textContent=b.category||""; document.getElementById('desc').textContent=b.description||"";
-  document.getElementById('price').textContent=formatPrice(b.price_cents,b.currency);
-  const books=b.books||[]; document.getElementById('count').textContent=books.length+" books"; document.getElementById('book-count').textContent=`(${books.length})`;
-  const el=document.getElementById('books');
-  if(!books.length) el.innerHTML='<div class="bg-white rounded-2xl border p-6 text-center text-stone-500">Book list coming soon.</div>';
-  else el.innerHTML=books.map((bk,i)=>`<a href="/books/${bk.id}" class="flex gap-4 bg-white rounded-2xl border p-4 hover:shadow-sm hover:border-stone-300 transition"><span class="w-8 h-8 rounded-full bg-stone-900 text-white grid place-items-center text-sm font-bold shrink-0">${i+1}</span><div class="min-w-0"><p class="font-semibold leading-tight">${bk.title}</p><p class="text-sm text-stone-500">${bk.author||''}</p></div><span class="ml-auto text-stone-400">→</span></a>`).join('');
-  // free downloads gating
-  try{ const u=JSON.parse(localStorage.getItem('user')||'null'); if(u&&u.is_admin){ document.getElementById('free-section').classList.remove('hidden'); document.getElementById('paid').classList.add('hidden') } }catch{}
-}
-function showErr(){ document.getElementById('loading').classList.add('hidden'); document.getElementById('error').classList.remove('hidden') }
-async function freeDownload(){
-  const token=localStorage.getItem('token'), user=JSON.parse(localStorage.getItem('user')||'null');
-  if(!token||!user){ alert('Please login'); location.href='/login'; return }
-  const r=await fetch('/api/v1/checkout/free',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({bundle_slug:slug(),email:user.email})});
-  const d=await r.json(); if(!r.ok) return alert(d.detail||'Failed'); alert('Free download started!'); if(d.checkout_url) location.href=d.checkout_url;
-}
-async function pay(provider){
-  const email=prompt('Email to receive download links:'); if(!email||!email.includes('@')) return alert('Valid email required');
-  let phone=null;
-  if(provider==='mpesa'){
-    phone=prompt('M-Pesa phone (2547XXXXXXXX):'); if(!phone) return;
-    // normalise: allow 07xx
-    phone=phone.replace(/\s|-/g,'');
-    if(phone.startsWith('0')) phone='254'+phone.slice(1);
-    if(phone.startsWith('7')&&phone.length===9) phone='254'+phone;
-    if(!phone.startsWith('254')||phone.length!==12) return alert('Invalid phone — use 2547XXXXXXXX');
-  }
-  const btn=event.target.closest('button'); const orig=btn.innerHTML; btn.innerHTML='Processing…'; btn.disabled=true;
-  try{
-    const body={bundle_slug:slug(),email}; if(phone) body.phone=phone;
-    const r=await fetch(`/api/v1/checkout/${provider}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Checkout failed');
-    if(provider==='mpesa'){
-      alert('M-Pesa STK push sent to '+phone+' — check your phone, enter PIN, then check /account for download once paid. Funds settle directly to the configured shortcode.');
-    }
-    if(d.checkout_url||d.url) location.href=d.checkout_url||d.url; else { alert('Checkout created — check email/phone'); btn.innerHTML=orig; btn.disabled=false }
-  }catch(e){ alert(e.message); btn.innerHTML=orig; btn.disabled=false }
-}
-async function loadMpesaConfig(){
-  try{
-    const r=await fetch('/api/v1/checkout/config?_='+Date.now()); if(!r.ok) return;
-    const c=await r.json();
-    if(c.mpesa_enabled){
-      document.getElementById('mpesa-btn').classList.remove('hidden');
-      document.getElementById('mpesa-hint').classList.remove('hidden');
-    }
-  }catch{}
-}
-document.addEventListener('DOMContentLoaded', ()=>{ load(); loadMpesaConfig(); });
-</script>
+<script src="/js/app.js"></script>
+<script src="/js/bundle-detail.js"></script>
 </body>
 </html>

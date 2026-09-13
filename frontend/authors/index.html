@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <link rel="stylesheet" href="/static/theme.css">
   <script src="/js/theme.js"></script>
 
@@ -25,7 +25,7 @@
   <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
     <div class="hidden md:flex gap-7 text-[.92rem] font-medium"><a href="/bundles" class="text-stone-600 hover:text-stone-900">Bundles</a><a href="/search" class="text-stone-900">Library</a><a href="/authors" class="text-stone-900">Authors</a></div></div>
   <div class="flex items-center gap-3"><a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Account</a>
-    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    <button class="md:hidden p-2 -mr-2" data-action="menu-toggle" data-menu-id="m"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
 </div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="/authors" class="block px-3 py-2.5 rounded-xl bg-stone-100 font-medium">Authors</a></div></nav>
 
 <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
@@ -36,8 +36,8 @@
   </div>
 
   <div class="mt-6 flex gap-2 max-w-md">
-    <input id="q" type="search" placeholder="Search authors…" class="flex-1 px-4 py-2.5 rounded-full border bg-white text-sm" onkeydown="if(event.key==='Enter'){event.preventDefault();load(1)}">
-    <button onclick="load(1)" class="px-5 py-2.5 rounded-full bg-stone-900 text-white text-sm font-medium hover:bg-black">Search</button>
+    <input id="q" type="search" placeholder="Search authors…" class="flex-1 px-4 py-2.5 rounded-full border bg-white text-sm" data-enter="load" data-arg-1="1">
+    <button data-action="load" data-arg-1="1" class="px-5 py-2.5 rounded-full bg-stone-900 text-white text-sm font-medium hover:bg-black">Search</button>
   </div>
 
   <div class="mt-6 mb-2 max-w-md">
@@ -58,59 +58,7 @@
 <footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-sm text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore</div></footer>
 
 <script src="/js/store.js"></script>
-<script>
-var curPage=1;
-function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] }) }
-function stale(key,hours){
-  try{ var raw=localStorage.getItem(key); if(!raw) return null; var o=JSON.parse(raw); if(Date.now()-o.t>hours*3600000) return null; return o.d }catch(_){ return null }
-}
-async function fetchJSON(url,key,attempts){
-  var last;
-  for(var i=0;i<attempts;i++){
-    try{
-      var r=await fetch(url); if(!r.ok) throw new Error(r.status);
-      var d=await r.json(); if(key) try{ localStorage.setItem(key,JSON.stringify({t:Date.now(),d:d})) }catch(_){}
-      return d;
-    }catch(e){ last=e; if(i<attempts-1) await new Promise(function(R){ setTimeout(R,400*(i+1)) }) }
-  }
-  throw last;
-}
-function card(a){
-  return '<a href="/authors/'+a.slug+'" class="block bg-white border rounded-2xl p-5 hover:border-stone-900 transition group">'+
-    '<div class="w-14 h-14 rounded-full bg-stone-100 border grid place-items-center font-serif text-xl text-stone-700 mb-3">'+(a.name||'?').charAt(0).toUpperCase()+'</div>'+
-    '<p class="font-serif font-semibold leading-tight group-hover:underline">'+a.name+'</p>'+
-    '<p class="text-xs text-stone-500 mt-1">'+a.book_count+' work'+(a.book_count===1?'':'s')+'</p>'+
-  '</a>';
-}
-async function load(page){
-  if(page) curPage=page;
-  var loading=document.getElementById('loading'), err=document.getElementById('error'), res=document.getElementById('results'), empty=document.getElementById('empty'), pag=document.getElementById('pagination');
-  loading.classList.remove('hidden'); err.classList.add('hidden'); res.innerHTML=''; empty.classList.add('hidden'); pag.innerHTML='';
-  var q=document.getElementById('q').value.trim();
-  var params=new URLSearchParams(); params.set('page',curPage); params.set('page_size','48'); if(q) params.set('q',q);
-  var cacheKey='authors:'+params.toString();
-  var d=null, cached=false;
-  try{
-    d=await fetchJSON('/api/v1/authors?'+params.toString(), cacheKey, 3);
-  }catch(fe){ d=stale(cacheKey,24); cached=!!d; }
-  if(!d) throw new Error('network');
-  try{
-    var items=d.items||[];
-    loading.classList.add('hidden');
-    if(cached){ var st=document.getElementById('stale'); if(st) st.classList.remove('hidden'); }
-    if(!items.length){ empty.classList.remove('hidden'); return }
-    res.innerHTML=items.map(card).join('');
-    var tp=Math.ceil(d.total/48);
-    if(tp>1){ var h='';
-      h+='<button onclick="load('+(curPage-1)+')" '+(curPage<=1?'disabled':'')+' class="px-4 py-2 rounded-full border bg-white text-sm '+(curPage<=1?'opacity-40':'')+'">Previous</button>';
-      for(var i=Math.max(1,curPage-2);i<=Math.min(tp,curPage+2);i++) h+='<button onclick="load('+i+')" class="w-10 h-10 rounded-full text-sm '+(i===curPage?'bg-stone-900 text-white':'border bg-white')+'">'+i+'</button>';
-      if(curPage+2<tp) h+='<span class="text-stone-400">…</span><button onclick="load('+tp+')" class="w-10 h-10 rounded-full border bg-white text-sm">'+tp+'</button>';
-      h+='<button onclick="load('+(curPage+1)+')" '+(curPage>=tp?'disabled':'')+' class="px-4 py-2 rounded-full border bg-white text-sm '+(curPage>=tp?'opacity-40':'')+'">Next</button>';
-      pag.innerHTML=h;
-    }
-  }catch(e){ loading.classList.add('hidden'); err.textContent='Could not load: '+e.message; err.classList.remove('hidden') }
-}
-document.addEventListener('DOMContentLoaded',function(){ load(1); });
-</script>
+<script src="/js/app.js"></script>
+<script src="/js/authors.js"></script>
 </body>
 </html>

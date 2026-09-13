@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Manage Bundles - Babe's Bookstore</title>
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
     <meta name="theme-color" content="#fbfbfd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="apple-touch-icon" href="/static/icon.svg">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
 
   <link rel="preconnect" href="https://babes-bookstore.fly.dev" crossorigin>
@@ -34,7 +34,7 @@
                         <a href="/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
                         <a href="/search" class="text-stone-700 hover:text-amber-700 font-medium">Search</a>
                     </div>
-                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <button class="md:hidden text-stone-700 hover:text-amber-700 p-2 -mr-2" aria-label="Open menu" data-action="menu-toggle" data-menu-id="mobile-menu">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
                 </div>
@@ -64,12 +64,12 @@
         <div id="admin-content" class="hidden">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="font-serif text-3xl font-bold text-stone-900">Manage Bundles</h1>
-                <button onclick="toggleCreateForm()" id="new-bundle-btn" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">+ New Bundle</button>
+                <button data-action="toggleCreateForm" id="new-bundle-btn" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">+ New Bundle</button>
             </div>
 
             <div id="create-form" class="hidden bg-white rounded-xl border border-stone-200 p-6 mb-8">
                 <h2 class="font-serif text-xl font-bold text-stone-900 mb-4">Create New Bundle</h2>
-                <form onsubmit="createBundle(event)">
+                <form data-submit="createBundle">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-stone-600 mb-1">Name</label>
@@ -98,7 +98,7 @@
                     </div>
                     <div class="flex gap-3">
                         <button type="submit" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">Create Bundle</button>
-                        <button type="button" onclick="toggleCreateForm()" class="bg-stone-100 text-stone-700 px-5 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Cancel</button>
+                        <button type="button" data-action="toggleCreateForm" class="bg-stone-100 text-stone-700 px-5 py-2.5 rounded-lg font-medium hover:bg-stone-200 transition text-sm">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -161,144 +161,8 @@
         </div>
     </footer>
 
-    <script>
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-        if (!token || !user.is_admin) {
-            document.getElementById('access-denied').classList.remove('hidden');
-        } else {
-            document.getElementById('admin-content').classList.remove('hidden');
-            loadBundles();
-        }
-
-        function authHeaders() {
-            return {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            };
-        }
-
-        function toggleCreateForm() {
-            const form = document.getElementById('create-form');
-            const btn = document.getElementById('new-bundle-btn');
-            if (form.classList.contains('hidden')) {
-                form.classList.remove('hidden');
-                btn.classList.add('hidden');
-            } else {
-                form.classList.add('hidden');
-                btn.classList.remove('hidden');
-            }
-        }
-
-        async function loadBundles() {
-            const tbody = document.getElementById('bundles-tbody');
-            const loading = document.getElementById('bundles-loading');
-            tbody.innerHTML = '';
-            loading.classList.remove('hidden');
-
-            try {
-                const res = await fetch('/api/v1/bundles', { headers: authHeaders() });
-                if (!res.ok) throw new Error('Failed to load bundles');
-                const data = await res.json();
-
-                const bundles = data.items || data.bundles || data || [];
-                loading.classList.add('hidden');
-
-                if (bundles.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-stone-500">No bundles found.</td></tr>';
-                    return;
-                }
-
-                bundles.forEach(bundle => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-stone-50 transition';
-                    const bookCount = Array.isArray(bundle.books) ? bundle.books.length : 0;
-                    const priceDisplay = formatPrice(bundle.price_cents, bundle.currency);
-                    const activeDot = bundle.active ? '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>Active' : '<span class="inline-block w-2 h-2 rounded-full bg-stone-300 mr-1.5"></span>Inactive';
-                    tr.innerHTML = `
-                        <td class="px-4 py-3 font-medium text-stone-900">${escapeHtml(bundle.name || '')}</td>
-                        <td class="px-4 py-3 text-stone-600">${bookCount}</td>
-                        <td class="px-4 py-3 text-stone-600">${priceDisplay}</td>
-                        <td class="px-4 py-3 text-sm text-stone-600">${activeDot}</td>
-                        <td class="px-4 py-3">
-                            <div class="flex gap-2">
-                                ${bundle.slug ? `<a href="/bundles/${bundle.slug}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>` : `<a href="/bundles/${bundle.id}" class="text-amber-600 hover:text-amber-800 text-xs font-medium">View</a>`}
-                                <button onclick="toggleBundle('${bundle.id}', ${!bundle.active})" class="text-xs font-medium ${bundle.active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'}">${bundle.active ? 'Deactivate' : 'Activate'}</button>
-                                <button onclick="rebuildBundle('${bundle.id}')" class="text-xs font-medium text-blue-600 hover:text-blue-800" title="Regenerate the download ZIP from current contents">Rebuild ZIP</button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (e) {
-                loading.textContent = 'Error loading bundles.';
-            }
-        }
-
-        async function createBundle(e) {
-            e.preventDefault();
-            const bookIdsRaw = document.getElementById('bundle-book-ids').value.trim();
-            const bookIds = bookIdsRaw ? bookIdsRaw.split(',').map(id => id.trim()).filter(id => id) : [];
-
-            const body = {
-                name: document.getElementById('bundle-name').value,
-                slug: document.getElementById('bundle-slug').value,
-                description: document.getElementById('bundle-description').value,
-                price_cents: parseInt(document.getElementById('bundle-price').value, 10),
-                category: document.getElementById('bundle-category').value || null,
-                book_ids: bookIds,
-            };
-
-            try {
-                const res = await fetch('/api/v1/bundles', {
-                    method: 'POST',
-                    headers: authHeaders(),
-                    body: JSON.stringify(body)
-                });
-                if (!res.ok) throw new Error('Failed to create bundle');
-                toggleCreateForm();
-                document.getElementById('create-form').querySelector('form').reset();
-                loadBundles();
-            } catch (e) {
-                alert('Failed to create bundle');
-            }
-        }
-
-        async function toggleBundle(id, active) {
-            try {
-                await fetch(`/api/v1/bundles/${id}`, {
-                    method: 'PATCH',
-                    headers: authHeaders(),
-                    body: JSON.stringify({ active })
-                });
-                loadBundles();
-            } catch (e) {
-                alert('Failed to update bundle');
-            }
-        }
-
-        async function rebuildBundle(id) {
-            if (!confirm('Rebuild this bundle\'s download ZIP from its current contents? (Uses cached files where available.)')) return;
-            try {
-                const res = await fetch(`/api/v1/admin/bundles/${id}/rebuild`, {
-                    method: 'POST',
-                    headers: authHeaders()
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || 'Failed');
-                alert('Rebuild queued · Task ID: ' + (data.task_id || '').substring(0, 12));
-            } catch (e) {
-                alert('Failed to queue rebuild: ' + e.message);
-            }
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(str));
-            return div.innerHTML;
-        }
-    </script>
+    <script src="/js/app.js"></script>
+    <script src="/js/admin-bundles.js"></script>
     <script src="/js/store.js"></script>
 </body>
 </html>

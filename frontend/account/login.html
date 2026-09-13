@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <link rel="stylesheet" href="/static/theme.css">
   <script src="/js/theme.js"></script>
 
@@ -35,10 +35,10 @@
       <p data-google-hint class="hidden text-center text-xs text-stone-400 mt-2">Google sign-in is not configured on this deployment — use email below.</p>
       <div class="relative my-6"><div class="absolute inset-0 flex items-center"><div class="w-full border-t"></div></div><div class="relative flex justify-center"><span class="bg-white px-3 text-xs text-stone-400">or with email</span></div></div>
       <div id="err" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-xl text-sm mb-4"></div>
-      <form id="form" onsubmit="return false;" class="space-y-4">
+      <form id="form" data-nosubmit class="space-y-4">
         <div><label class="text-sm font-medium">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 w-full px-4 py-3 border rounded-xl"></div>
         <div><label class="text-sm font-medium">Password</label><input id="password" type="password" required autocomplete="current-password" placeholder="••••••••" class="mt-1 w-full px-4 py-3 border rounded-xl"></div>
-        <button onclick="login()" class="w-full py-3 rounded-full bg-stone-900 text-white font-semibold hover:bg-black">Sign in</button>
+        <button data-action="login" class="w-full py-3 rounded-full bg-stone-900 text-white font-semibold hover:bg-black">Sign in</button>
       </form>
       <p class="text-center text-sm text-stone-500 mt-6">No account? <a href="/register" class="font-medium text-stone-900 underline">Create one</a></p>
     </div>
@@ -48,19 +48,7 @@
 <footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-sm text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore</div></footer>
 
 <script src="/js/store.js"></script>
-<script>
-async function login(){
-  const err=document.getElementById('err'); err.classList.add('hidden');
-  const email=document.getElementById('email').value.trim(), password=document.getElementById('password').value;
-  if(!email||!password){ err.textContent='Enter email and password.'; err.classList.remove('hidden'); return }
-  try{
-    const r=await fetch('/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Login failed');
-    localStorage.setItem('token', d.access_token||d.data?.access_token); localStorage.setItem('user', JSON.stringify(d.user));
-    location.href=d.user?.is_admin?'/admin':'/account';
-  }catch(e){ err.textContent=e.message; err.classList.remove('hidden') }
-}
-document.getElementById('form').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); login() } });
-</script>
+<script src="/js/app.js"></script>
+<script src="/js/login.js"></script>
 </body>
 </html>

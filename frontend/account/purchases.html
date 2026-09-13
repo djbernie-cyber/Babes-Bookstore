@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <link rel="stylesheet" href="/static/theme.css">
   <script src="/js/theme.js"></script>
 
@@ -24,9 +24,9 @@
 <nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
   <div class="flex items-center gap-8"><a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
     <div class="hidden md:flex gap-7 text-sm font-medium"><a href="/account" class="text-stone-600">My Library</a><a href="/bundles" class="text-stone-600">Bundles</a><a href="/search" class="text-stone-600">Library</a></div></div>
-  <div class="flex items-center gap-3"><button onclick="logout()" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Sign out</button>
-    <button class="md:hidden p-2 -mr-2" onclick="document.getElementById('m').classList.toggle('hidden')"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
-</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="#" onclick="logout()" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Sign out</a></div></nav>
+  <div class="flex items-center gap-3"><button data-action="logout" class="hidden sm:inline-flex px-4 py-2 rounded-full border bg-white text-sm font-medium">Sign out</button>
+    <button class="md:hidden p-2 -mr-2" data-action="menu-toggle" data-menu-id="m"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+</div></div><div id="m" class="hidden md:hidden border-t bg-white px-4 py-3 space-y-1"><a href="/bundles" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Bundles</a><a href="/search" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Library</a><a href="#" data-action="logout" class="block px-3 py-2.5 rounded-xl hover:bg-stone-50">Sign out</a></div></nav>
 
 <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
   <div id="logged-out" class="hidden text-center py-16">
@@ -89,73 +89,7 @@
 
 <script src="/js/coming-soon.js"></script>
 <script src="/js/store.js"></script>
-<script>
-function logout(){ localStorage.removeItem('token'); localStorage.removeItem('user'); location.href='/login' }
-function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function firstName(u){
-  const raw=(u.name||(u.email||'').split('@')[0]||'Reader').trim().split(/\s+/)[0]||'Reader';
-  return raw.charAt(0).toUpperCase()+raw.slice(1);
-}
-function check(){
-  const t=localStorage.getItem('token'), s=localStorage.getItem('user');
-  if(!t||!s){ document.getElementById('logged-out').classList.remove('hidden'); return }
-  let u; try{ u=JSON.parse(s)}catch{ localStorage.clear(); document.getElementById('logged-out').classList.remove('hidden'); return }
-  document.getElementById('logged-in').classList.remove('hidden');
-  document.getElementById('uname').textContent=u.name||u.email||'User';
-  document.getElementById('uemail').textContent=u.email||'';
-  document.getElementById('avatar').textContent=(u.name||u.email||'U').charAt(0).toUpperCase();
-  document.getElementById('jones-name').textContent=firstName(u);
-  if(u.is_admin) document.getElementById('badge-admin').classList.remove('hidden');
-  load(t);
-  loadWishlist(t);
-}
-async function loadWishlist(token){
-  try{
-    const r=await fetch('/api/v1/wishlist',{headers:{'Authorization':'Bearer '+token}}); if(!r.ok) throw new Error();
-    const d=await r.json(); const items=d.items||[];
-    const empty=document.getElementById('wishlist-empty'), list=document.getElementById('wishlist-list');
-    if(!items.length){ empty.classList.remove('hidden'); return }
-    empty.classList.add('hidden'); list.classList.remove('hidden');
-    list.innerHTML=items.map(b=>{
-      const cover=b.cover_url&&/^https?:\/\//.test(b.cover_url)?`<img src="${b.cover_url}" alt="${b.title||'Book cover'}" class="w-full h-28 object-cover rounded-xl border">`:`<div class="w-full h-28 bg-[#ece9e3] rounded-xl grid place-items-center text-[#8a8683] font-serif text-3xl">${(b.title||'?').charAt(0)}</div>`;
-      return `<a href="/books/${b.id}" class="block bg-white border rounded-2xl p-3 hover:border-[#0b0b0c] transition"><div class="text-right"><button onclick="event.preventDefault();unwish(${b.id});this.closest('a').remove()" class="text-stone-400 hover:text-red-600 text-xs font-semibold">♡ remove</button></div>${cover}<h3 class="font-serif font-semibold leading-tight mt-2">${esc(b.title)}</h3><p class="text-xs text-stone-500 mt-0.5">${esc(b.author)}</p></a>`;
-    }).join('');
-  }catch(e){ console.error(e) }
-}
-async function unwish(id){
-  const t=localStorage.getItem('token');
-  try{ await fetch(`/api/v1/wishlist/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+t}}); }catch(e){}
-}
-async function loadVault(apiToken){
-  try{
-    const r=await fetch('/api/v1/library/summary',{headers:{'Authorization':'Bearer '+apiToken}}); if(!r.ok) return;
-    const d=await r.json();
-    const sv=document.getElementById('vault-saved'); if(sv) sv.textContent=(d.total_saved||0).toLocaleString();
-    const vb=document.getElementById('vault-bundles'); if(vb) vb.textContent=(d.bundle_count||0).toLocaleString();
-  }catch(e){}
-}
-async function load(token){
-  loadVault(token);
-  try{
-    const r=await fetch('/api/v1/purchases',{headers:{'Authorization':'Bearer '+token}}); if(!r.ok) throw new Error();
-    const arr=await r.json(); if(!Array.isArray(arr)||!arr.length) return;
-    document.getElementById('empty').classList.add('hidden'); const el=document.getElementById('list'); el.classList.remove('hidden');
-    el.innerHTML=arr.map(p=>{
-      const d=p.created_at?new Date(p.created_at).toLocaleDateString():'';
-      const st=p.status||'completed'; const cls=st==='completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':st==='failed'?'bg-red-50 text-red-700 border-red-200':'bg-amber-50 text-amber-700 border-amber-200';
-      const dl=p.download_available?`<button onclick="dl(${p.id},'${p.download_token||''}')" class="mt-3 w-full py-2.5 rounded-full bg-stone-900 text-white text-sm font-medium">Download</button>`:'';
-      return `<div class="bg-white rounded-2xl border p-5"><h3 class="font-serif font-bold leading-tight">${esc(p.bundle_name)||'Bundle'}</h3><div class="flex items-center justify-between mt-1"><p class="text-sm text-stone-500">${d}</p><span class="text-xs font-medium px-2 py-1 rounded-full border ${cls}">${esc(st)}</span></div><p class="text-sm font-semibold mt-2">${formatPrice(p.amount_cents,p.currency)}</p>${dl}</div>`;
-    }).join('');
-  }catch(e){ console.error(e) }
-}
-async function dl(id, tok){
-  const t=localStorage.getItem('token');
-  try{
-    const r=await fetch(`/api/v1/purchases/${id}/download?token=${encodeURIComponent(tok||'')}`,{headers:{'Authorization':'Bearer '+t}});
-    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Not available'); if(d.url) location.href=d.url;
-  }catch(e){ alert(e.message) }
-}
-document.addEventListener('DOMContentLoaded', check);
-</script>
+<script src="/js/app.js"></script>
+<script src="/js/purchases.js"></script>
 </body>
 </html>

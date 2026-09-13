@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <link rel="stylesheet" href="/static/theme.css">
   <script src="/js/theme.js"></script>
 
@@ -35,12 +35,12 @@
       <p data-google-hint class="hidden text-center text-xs text-stone-400 mt-2">Google sign-in not configured — use email below.</p>
       <div class="relative my-6"><div class="absolute inset-0 flex items-center"><div class="w-full border-t"></div></div><div class="relative flex justify-center"><span class="bg-white px-3 text-xs text-stone-400">or with email</span></div></div>
       <div id="err" class="hidden bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-xl text-sm mb-4"></div>
-      <form id="form" onsubmit="return false;" class="space-y-4">
+      <form id="form" data-nosubmit class="space-y-4">
         <div><label class="text-sm font-medium">Full name</label><input id="name" type="text" required autocomplete="name" placeholder="Ada Lovelace" class="mt-1 w-full px-4 py-3 border rounded-xl"></div>
         <div><label class="text-sm font-medium">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com" class="mt-1 w-full px-4 py-3 border rounded-xl"></div>
         <div><label class="text-sm font-medium">Password</label><input id="password" type="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" class="mt-1 w-full px-4 py-3 border rounded-xl"></div>
         <div><label class="text-sm font-medium">Confirm password</label><input id="confirm" type="password" required autocomplete="new-password" placeholder="Repeat password" class="mt-1 w-full px-4 py-3 border rounded-xl"></div>
-        <button onclick="register()" class="w-full py-3 rounded-full bg-stone-900 text-white font-semibold hover:bg-black">Create account</button>
+        <button data-action="register" class="w-full py-3 rounded-full bg-stone-900 text-white font-semibold hover:bg-black">Create account</button>
       </form>
       <p class="text-center text-sm text-stone-500 mt-6">Already have an account? <a href="/login" class="font-medium text-stone-900 underline">Sign in</a></p>
     </div>
@@ -50,21 +50,7 @@
 <footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-sm text-stone-500">© <span data-copyright-year>2026</span> Babe's Bookstore</div></footer>
 
 <script src="/js/store.js"></script>
-<script>
-async function register(){
-  const err=document.getElementById('err'); err.classList.add('hidden');
-  const name=document.getElementById('name').value.trim(), email=document.getElementById('email').value.trim(), password=document.getElementById('password').value, confirm=document.getElementById('confirm').value;
-  if(!name||!email||!password){ err.textContent='Fill all fields.'; err.classList.remove('hidden'); return }
-  if(password.length<8){ err.textContent='Password must be 8+ characters.'; err.classList.remove('hidden'); return }
-  if(password!==confirm){ err.textContent='Passwords do not match.'; err.classList.remove('hidden'); return }
-  try{
-    const r=await fetch('/api/v1/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});
-    const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Registration failed');
-    localStorage.setItem('token', d.access_token||d.data?.access_token); localStorage.setItem('user', JSON.stringify(d.user));
-    location.href='/account';
-  }catch(e){ err.textContent=e.message; err.classList.remove('hidden') }
-}
-document.getElementById('form').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); register() } });
-</script>
+<script src="/js/app.js"></script>
+<script src="/js/register.js"></script>
 </body>
 </html>
