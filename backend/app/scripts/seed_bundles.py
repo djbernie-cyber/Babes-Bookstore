@@ -114,25 +114,6 @@ NEW_BUNDLES = [
     ),
 ]
 
-TOP_UPS = [
-    ("the-sherlock-files", ["doyle, arthur", "conan doyle"], 24),
-    ("gothic-collection", [
-        "walpole", "radcliffe, ann", "lewis, matthew", "shelley, mary",
-        "le fanu", "hogg, james", "stoker, bram", "poe, edgar",
-        "stevenson, robert", "oliphant, margaret",
-    ], 24),
-    ("mystery-whodunit", ["collins, wilkie", "poe, edgar", "doyle, arthur",
-                          "green, anna katharine", "orczy", "le queux",
-                          "bramah, ernest", "futrelle, jacques",
-                          "chesterton, g. k.", "freeman, r. austin"], 36),
-    ("children-ever-after", ["carroll, lewis", "grahame, kenneth", "kipling, rudyard",
-                             "alcott, louisa", "nesbit, e.", "macdonald, george",
-                             "barrie, j. m.", "collodi", "andrew lang"], 36),
-    ("poetry-the-voice", ["wordsworth", "keats, john", "shelley, percy", "byron",
-                          "burns, robert", "blake, william", "pope, alexander",
-                          "tennyson", "browning", "arnold, matthew", "coleridge"], 60),
-]
-
 AMERICAN = ["twain, mark", "hawthorne, nathaniel", "melville, herman", "poe, edgar",
             "whitman, walt", "emerson, ralph", "thoreau, henry", "longfellow",
             "dickinson, emily", "wharton, edith", "james, henry", "alcott, louisa",
@@ -152,6 +133,30 @@ TRAVEL_KW = re.compile(r"(travels|voyage|journey|expedition|exploration|explor|"
 TRAVEL_AUTHORS = ["livingstone, david", "park, mungo", "burton, richard",
                   "speke", "baker, s. w.", "barth, heinrich",
                   "dampier", "cook, james", "humboldt, alexander", "kinglake"]
+
+TOP_UPS = [
+    ("the-sherlock-files", ["doyle, arthur", "conan doyle"], 24),
+    ("gothic-collection", [
+        "walpole", "radcliffe, ann", "lewis, matthew", "shelley, mary",
+        "le fanu", "hogg, james", "stoker, bram", "poe, edgar",
+        "stevenson, robert", "oliphant, margaret",
+    ], 24),
+    ("mystery-whodunit", ["collins, wilkie", "poe, edgar", "doyle, arthur",
+                          "green, anna katharine", "orczy", "le queux",
+                          "bramah, ernest", "futrelle, jacques",
+                          "chesterton, g. k.", "freeman, r. austin"], 36),
+    ("children-ever-after", ["carroll, lewis", "grahame, kenneth", "kipling, rudyard",
+                             "alcott, louisa", "nesbit, e.", "macdonald, george",
+                             "barrie, j. m.", "collodi", "andrew lang"], 36),
+    ("poetry-the-voice", ["wordsworth", "keats, john", "shelley, percy", "byron",
+                          "burns, robert", "blake, william", "pope, alexander",
+                          "tennyson", "browning", "arnold, matthew", "coleridge"], 60),
+    # Restore author-seeded bundles after an early randomiser run shrank them
+    # (tag pools couldn't see author-picked members — now fixed, but the
+    # members that were lost must be topped back up to their intended size).
+    ("american-classics-republic", AMERICAN, 40),
+    ("travel-exploration", TRAVEL_AUTHORS, 40),
+]
 
 
 async def main():
