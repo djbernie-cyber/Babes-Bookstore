@@ -486,6 +486,33 @@ async def rebuild_bundle(
     return {"task_id": task.id, "bundle_id": bundle_id, "slug": bundle.slug, "status": "queued"}
 
 
+@router.post("/bundles/randomise")
+async def randomise_bundles(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Re-randomise the membership of every active curated (system) bundle.
+
+    Each curated bundle is re-picked from the approved, licence-verified
+    catalogue, preferring books whose tags/category match the bundle's theme,
+    then the affected ZIPs are rebuilt in the background. Custom bundles are
+    never touched. Single in-flight guard prevents stacking redundant runs.
+    """
+    from ...tasks.bundle_randomise import randomise_system_bundles_task
+
+    task = _task_in_flight("services.randomise_system_bundles")
+    if task:
+        raise HTTPException(status_code=409, detail=f"Randomisation already in progress ({task}")
+
+    t = randomise_system_bundles_task.delay()
+    await log_action(
+        db, action="bundle.randomise", entity_type="bundle",
+        entity_id=None, user_id=admin.id,
+        details={"status": "queued", "task_id": t.id},
+    )
+    return {"task_id": t.id, "status": "queued"}
+
+
 @router.get("/categories")
 async def list_categories(
     db: AsyncSession = Depends(get_db),

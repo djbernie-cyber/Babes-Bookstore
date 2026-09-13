@@ -10,11 +10,37 @@ from ...sources.african_ebooks import (
     AFRICAN_LITERATURE_TAG,
     AFRICAN_CONTINENT_TAG,
     COLONIAL_SOURCE_TAG,
+    CONDEMNED_REVOLUTIONARY_AUTHORS,
 )
 
 router = APIRouter(prefix="/authors", tags=["authors"])
 
 _AGGREGATE_CREDITS: list[str] = ["Various", "Anonymous", "Unknown"]
+
+#: Revolutionary writers explicitly banned/imprisoned by their own states —
+#: surfaced with a badge so readers can find the political canon.
+_banned_lookup = {n.strip().lower(): n for n in CONDEMNED_REVOLUTIONARY_AUTHORS}
+
+
+def _banned(name: str) -> bool:
+    """True when ``name`` matches a condemned revolutionary writer.
+
+    Author strings appear in the catalogue in both "First Last" and
+    "Last, First" forms, so compare against every word ordering.
+    """
+    if not name:
+        return False
+    clean = " ".join((name or "").strip().lower().split())
+    if clean in _banned_lookup:
+        return True
+    # Re-order "Last, First" → "First Last".
+    if "," in clean:
+        parts = [p.strip() for p in clean.split(",")]
+        if len(parts) == 2 and parts[0] and parts[1]:
+            reordered = f"{parts[1]} {parts[0]}".strip()
+            if reordered in _banned_lookup:
+                return True
+    return False
 
 
 @router.get("")
@@ -120,12 +146,28 @@ async def list_african_authors(
     result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
     rows = result.all()
 
-    items = [{"name": r[0], "book_count": r[1], "slug": _slugify(r[0])} for r in rows]
+    items = [
+        {
+            "name": r[0],
+            "book_count": r[1],
+            "slug": _slugify(r[0]),
+            "banned": _banned(r[0]),
+        }
+        for r in rows
+    ]
 
     # Featured: lead with continent (Black African) authors.
     continent_result = await db.execute(continent_stmt.limit(5))
     continent_rows = continent_result.all()
-    featured = [{"name": r[0], "book_count": r[1], "slug": _slugify(r[0])} for r in continent_rows]
+    featured = [
+        {
+            "name": r[0],
+            "book_count": r[1],
+            "slug": _slugify(r[0]),
+            "banned": _banned(r[0]),
+        }
+        for r in continent_rows
+    ]
     if not featured:
         featured = items[:5]
 

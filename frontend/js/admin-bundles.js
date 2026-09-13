@@ -129,6 +129,32 @@
             }
         }
 
+        async function randomiseBundles(btn) {
+            if (!confirm('Re-pick the books inside every curated (system) bundle from the approved catalogue, then rebuild their download ZIPs? Custom bundles are untouched.')) return;
+            const self = btn || this;
+            const label = self.dataset.origLabel || 'Randomise System Bundles';
+            self.dataset.origLabel = label;
+            self.disabled = true;
+            self.textContent = 'Randomising…';
+            try {
+                const res = await fetch('/api/v1/admin/bundles/randomise', {
+                    method: 'POST',
+                    headers: authHeaders()
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    if (res.status === 409) throw new Error(data.detail || 'Another randomisation is already running.');
+                    throw new Error(data.detail || 'Failed');
+                }
+                alert('Randomisation queued · Task ID: ' + (data.task_id || '').substring(0, 12));
+            } catch (e) {
+                alert('Failed to queue randomisation: ' + e.message);
+            } finally {
+                self.disabled = false;
+                self.textContent = label;
+            }
+        }
+
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(str));

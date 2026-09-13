@@ -41,6 +41,21 @@
     <p class="text-sm max-w-3xl leading-7 text-stone-200">Below, each entry records the title, the author, and the year of its suppression. These are the documented tipping points of library history — from the 1885 Concord, Massachusetts police ban of <em>Huckleberry Finn</em> to the 1989 <em>Satanic Verses</em> fatwa. The catalogue links point at the public-domain editions we ourselves carry.</p>
   </div>
 
+  <div class="mt-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div>
+        <p class="eyebrow">In our catalogue today</p>
+        <h2 class="font-serif text-2xl sm:text-3xl font-bold tracking-[-.02em]">Suppressed Classics</h2>
+        <p class="text-sm text-stone-600 mt-1 leading-6">Live from the library — every title tagged <span class="font-medium">Suppressed Classics</span>, free to download.</p>
+      </div>
+      <p id="banned-meta" class="text-sm text-[#8a8683] hidden"></p>
+    </div>
+    <div id="banned-results" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    <div id="banned-loading" class="py-12 text-center text-stone-500">Loading suppressed classics…</div>
+    <div id="banned-empty" class="hidden py-12 text-center text-stone-500">No suppressed classics in the catalogue yet.</div>
+    <div id="banned-error" class="hidden py-12 text-center text-red-700"></div>
+  </div>
+
   <div class="mt-6 space-y-4">
     <details class="border rounded-lg p-4">
       <summary class="font-serif text-lg font-bold cursor-pointer">Europe — church, crown &amp; state</summary>

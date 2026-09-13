@@ -54,6 +54,20 @@ NEW_BUNDLES = [
             "browsers, phones and e-readers.",
     ),
     dict(
+        name="Banned & Suppressed Classics — Courageous Words",
+        slug="banned-suppressed-classics",
+        category="Banned & Suppressed",
+        tags=["Suppressed Classics", "Banned Books"],
+        featured=True,
+        description="Books once banned, burned or censored: Kama Sutra, the Decameron, "
+            "Satyricon, Arabian Nights and more — words that survived the fire.",
+        long_description="From the thirteenth century's Qhoboshihein to the school-library "
+            "wars of the twentieth, censorship has always hunted the same prey: the candid, "
+            "the subversive and the truthful. This bundle gathers the library's suppressed "
+            "classics and condemned revolutionary writers. Some of history's most important "
+            "books are the ones someone tried to destroy.",
+    ),
+    dict(
         name="Modernist Voices — The New World",
         slug="modernist-voices-new",
         category="Modern & 20th Century",
@@ -85,6 +99,18 @@ NEW_BUNDLES = [
             "the world.",
         long_description="Classic travel writing and expedition narratives from Mungo Park, "
             "David Livingstone, Richard Burton, James Cook and more — history you can roam.",
+    ),
+    dict(
+        name="Revolutionary Voices — Banned, Condemned, Unsilenced",
+        slug="revolutionary-voices",
+        category="Banned & Suppressed",
+        tags=["Revolutionary", "African Literature"],
+        featured=False,
+        description="Writers condemned, imprisoned or exiled by their own states for the "
+            "crime of telling the truth.",
+        long_description="Steve Biko, Nelson Mandela, Ngũgĩ wa Thiong'o and Soyinka's "
+            "generation — this bundle collects the library's Revolutionary-tagged works by "
+            "African and diaspora writers: the banned, the imprisoned, and the unsilenced.",
     ),
 ]
 
@@ -182,6 +208,12 @@ async def main():
         ]
         print(f"African Literature tag count (excl. Colonial Sauce): {len(african)}")
 
+        suppressed = [b for b in books if "Suppressed Classics" in b["tags"]]
+        print(f"Suppressed Classics tag count: {len(suppressed)}")
+
+        revolutionary = [b for b in books if "Revolutionary" in b["tags"]]
+        print(f"Revolutionary tag count: {len(revolutionary)}")
+
         for spec in NEW_BUNDLES:
             slug = spec["slug"]
             if slug in existing:
@@ -191,6 +223,16 @@ async def main():
                 chosen = sorted(african, key=lambda b: b["id"])[:60]
             elif slug == "american-classics-republic":
                 chosen = pick(AMERICAN, cap=40)
+            elif slug == "banned-suppressed-classics":
+                chosen = sorted(suppressed, key=lambda b: b["id"])[:50]
+                # Prefer true Suppressed Classics; top up with condemned
+                # revolutionary canon so the bundle always has meat.
+                if len(chosen) < 20:
+                    have = {b["id"] for b in chosen}
+                    fill = [b for b in revolutionary if b["id"] not in have]
+                    chosen = chosen + fill[: max(0, 40 - len(chosen))]
+            elif slug == "revolutionary-voices":
+                chosen = sorted(revolutionary, key=lambda b: b["id"])[:40]
             elif slug == "modernist-voices-new":
                 chosen = pick(MODERN, cap=40)
             elif slug == "mythology-legends":

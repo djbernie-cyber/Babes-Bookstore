@@ -64,7 +64,10 @@
         <div id="admin-content" class="hidden">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="font-serif text-3xl font-bold text-stone-900">Manage Bundles</h1>
-                <button data-action="toggleCreateForm" id="new-bundle-btn" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">+ New Bundle</button>
+                <div class="flex gap-3">
+                    <button data-action="randomiseBundles" id="randomise-bundles-btn" class="bg-stone-800 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-stone-900 transition text-sm" title="Re-pick books inside every curated system bundle from the approved catalogue and rebuild their ZIPs. Custom bundles are untouched.">Randomise System Bundles</button>
+                    <button data-action="toggleCreateForm" id="new-bundle-btn" class="bg-amber-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-amber-800 transition text-sm">+ New Bundle</button>
+                </div>
             </div>
 
             <div id="create-form" class="hidden bg-white rounded-xl border border-stone-200 p-6 mb-8">

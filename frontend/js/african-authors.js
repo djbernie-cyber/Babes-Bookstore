@@ -6,6 +6,7 @@ function authorCard(a) {
     '<div class="w-14 h-14 rounded-full bg-[#f6efe1] border grid place-items-center font-serif text-xl text-stone-800 mb-3">' + esc((a.name || '?').charAt(0).toUpperCase()) + '</div>' +
     '<p class="font-serif font-semibold leading-tight group-hover:underline">' + esc(a.name) + '</p>' +
     '<p class="text-xs text-stone-500 mt-1">' + a.book_count + ' work' + (a.book_count === 1 ? '' : 's') + '</p>' +
+    (a.banned ? '<p class="text-[11px] font-semibold text-red-700 mt-2 inline-block bg-red-50 border border-red-200 rounded-full px-2 py-0.5">Banned / imprisoned writer</p>' : '') +
     '</a>';
 }
 function featuredCard(a) {
@@ -14,6 +15,7 @@ function featuredCard(a) {
     '<div class="w-16 h-16 rounded-full bg-gradient-to-br from-stone-800 to-stone-600 text-white grid place-items-center font-serif text-xl mb-4">' + initials + '</div>' +
     '<p class="font-serif text-xl font-bold leading-tight">' + esc(a.name) + '</p>' +
     '<p class="text-sm text-stone-500 mt-1">' + a.book_count + ' work' + (a.book_count === 1 ? '' : 's') + ' in the library</p>' +
+    (a.banned ? '<p class="text-[11px] font-semibold text-red-700 mt-2 inline-block bg-red-50 border border-red-200 rounded-full px-2 py-0.5">Banned / imprisoned writer</p>' : '') +
     '<div class="mt-4 pt-4 border-t"><a href="/authors/' + a.slug + '" class="text-sm font-semibold text-stone-900 hover:underline">Browse catalogue →</a></div>' +
     '</div>';
 }
