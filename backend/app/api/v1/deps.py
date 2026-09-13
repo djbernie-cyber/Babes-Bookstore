@@ -38,6 +38,8 @@ async def get_current_user(
         return None
 
     user = await db.get(User, int(user_id))
+    if not user or not user.is_active:
+        return None
     return user
 
 

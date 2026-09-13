@@ -48,6 +48,30 @@ class EmailService:
         """
         return self._send(to_email, subject, html)
 
+    def send_password_reset(self, to_email: str, reset_url: str) -> bool:
+        subject = "Reset your Babe's Bookstore password"
+        html = f"""
+        <html>
+        <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1>Reset your password</h1>
+            <p>We got a request to reset the password for your Babe's Bookstore account.</p>
+            <p>
+                <a href="{reset_url}"
+                   style="display: inline-block; background: #d97706; color: white;
+                          padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                    Set a new password
+                </a>
+            </p>
+            <p><small>This link expires in 30 minutes. If you didn't ask for a reset, you can safely ignore it.</small></p>
+            <hr>
+            <p style="color: #666; font-size: 12px;">
+                Babe's Bookstore — Public domain and openly-licensed books, curated for you.
+            </p>
+        </body>
+        </html>
+        """
+        return self._send(to_email, subject, html)
+
     def _send(self, to_email: str, subject: str, html: str) -> bool:
         if not self.client:
             logger.warning(f"Email not configured. Would send: {subject} to {to_email}")

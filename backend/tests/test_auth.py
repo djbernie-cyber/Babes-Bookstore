@@ -167,3 +167,84 @@ async def test_free_checkout_denied_for_normal_user(client, seeded):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_register_normalizes_email_case(client):
+    r = await client.post("/api/v1/auth/register", json={
+        "email": "  MiXeD@Example.CoM ", "password": "s3cret-pass", "name": "Casey",
+    })
+    assert r.status_code == 200
+    assert r.json()["user"]["email"] == "mixed@example.com"
+
+    r2 = await client.post("/api/v1/auth/login", json={
+        "email": "mixed@example.com", "password": "s3cret-pass",
+    })
+    assert r2.status_code == 200
+    assert r2.json()["user"]["email"] == "mixed@example.com"
+
+
+@pytest.mark.asyncio
+async def test_duplicate_registration_rejected_across_case(client):
+    await client.post("/api/v1/auth/register", json={
+        "email": "dup@example.com", "password": "s3cret-pass",
+    })
+    r = await client.post("/api/v1/auth/register", json={
+        "email": "DUP@EXAMPLE.COM", "password": "other-pass",
+    })
+    assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_password_reset_roundtrip(client):
+    reg = await client.post("/api/v1/auth/register", json={
+        "email": "reset@example.com", "password": "old-pass-1", "name": "Red",
+    })
+    assert reg.status_code == 200
+
+    fr = await client.post("/api/v1/auth/forgot-password", json={"email": "RESET@EXAMPLE.COM"})
+    assert fr.status_code == 200
+
+    # Derive the signed reset token the same way the server does, then use it.
+    from app.api.v1.auth import create_reset_token
+    token = create_reset_token("reset@example.com")
+
+    bad = await client.post("/api/v1/auth/reset-password", json={"token": "nope", "password": "new-pass-2"})
+    assert bad.status_code == 400
+
+    ok = await client.post("/api/v1/auth/reset-password", json={"token": token, "password": "new-pass-2"})
+    assert ok.status_code == 200
+    assert ok.json()["user"]["email"] == "reset@example.com"
+
+    old = await client.post("/api/v1/auth/login", json={"email": "reset@example.com", "password": "old-pass-1"})
+    assert old.status_code == 401
+
+    new = await client.post("/api/v1/auth/login", json={"email": "reset@example.com", "password": "new-pass-2"})
+    assert new.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_is_private(client):
+    fr = await client.post("/api/v1/auth/forgot-password", json={"email": "ghost@example.com"})
+    assert fr.status_code == 200
+    assert "on its way" in fr.json()["message"]
+
+
+@pytest.mark.asyncio
+async def test_deactivated_user_cannot_login(client, db):
+    reg = await client.post("/api/v1/auth/register", json={
+        "email": "off@example.com", "password": "s3cret-pass",
+    })
+    assert reg.status_code == 200
+
+    from app.models.user import User
+    from sqlalchemy import select
+    user = (await db.execute(select(User).where(User.email == "off@example.com"))).scalar_one()
+    user.is_active = False
+    await db.commit()
+
+    r = await client.post("/api/v1/auth/login", json={"email": "off@example.com", "password": "s3cret-pass"})
+    assert r.status_code == 403
+
+    r2 = await client.post("/api/v1/auth/login", json={"email": "off@example.com", "password": "s3cret-pass"})
+    assert r2.status_code == 403

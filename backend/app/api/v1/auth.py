@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from pydantic import BaseModel, EmailStr, Field
@@ -30,6 +30,15 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH, max_length=256)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -47,12 +56,25 @@ def create_access_token(user_id: int) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+def create_reset_token(email: str) -> str:
+    expire = datetime.utcnow() + timedelta(minutes=30)
+    payload = {"sub": _norm_email(email), "purpose": "password_reset", "exp": expire}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def _norm_email(email: str) -> str:
+    return (email or "").strip().lower()
+
+
 async def get_or_create_google_user(email: str, name: str, google_id: str) -> User:
     from ...database import AsyncSessionLocal
+    email = _norm_email(email)
     async with AsyncSessionLocal() as db:
-        stmt = select(User).where(User.email == email)
+        stmt = select(User).where(func.lower(User.email) == email)
         user = (await db.execute(stmt)).scalar_one_or_none()
         if user:
+            if user.email != email:
+                user.email = email
             user.google_id = google_id
             if name and not user.name:
                 user.name = name
@@ -182,13 +204,14 @@ async def google_token_login(body: GoogleCallbackRequest, db: AsyncSession = Dep
 
 @router.post("/register", response_model=TokenResponse)
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    stmt = select(User).where(User.email == req.email)
+    email = _norm_email(req.email)
+    stmt = select(User).where(func.lower(User.email) == email)
     existing = (await db.execute(stmt)).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
-        email=req.email,
+        email=email,
         name=req.name,
         hashed_password=hash_password(req.password),
     )
@@ -218,11 +241,57 @@ async def token(form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
 
 
 async def _authenticate(email: str, password: str, db: AsyncSession) -> TokenResponse:
-    stmt = select(User).where(User.email == email)
+    stmt = select(User).where(func.lower(User.email) == _norm_email(email))
     user = (await db.execute(stmt)).scalar_one_or_none()
 
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account disabled")
+
+    token = create_access_token(user.id)
+    return TokenResponse(
+        access_token=token,
+        user={"id": user.id, "email": user.email, "name": user.name, "is_admin": user.is_admin},
+    )
+
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """Email a signed, 30-minute reset link when the address exists.
+
+    Never discloses whether an account exists — responses are identical either
+    way, matching the behaviour of every reputable store.
+    """
+    email = _norm_email(body.email)
+    stmt = select(User).where(func.lower(User.email) == email)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+    if user is not None and user.is_active:
+        token = create_reset_token(user.email)
+        url = f"{settings.FRONTEND_URL.rstrip('/')}/account/reset?token={token}"
+        from ...services.email_service import email_service
+        email_service.send_password_reset(user.email, url)
+    return {"message": "If that address has an account, a reset link is on its way."}
+
+
+@router.post("/reset-password", response_model=TokenResponse)
+async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """Verify the signed reset token and set a fresh password, then log in."""
+    try:
+        payload = jwt.decode(body.token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("purpose") != "password_reset":
+            raise JWTError
+        email = _norm_email(payload.get("sub") or "")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    stmt = select(User).where(func.lower(User.email) == email)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    user.hashed_password = hash_password(body.password)
+    await db.commit()
 
     token = create_access_token(user.id)
     return TokenResponse(

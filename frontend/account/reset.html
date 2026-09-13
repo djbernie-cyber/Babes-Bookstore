@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Reset password — Babe's Bookstore</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="min-h-screen flex flex-col bg-[#fcfaf7]">
+<nav class="sticky top-0 z-50 bg-white"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
+  <a href="/" class="font-serif text-[1.45rem] font-bold tracking-[-.02em]">Babe's<span class="font-normal text-stone-500"> —</span> Bookstore</a>
+  <a href="/login" class="text-sm font-medium text-stone-600 hover:text-stone-900">Back to login</a>
+</div></div></nav>
+
+<main class="flex-1 w-full max-w-md mx-auto px-4 py-16">
+  <div id="email-view">
+    <h1 class="font-serif text-3xl font-bold tracking-[-.02em]">Forgot your password?</h1>
+    <p class="text-sm text-stone-600 mt-2 leading-6">Enter the email on your account and we'll send a link to set a new password. The link expires in 30 minutes.</p>
+    <form id="forgot-form" class="mt-6 space-y-4">
+      <div>
+        <label class="text-sm font-medium block mb-1" for="email">Email</label>
+        <input id="email" name="email" type="email" required autocomplete="email" class="w-full rounded-xl border bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900">
+      </div>
+      <button type="submit" class="w-full rounded-full bg-[#0b0b0c] text-white py-3 text-sm font-medium">Send reset link</button>
+    </form>
+    <p id="forgot-msg" class="mt-4 text-sm text-stone-600 hidden leading-6"></p>
+  </div>
+
+  <div id="reset-view" class="hidden">
+    <h1 class="font-serif text-3xl font-bold tracking-[-.02em]">Set a new password</h1>
+    <p class="text-sm text-stone-600 mt-2">Choose a password of at least 8 characters.</p>
+    <form id="reset-form" class="mt-6 space-y-4">
+      <div>
+        <label class="text-sm font-medium block mb-1" for="pw">New password</label>
+        <input id="pw" name="password" type="password" required minlength="8" autocomplete="new-password" class="w-full rounded-xl border bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900">
+      </div>
+      <button type="submit" class="w-full rounded-full bg-[#0b0b0c] text-white py-3 text-sm font-medium">Save new password</button>
+    </form>
+    <p id="reset-msg" class="mt-4 text-sm text-stone-600 hidden leading-6"></p>
+  </div>
+</main>
+
+<script src="/js/api.js"></script>
+<script>
+var token = new URLSearchParams(location.search).get('token');
+window.addEventListener('DOMContentLoaded', function () {
+  if (token) resetView();
+  document.getElementById('forgot-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var msg = document.getElementById('forgot-msg');
+    msg.classList.remove('hidden'); msg.textContent = 'Sending…';
+    try {
+      var r = await fetch('/api/v1/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value }) });
+      if (!r.ok) throw new Error(r.status);
+      document.getElementById('email-view').innerHTML = '<h1 class="font-serif text-3xl font-bold tracking-[-.02em]">Check your inbox</h1><p class="text-sm text-stone-600 mt-2 leading-6">If that address has an account, a reset link is on its way. The link expires in 30 minutes.</p><a href="/login" class="inline-block mt-6 text-sm font-medium underline">Back to login</a>';
+    } catch (err) {
+      msg.textContent = 'Something went wrong sending that. Please try again.';
+    }
+  });
+  document.getElementById('reset-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var msg = document.getElementById('reset-msg');
+    msg.classList.remove('hidden'); msg.textContent = 'Saving…';
+    try {
+      var r = await fetch('/api/v1/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token, password: document.getElementById('pw').value }) });
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      localStorage.setItem('bb_token', d.access_token);
+      location.href = '/account/library';
+    } catch (err) {
+      msg.textContent = 'That link is invalid or has expired. Please request a new one.';
+    }
+  });
+});
+function resetView() {
+  document.getElementById('email-view').classList.add('hidden');
+  document.getElementById('reset-view').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
