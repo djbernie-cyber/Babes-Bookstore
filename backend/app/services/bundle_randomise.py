@@ -82,14 +82,24 @@ async def randomise_curated_bundles(db: AsyncSession) -> Dict:
             skipped.append(f"{bundle.slug}: empty (no books)")
             continue
 
-        # ── Build themed pool ──────────────────────────────────────────
         tags = bundle.tags or []
+        current_ids = {bb.book_id for bb in bundle.bundle_books}
+        # Author canon: the original seeders picked many bundles by author
+        # list (Twain, Dickens, Park…) whose catalogue entries don't all share
+        # the bundle's tags. Keep their authors in the pool or the bundle
+        # silently shrinks every time it is randomised.
+        current_authors = {
+            (book_by_id[i]["author"] or "").strip().lower()
+            for i in current_ids if i in book_by_id
+        } - {""}
 
         def _matches(book: Dict) -> bool:
-            b_tags = book["tags"]
-            if tags and any(t in b_tags for t in tags):
+            if tags and any(t in book["tags"] for t in tags):
                 return True
             if not tags and bundle.category and book["category"] == bundle.category:
+                return True
+            inv = (book["author"] or "").strip().lower()
+            if inv and inv in current_authors:
                 return True
             return False
 
@@ -101,29 +111,19 @@ async def randomise_curated_bundles(db: AsyncSession) -> Dict:
             pool = list(approved_books)
 
         # Remove any books currently in the bundle to encourage freshness
-        current_ids = {bb.book_id for bb in bundle.bundle_books}
         fresh_pool = [b for b in pool if b["id"] not in current_ids]
         # If the fresh pool is smaller than target, re-include current books
         if len(fresh_pool) < MIN_BUNDLE_SIZE:
             fresh_pool = pool
 
         target = min(max(current_size, MIN_BUNDLE_SIZE), MAX_BUNDLE_SIZE, len(fresh_pool))
+        # Sample-distinct: never duplicate a book inside its own bundle.
         chosen = random.sample(fresh_pool, target)
-        chosen_ids = [b["id"] for b in chosen]
+        final_ids = [b["id"] for b in chosen]
 
-        # ── Validate: every book must be approved ──────────────────────
-        final_ids = [bid for bid in chosen_ids if bid in approved_ids]
-        if len(final_ids) < MIN_BUNDLE_SIZE:
-            skipped.append(
-                f"{bundle.slug}: pool too small after validation ({len(final_ids)} < {MIN_BUNDLE_SIZE})"
-            )
-            continue
-
-        # ── Replace membership ─────────────────────────────────────────
-        await db.execute(
-            # Core delete to avoid lazy-load MissingGreenlet
-            BundleBook.__table__.delete().where(BundleBook.bundle_id == bundle.id)
-        )
+        # ── Replace membership (ORM delete keeps the identity map clean) ─
+        for bb in list(bundle.bundle_books):
+            await db.delete(bb)
         await db.flush()
 
         for i, book_id in enumerate(final_ids):

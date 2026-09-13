@@ -128,6 +128,53 @@ async def test_randomise_preserves_book_count_in_expected_range(db):
 
 
 @pytest.mark.asyncio
+async def test_randomise_author_pool_prevents_shrinkage(db):
+    """Bundles seeded by author list (no shared tags) must not shrink.
+
+    Regression: tag-matched pools shrank author-seeded bundles (e.g. Twain's
+    American classics) every time they were randomised.
+    """
+    from app.services.bundle_randomise import randomise_curated_bundles
+
+    authors = {
+        "Twain, Mark",
+        "Melville, Herman",
+        "Dickinson, Emily",
+        "Hawthorne, Nathaniel",
+        "Whitman, Walt",
+    }
+    for i in range(6):
+        db.add(Book(
+            title=f"American {i}", author=list(authors)[i % len(authors)],
+            source="gutenberg", source_id=str(100 + i),
+            license_type="public_domain", status=BookStatus.APPROVED,
+            license_verified=True, tags=["no-theme-match"],
+        ))
+    await db.flush()
+
+    bun = Bundle(name="American Classics", slug="american-test",
+                 tags=["American literature", "Classics"],
+                 price_cents=1000, active=True, bundle_type="curated")
+    db.add(bun)
+    await db.flush()
+
+    all_books = (await db.execute(select(Book))).scalars().all()
+    for n, b in enumerate(all_books):
+        db.add(BundleBook(bundle_id=bun.id, book_id=b.id, sort_order=n))
+    await db.commit()
+
+    result = await randomise_curated_bundles(db)
+    assert len(result["updated"]) == 1
+
+    count = (await db.execute(
+        select(func.count()).select_from(BundleBook).where(BundleBook.bundle_id == bun.id)
+    )).scalar()
+    # All 6 books share the author canon, so the bundle must stay at 6 —
+    # not collapse to MIN_BUNDLE_SIZE because of a missing tag match.
+    assert count == 6
+
+
+@pytest.mark.asyncio
 async def test_randomise_endpoint_blocked_for_anonymous_and_normal(client):
     assert (await client.post("/api/v1/admin/bundles/randomise")).status_code in (401, 403)
 
