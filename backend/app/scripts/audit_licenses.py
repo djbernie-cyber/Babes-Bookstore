@@ -1,7 +1,7 @@
 """Full production license + data-quality sweep.
 
 Run inside the API container:
-    cd /app && PYTHONPATH=/app python /tmp/audit_licenses.py
+    cd /app && PYTHONPATH=/app python /app/app/scripts/audit_licenses.py
 
 1. Re-verifies every approved standard_ebooks / internet_archive book plus all
    African/Revolutionary-tagged books against their declared source URL.
@@ -29,7 +29,7 @@ def _degenerate_author(name) -> bool:
         return True
     if all(len(t) == 1 for t in tokens):
         return True
-    if len(tokens) == 1 and len(tokens[0]) <= 3:
+    if len(tokens) == 1:
         return True
     return False
 
