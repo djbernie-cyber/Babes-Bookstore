@@ -7,10 +7,10 @@
 # Prerequisites:
 #   1. A cluster reachable from GitHub Actions (or use kubeconfig secret).
 #      Secrets to configure in repo settings:
-#        REGISTRY_USER      — GitHub user with write access to the package
-#        REGISTRY_TOKEN     — a GitHub PAT (or actions token) for ghcr.io
 #        KUBECONFIG_B64     — base64 of your kubeconfig with namespace rights
 #   2. Edit "image" tags in infra/kubernetes/*.yaml to your registry/org.
+#      The registry login uses the built-in GITHUB_TOKEN (job grants
+#      packages: write), so no REGISTRY_* secrets are required.
 name: deploy-kubernetes
 
 on:
@@ -37,8 +37,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract commit tag
         id: meta
