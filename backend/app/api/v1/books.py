@@ -11,6 +11,7 @@ from .deps import get_db, require_admin, get_current_user
 from ...models.book import Book, BookStatus
 from ...schemas.book import BookResponse, BookListResponse, BookUpdate
 from ...models.user import User
+from ...services.search_filters import book_match_filter, tokenize
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -62,18 +63,17 @@ async def list_books(
     if exclude_tag:
         stmt = stmt.where(~func.cast(Book.tags, String).ilike(f'%"{exclude_tag}"%'))
 
-    if search:
-        search_filter = or_(
-            Book.title.ilike(f"%{search}%"),
-            Book.author.ilike(f"%{search}%"),
-            Book.description.ilike(f"%{search}%"),
-        )
-        stmt = stmt.where(search_filter)
+    match, score = (book_match_filter(Book, search) if search else (None, None))
+    if match is not None:
+        stmt = stmt.where(match)
 
     total_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await db.execute(total_stmt)).scalar() or 0
 
-    stmt = stmt.order_by(Book.created_at.desc())
+    if score is not None:
+        stmt = stmt.order_by(score.desc(), Book.title.asc())
+    else:
+        stmt = stmt.order_by(Book.created_at.desc())
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(stmt)

@@ -13,6 +13,7 @@ from ...sources.african_ebooks import (
     COLONIAL_SOURCE_TAG,
     CONDEMNED_REVOLUTIONARY_AUTHORS,
 )
+from ...services.search_filters import author_match_filter, tokenize
 
 router = APIRouter(prefix="/authors", tags=["authors"])
 
@@ -95,7 +96,11 @@ async def list_authors(
     )
 
     if search:
-        stmt = stmt.where(Book.author.ilike(f"%{search}%"))
+        name_match = author_match_filter(Book, search)
+        if name_match is not None:
+            stmt = stmt.where(name_match)
+        else:
+            stmt = stmt.where(Book.author.ilike(f"%{search}%"))
 
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await db.execute(count_stmt)).scalar() or 0
@@ -146,8 +151,15 @@ async def list_african_authors(
 
     rows = (await db.execute(base.order_by(func.count(Book.id).desc()))).all()
     if search:
-        like = f"%{search.lower()}%"
-        rows = [r for r in rows if like in r[0].lower() or like in _author_key(r[0])]
+        tokens = tokenize(search)
+        if tokens:
+            rows = [
+                r for r in rows
+                if all(t in (r[0] or "").lower() or t in _author_key(r[0]) for t in tokens)
+            ]
+        else:
+            like = f"%{search.lower()}%"
+            rows = [r for r in rows if like in r[0].lower() or like in _author_key(r[0])]
 
     # Merge duplicated name spellings, drop degenerate credits.
     merged: dict = {}
