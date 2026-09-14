@@ -50,7 +50,17 @@ async def _fetch_one(client: httpx.AsyncClient, book) -> str:
         resp = await client.get(OL_SEARCH, params=params)
         resp.raise_for_status()
         docs = resp.json().get("docs", [])
-    except Exception as e:  # network/OL hiccup — skip, don't sentinel
+    except (httpx.HTTPStatusError, httpx.TransportError) as e:
+        # Transient blip — 429/5xx/conn reset. Back off briefly and retry once.
+        await asyncio.sleep(2.5)
+        try:
+            resp = await client.get(OL_SEARCH, params=params)
+            resp.raise_for_status()
+            docs = resp.json().get("docs", [])
+        except Exception as e2:
+            logger.warning("OL lookup failed for %r (retried): %s", title, e2)
+            return None
+    except Exception as e:  # unexpected — skip, don't sentinel
         logger.warning("OL lookup failed for %r: %s", title, e)
         return None
     for doc in docs:
