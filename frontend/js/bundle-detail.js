@@ -50,13 +50,7 @@ async function pay(provider) {
   } catch (e) { alert(e.message); btn.innerHTML = orig; btn.disabled = false }
 }
 async function loadMpesaConfig() {
-  try {
-    const r = await fetch('/api/v1/checkout/config?_=' + Date.now()); if (!r.ok) return;
-    const c = await r.json();
-    if (c.mpesa_enabled) {
-      document.getElementById('mpesa-btn').classList.remove('hidden');
-      document.getElementById('mpesa-hint').classList.remove('hidden');
-    }
-  } catch (e) { }
+  // M-Pesa is the store's only payment method — the button is always shown.
+  document.getElementById('mpesa-btn')?.classList.remove('hidden');
 }
-document.addEventListener('DOMContentLoaded', () => { load(); loadMpesaConfig(); });
+document.addEventListener('DOMContentLoaded', () => { load(); });

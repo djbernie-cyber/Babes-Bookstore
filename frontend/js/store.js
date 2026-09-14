@@ -56,9 +56,8 @@
       document.querySelectorAll('[data-google-hint]').forEach(function(h){ h.style.display=on?'none':''; });
       var el=document.querySelector('[data-live-payments]');
       if(el){
-        var m=[]; if(c.stripe_publishable_key) { m.push('Card'); m.push('Apple Pay','Google Pay'); }
-        if(c.paypal_client_id) m.push('PayPal'); if(c.square_application_id) m.push('Square');
-        el.textContent=m.length? m.length+(m.length===1?' way to pay':' ways to pay') : 'Payments launching soon';
+        // M-Pesa is the store's only payment method.
+        el.textContent = c.mpesa_enabled ? '1 way to pay — M-Pesa' : 'M-Pesa — launching at checkout';
       }
     }).catch(function(){});
   }
