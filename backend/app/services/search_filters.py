@@ -70,7 +70,7 @@ def book_match_filter(cls, raw: str):
         in_tags = tag_text.ilike(f"%{safe}%")
         token_filters.append(or_(in_title, in_author, in_tags))
         score += case((in_title, 400), else_=0)
-        score += case((in_author, 200), else_=0)
+        score += case((in_author, 500), else_=0)
         score += case((in_desc, 40), else_=0)
         score += case((in_tags, 20), else_=0)
 

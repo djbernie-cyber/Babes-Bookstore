@@ -78,3 +78,19 @@ async def test_single_token_returning_result(client, db):
     await _seed(db)
     r = await client.get("/api/v1/books", params={"search": "douglass"})
     assert r.json()["total"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_author_name_ranks_above_title_only(client, db):
+    await _seed(db)
+    # Control: both tokens in the title ("solar plane") but not the author —
+    # the author match ("Sol T. Plaatje") must rank first for name intent.
+    db.add(Book(
+        title="Solar Plane Letters", author="Somebody", description="",
+        status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+        source_id="900", license_type="public_domain", tags=[], category="Classics",
+    ))
+    await db.commit()
+    r = await client.get("/api/v1/books", params={"search": "sol pla"})
+    items = r.json()["items"]
+    assert items[0]["title"] == "Mhudi"
