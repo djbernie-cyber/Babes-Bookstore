@@ -12,6 +12,7 @@ import httpx
 from .deps import get_db, get_current_user, require_admin
 from ...models.bundle import Bundle
 from ...models.purchase import Purchase, PurchaseStatus, PaymentProvider
+from ...models.refund import Refund, RefundStatus
 from ...models.user import User
 from ...config import settings
 from ...schemas.purchase import CheckoutRequest, CheckoutResponse
@@ -745,7 +746,76 @@ async def mpesa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 
-# ─── WEBHOOKS ──────────────────────────────────────────────────────────────
+# ─── M-Pesa B2Pochi payout callback ──────────────────────────────────────
+
+
+def _b2pochi_receipt(result: dict) -> Optional[str]:
+    """Pull TransactionReceipt/TransactionID out of ResultParameters."""
+    params = result.get("ResultParameters") or {}
+    items = params.get("ResultParameter") if isinstance(params, dict) else None
+    if not isinstance(items, list):
+        return None
+    for p in items:
+        if isinstance(p, dict) and p.get("Key") in ("TransactionReceipt", "TransactionID", "ReceiptNo"):
+            return str(p.get("Value") or "") or None
+    return None
+
+
+@router.post("/webhook/b2pochi")
+async def b2pochi_webhook(request: Request, db: AsyncSession = Depends(get_db)):
+    """Safaricom B2Pochi result callback.
+
+    Same trust model as the STK callback: Daraja does not sign these, so we
+    only ever transition a Refund we initiated, keyed by the unique
+    OriginatorConversationID. ResultCode 0 = payout succeeded; anything else
+    is a final failure (B2Pochi does not auto-retry inside our record).
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return {"ResultCode": 1, "ResultDesc": "Invalid JSON"}
+    if not isinstance(body, dict):
+        return {"ResultCode": 1, "ResultDesc": "Invalid payload shape"}
+
+    try:
+        result = body.get("Result")
+        if not isinstance(result, dict):
+            return {"ResultCode": 0, "ResultDesc": "Ignored — malformed Result"}
+
+        originator_id = result.get("OriginatorConversationID")
+        if not isinstance(originator_id, str) or not originator_id:
+            return {"ResultCode": 0, "ResultDesc": "Ignored — no OriginatorConversationID"}
+
+        try:
+            result_code = int(result.get("ResultCode"))
+        except (TypeError, ValueError):
+            logger.warning("B2Pochi callback with non-numeric ResultCode %r", result.get("ResultCode"))
+            return {"ResultCode": 1, "ResultDesc": "Invalid ResultCode"}
+
+        refund = (await db.execute(
+            select(Refund).where(Refund.originator_conversation_id == originator_id)
+        )).scalar_one_or_none()
+        if not refund:
+            logger.warning("B2Pochi callback for unknown OriginatorConversationID %s", originator_id)
+            return {"ResultCode": 0, "ResultDesc": "Unknown refund"}
+
+        if refund.is_terminal:
+            return {"ResultCode": 0, "ResultDesc": "Already settled"}
+
+        refund.conversation_id = result.get("ConversationID") or refund.conversation_id
+        refund.result_code = str(result_code)
+        refund.result_desc = result.get("ResultDesc")
+        if result_code == 0:
+            refund.status = RefundStatus.SUCCEEDED
+            refund.transaction_id = _b2pochi_receipt(result) or refund.transaction_id
+        else:
+            refund.status = RefundStatus.FAILED
+        await db.commit()
+        logger.info("B2Pochi refund %s -> %s (code %s)", refund.id, refund.status, result_code)
+    except Exception as e:
+        logger.error("B2Pochi webhook error: %s", e)
+
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 
 @router.post("/webhook/stripe")

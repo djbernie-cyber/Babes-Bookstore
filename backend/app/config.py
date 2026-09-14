@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     MPESA_ENVIRONMENT: str = "sandbox"  # sandbox or production
     MPESA_CALLBACK_URL: Optional[str] = None  # defaults to {PRODUCTION_URL}/api/v1/checkout/webhook/mpesa
 
+    # M-Pesa B2Pochi (Business Pay to Pochi) — payouts/refunds to customer Pochi wallets
+    MPESA_B2C_SHORTCODE: Optional[str] = None  # discharging org/B2C shortcode
+    MPESA_B2C_INITIATOR_NAME: Optional[str] = None  # B2C API initiator (Needs B2C role, not just "my account")
+    MPESA_B2C_SECURITY_CREDENTIAL: Optional[str] = None  # pre-encrypted initiator password
+    MPESA_B2POCHI_CALLBACK_URL: Optional[str] = None  # defaults to {PRODUCTION_URL}/api/v1/checkout/webhook/b2pochi
+
     # Local file storage fallback when R2 is not configured (useful for dev and
     # so bundles are still downloadable without Cloudflare credentials).
     LOCAL_STORAGE_PATH: str = "/tmp/babes_storage"

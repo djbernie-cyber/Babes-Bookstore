@@ -26,34 +26,6 @@
             setTimeout(() => t.classList.add('hidden'), 4000);
         }
 
-        async function loadStats() {
-            try {
-                const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
-                // The token may come from a cached session: re-validate against
-                // the API rather than trusting localStorage. 401 = expired
-                // token, 403 = signed in but not an admin.
-                if (res.status === 401 || res.status === 403) {
-                    if (res.status === 401) localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    showAccessDenied();
-                    return;
-                }
-                if (!res.ok) throw new Error('Failed to load stats');
-                const data = await res.json();
-                document.getElementById('stat-total').textContent = data.books?.total ?? '—';
-                document.getElementById('stat-approved').textContent = data.books?.approved ?? '—';
-                document.getElementById('stat-pending').textContent = data.books?.pending ?? '—';
-                document.getElementById('stat-rejected').textContent = data.books?.rejected ?? '—';
-                document.getElementById('stat-purchases').textContent = data.purchases?.total ?? '—';
-                const rev = data.purchases?.revenue_cents;
-                document.getElementById('stat-revenue').textContent = (rev != null && !isNaN(rev))
-                    ? '£' + (rev / 100).toFixed(2)
-                    : '—';
-            } catch (e) {
-                showToast('Error loading stats');
-            }
-        }
-
         async function adminPost(url, okMsg, failMsg) {
             const res = await fetch(url, { method: 'POST', headers: authHeaders() });
             if (!res.ok) {
@@ -144,4 +116,25 @@
                 showToast('Failed to start Gutenberg harvest');
             }
         }
+
+        // ── Wire up every [data-action] button ────────────────────────
+        document.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                const prev = btn.textContent;
+                if (!btn.textContent.endsWith('…')) btn.textContent += '…';
+                try {
+                    const action = btn.getAttribute('data-action');
+                    const fns = { scrapeSource, scrapeAll, scrapePopular, scrapeGutenbergFull,
+                                  scrapeAfrican, scrapeFull, retagAfrican, reverifyAll };
+                    if (fns[action]) await fns[action]();
+                } catch (e) {
+                    showToast(e.message || 'Action failed');
+                }
+                setTimeout(() => { btn.disabled = false; btn.textContent = prev; }, 1400);
+                loadStats();
+            });
+        });
+
+        function fmt(n) { return n != null ? Number(n).toLocaleString() : '—'; }
     

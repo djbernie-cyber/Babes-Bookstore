@@ -108,8 +108,18 @@ async def list_authors(
     result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
     rows = result.all()
 
+    # Slugs are built from the *display* name — never the raw Gutenberg
+    # record — so the slug an author card links to always resolves on the
+    # detail endpoint (no comma/punctuation mismatch → no 404s).
     return {
-        "items": [{"name": r[0], "book_count": r[1], "slug": _slugify(r[0])} for r in rows],
+        "items": [
+            {
+                "name": _display_name(r[0]),
+                "book_count": r[1],
+                "slug": _slugify(_display_name(r[0])),
+            }
+            for r in rows
+        ],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -242,36 +252,54 @@ async def get_author_books(
     Pass ``?tag=African Literature`` (URL-encoded) to restrict to a tag so
     an author's dedicated page can show only their African-tagged works.
     """
-    # Find the author whose slug matches
-    author_name = author_slug.replace("-", " ")
+    # Find the author whose slug matches.
+    #
+    # The slug is built from the display name (e.g. "Olaudah Equiano"), but
+    # the database stores the raw record ("Equiano, Olaudah") in some places
+    # and the reordered form in others. We therefore resolve by the
+    # punctuation-insensitive display key of EVERY candidate that shares the
+    # slug's first word, so commas, parenthetical aliases and name order
+    # never cause a false 404.
+    slug_key = re.sub(r"[^a-z0-9]+", "", author_slug.lower())
+    if not slug_key:
+        raise HTTPException(status_code=404, detail="Author not found")
 
-    # Try exact match first, then fuzzy
-    stmt = select(Book).where(
+    first_word = re.sub(r"[^a-z0-9]+", "", (author_slug.replace("-", " ").split()[0]).lower())
+
+    candidates = select(Book.author).where(
         Book.status == BookStatus.APPROVED,
         Book.license_verified == True,
+        Book.author.isnot(None),
+        Book.author != "",
     )
+    if first_word:
+        candidates = candidates.where(Book.author.ilike(f"%{first_word}%"))
 
-    # Try matching by normalized name
-    stmt = stmt.where(
-        func.lower(func.replace(func.replace(Book.author, " ", ""), "-", "")) ==
-        func.lower(func.replace(func.replace(author_name, " ", ""), "-", ""))
-    )
+    raw_names = (await db.execute(candidates.distinct())).scalars().all()
+    matched_names = [n for n in raw_names if n and _author_key(n) == slug_key]
+
+    if not matched_names:
+        # Fuzzy fallback: every significant word of the slug appears in the
+        # author string (still void of punctuation/order pitfalls).
+        words = [w for w in author_slug.replace("-", " ").split() if len(w) > 2]
+        fuzzy = select(Book.author).where(
+            Book.status == BookStatus.APPROVED,
+            Book.license_verified == True,
+            Book.author.isnot(None),
+        )
+        for w in words:
+            fuzzy = fuzzy.where(Book.author.ilike(f"%{w}%"))
+        raw_names = (await db.execute(fuzzy.distinct())).scalars().all()
+        matched_names = [n for n in raw_names if n and _author_key(n) == slug_key]
+
+    if not matched_names:
+        raise HTTPException(status_code=404, detail="Author not found")
+
+    stmt = select(Book).where(Book.status == BookStatus.APPROVED,
+                              Book.license_verified == True).where(Book.author.in_(matched_names))
 
     total_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await db.execute(total_stmt)).scalar() or 0
-
-    if total == 0:
-        # Fuzzy: try ilike
-        stmt = select(Book).where(
-            Book.status == BookStatus.APPROVED,
-            Book.license_verified == True,
-            Book.author.ilike(f"%{author_name}%"),
-        )
-        total_stmt = select(func.count()).select_from(stmt.subquery())
-        total = (await db.execute(total_stmt)).scalar() or 0
-
-    if total == 0:
-        raise HTTPException(status_code=404, detail="Author not found")
 
     if tag:
         tag_filter = cast(Book.tags, String).ilike(f'%"{tag}"%')

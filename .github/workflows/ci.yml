@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Byte-compile (catch syntax errors)
+        run: python -m compileall -q app
+
+      - name: Tests
+        run: python -m pytest tests/ -q
+
+  frontend:
+    name: Frontend (static sanity)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON/XML/redirects exist
+        run: |
+          test -f frontend/_redirects
+          test -f frontend/_headers
+          test -f frontend/index.html
+          python -c "import json; json.load(open('frontend/manifest.webmanifest'))"

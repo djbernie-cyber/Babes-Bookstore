@@ -16,17 +16,46 @@
 [data-theme="light"] .bundle-card .cover{ background:#fbfbfa }
 [data-theme="light"] #african-toggle{ background:#ffffff }
 
-/* ── Dark ──────────────────────────────────────────────────────────── */
-[data-theme="dark"]{ filter:invert(92%) hue-rotate(180deg); background:#0b0b0c }
-[data-theme="dark"] body{ background:#101013; color:#e5e3e1 }
+/* ── Dark ────────────────────────────────────────────────────────────
+   Real palette (not the CSS invert trick — that inverted covers/artwork,
+   broke scrollbars and emoji, and leaked onto admin pages). Attribute
+   selectors target exactly the Tailwind classes the storefront uses. */
+[data-theme="dark"]{ background:#0b0b0c }
+[data-theme="dark"] body{ background:#0b0b0c; color:#e7e5e4 }
 
-/* keep photographic art natural-coloured on the inverted page */
-[data-theme="dark"] img,
-[data-theme="dark"] video,
-[data-theme="dark"] picture img,
-[data-theme="dark"] [class~="bg-[#0b0b0c]"] img{ filter:invert(92%) hue-rotate(180deg) }
+[data-theme="dark"] [class~="bg-white"]{ background:#18181b }
+[data-theme="dark"] [class~="bg-stone-50"]{ background:#0b0b0c }
+[data-theme="dark"] [class~="bg-stone-100"]{ background:#18181b }
+[data-theme="dark"] [class~="bg-[#fcfaf7]"]{ background:#1c1c1f }
+[data-theme="dark"] [class~="bg-[#f6f1e7]"]{ background:#1c1c1f }
+[data-theme="dark"] [class~="bg-[#e7e2d9]"]{ background:#3f3f46 }
 
-/* selection & focus stay legible under inversion */
+[data-theme="dark"] [class~="text-stone-900"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-stone-800"]{ color:#e7e5e4 }
+[data-theme="dark"] [class~="text-stone-700"]{ color:#d4d4d8 }
+[data-theme="dark"] [class~="text-stone-600"]{ color:#a1a1aa }
+[data-theme="dark"] [class~="text-stone-500"]{ color:#8b8b93 }
+[data-theme="dark"] [class~="text-stone-400"]{ color:#71717a }
+[data-theme="dark"] [class~="text-stone-300"]{ color:#b4b0ab }
+[data-theme="dark"] [class~="text-[#1f1f1f]"]{ color:#e7e5e4 }
+[data-theme="dark"] [class~="text-[#57534e]"]{ color:#a1a1aa }
+[data-theme="dark"] [class~="text-[#8a8683]"]{ color:#8b8b93 }
+[data-theme="dark"] [class~="text-amber-700"]{ color:#d4a14a }
+[data-theme="dark"] [class~="text-amber-800"]{ color:#e0b468 }
+
+[data-theme="dark"] [class~="border"]{ border-color:#27272a }
+[data-theme="dark"] [class~="border-stone-100"]{ border-color:#27272a }
+[data-theme="dark"] [class~="border-stone-200"]{ border-color:#27272a }
+[data-theme="dark"] [class~="border-stone-300"]{ border-color:#3f3f46 }
+
+[data-theme="dark"] [class~="hover:bg-stone-100"]:hover{ background:#18181b }
+[data-theme="dark"] [class~="hover:bg-stone-200"]:hover{ background:#27272a }
+[data-theme="dark"] [class~="hover:bg-[#fcfaf7]"]:hover{ background:#27272a }
+[data-theme="dark"] [class~="hover:bg-[#f6f1e7]"]:hover{ background:#27272a }
+[data-theme="dark"] [class~="hover:bg-white"]:hover{ background:#1c1c1f }
+[data-theme="dark"] [class~="hover:text-stone-900"]:hover{ color:#f4f4f5 }
+[data-theme="dark"] [class~="hover:border-stone-900"]:hover{ border-color:#e7e5e4 }
+
 [data-theme="dark"] ::selection{ background:#b08a4a; color:#1a1206 }
 [data-theme="dark"] :focus-visible{ outline-color:#e0b468 }
 

@@ -3,15 +3,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 from typing import Optional, List
 from pydantic import BaseModel
+import time
 
 from .deps import get_db, require_admin
 from ...models.book import Book, BookStatus
 from ...models.bundle import Bundle, BundleBook
 from ...models.purchase import Purchase, PurchaseStatus
+from ...models.refund import Refund, RefundStatus
 from ...models.user import User
 from ...models.audit import AuditLog
 from ...sources import source_registry
 from ...services.audit import log_action
+from ...services import mpesa_b2c
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -625,3 +628,123 @@ async def list_audit_log(
         "page": page,
         "page_size": page_size,
     }
+
+
+# ─── M-Pesa B2Pochi refunds ─────────────────────────────────────────────
+
+
+def _normalise_ke_phone(raw: str | None) -> str | None:
+    p = (raw or "").strip().replace(" ", "").replace("-", "")
+    if not p:
+        return None
+    if p.startswith("+"):
+        p = p[1:]
+    if p.startswith("0"):
+        p = "254" + p[1:]
+    if p.startswith("7") and len(p) == 9:
+        p = "254" + p
+    return p if (p.startswith("254") and len(p) == 12) else None
+
+
+def _refund_dict(r: Refund) -> dict:
+    return {
+        "id": r.id,
+        "purchase_id": r.purchase_id,
+        "amount": r.amount_cents,
+        "currency": r.currency,
+        "status": r.status,
+        "originator_conversation_id": r.originator_conversation_id,
+        "conversation_id": r.conversation_id,
+        "transaction_id": r.transaction_id,
+        "result_code": r.result_code,
+        "result_desc": r.result_desc,
+        "created_at": r.created_at.isoformat() if r.created_at else None,
+    }
+
+
+@router.get("/refunds")
+async def list_refunds(
+    db: AsyncSession = Depends(get_db),
+    _admin=Depends(require_admin),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+):
+    total = (await db.execute(select(func.count(Refund.id)))).scalar() or 0
+    rows = (await db.execute(
+        select(Refund).order_by(Refund.created_at.desc())
+        .offset((page - 1) * page_size).limit(page_size)
+    )).scalars().all()
+    return {"items": [_refund_dict(r) for r in rows], "total": total, "page": page, "page_size": page_size}
+
+
+@router.post("/purchases/{purchase_id}/refund")
+async def refund_purchase(
+    purchase_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Refund a paid M-Pesa purchase to the customer's Pochi wallet.
+
+    Creates a Refund record keyed by a unique OriginatorConversationID
+    (Daraja's idempotency key) then submits a B2Pochi payout. The final
+    outcome arrives on the b2pochi webhook; this call returns the
+    accepted-but-unsettled refund.
+    """
+    purchase = await db.get(Purchase, purchase_id)
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase not found")
+    if (purchase.payment_provider or "").lower() != "mpesa":
+        raise HTTPException(status_code=400, detail="Only M-Pesa purchases can be refunded via B2Pochi")
+    if purchase.status not in (PurchaseStatus.PAID, PurchaseStatus.COMPLETED):
+        raise HTTPException(status_code=400, detail="Only paid purchases can be refunded")
+
+    phone = _normalise_ke_phone(purchase.customer_phone)
+    if not phone:
+        raise HTTPException(status_code=400, detail="Purchase has no valid M-Pesa phone on record")
+
+    existing = (await db.execute(
+        select(Refund).where(
+            Refund.purchase_id == purchase_id,
+            Refund.status.in_([RefundStatus.PENDING, RefundStatus.PROCESSING, RefundStatus.SUCCEEDED]),
+        )
+    )).scalars().first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Refund already {existing.status} for this purchase")
+
+    # KES shillings (no cents). Matches the STK conversion rate (1 GBP ≈ 170 KES).
+    kes_amount = max(10, int(round((purchase.amount_cents / 100) * 170)))
+
+    refund = Refund(
+        purchase_id=purchase.id,
+        amount_cents=kes_amount,
+        currency="kes",
+        customer_phone=phone,
+        status=RefundStatus.PENDING,
+        originator_conversation_id=f"BBREF-{purchase.id}-{int(time.time())}",
+    )
+    db.add(refund)
+    await db.commit()
+    await db.refresh(refund)
+
+    ack = await mpesa_b2c.submit_b2pochi(refund, phone)
+    response_code = str(ack.get("ResponseCode", "")).strip()
+    refund.conversation_id = ack.get("ConversationID") or refund.conversation_id
+    if response_code == "0":
+        refund.status = RefundStatus.PROCESSING
+        refund.result_desc = ack.get("ResponseDescription")
+    else:
+        refund.status = RefundStatus.FAILED
+        refund.result_code = response_code or "ERR"
+        refund.result_desc = ack.get("ResponseDescription") or ack.get("errorMessage") or "Rejected by Daraja"
+    await db.commit()
+    await db.refresh(refund)
+
+    await log_action(
+        db,
+        action="refund_mpesa",
+        entity_type="purchase",
+        entity_id=purchase.id,
+        user_id=admin.id,
+        details={"refund_id": refund.id, "amount": kes_amount, "status": refund.status},
+    )
+    return _refund_dict(refund)
