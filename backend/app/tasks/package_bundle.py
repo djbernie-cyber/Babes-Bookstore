@@ -91,11 +91,16 @@ async def _package_bundle_async(purchase_id: int) -> dict:
 
             signed_url = storage.get_signed_url(zip_key, expires_in=settings.DOWNLOAD_WINDOW_HOURS * 3600)
             if purchase.customer_email and signed_url:
-                email_service.send_purchase_confirmation(
+                sent = email_service.send_purchase_confirmation(
                     to_email=purchase.customer_email,
                     bundle_name=bundle.name,
                     download_url=signed_url,
                 )
+                if not sent:
+                    logger.error(
+                        "Purchase %s completed but delivery email to %s failed",
+                        purchase_id, purchase.customer_email,
+                    )
 
             return {
                 "purchase_id": purchase_id,

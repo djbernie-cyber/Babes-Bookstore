@@ -16,6 +16,18 @@ async function load() {
     let m = ""; if (b.license_type) m += badge(b.license_type, 'bg-emerald-50 text-emerald-800 border-emerald-200'); if (b.category) m += badge(b.category, 'bg-white text-stone-700 border-stone-200'); if (b.publication_year) m += `<span class="text-sm text-stone-500">${b.publication_year}</span>`; if (b.language) m += `<span class="text-sm text-stone-400">${b.language}</span>`;
     document.getElementById('meta').innerHTML = m;
     document.getElementById('desc').innerHTML = b.description ? `<p class="whitespace-pre-wrap">${esc(b.description)}</p>` : '<p class="italic text-stone-400">No description.</p>';
+    const suppressed = (b.tags || []).some(t => /suppress|banned/i.test(t));
+    if (suppressed && !localStorage.getItem('bb-spp-' + b.id)) {
+      const gate = document.getElementById('suppressed-gate');
+      const download = document.getElementById('download'), readBtn = document.getElementById('read-online'), readCard = document.getElementById('read-card-btn');
+      [download, readBtn, readCard].forEach(el => { if (el) el.classList.add('hidden') });
+      gate.classList.remove('hidden'); gate.classList.add('flex');
+      document.getElementById('suppressed-acknowledge').addEventListener('click', () => {
+        localStorage.setItem('bb-spp-' + b.id, '1');
+        gate.classList.add('hidden'); gate.classList.remove('flex');
+        [download, readBtn, readCard].forEach(el => { if (el) el.classList.remove('hidden') });
+      });
+    }
     let s = ""; if (b.source_url) s += `<p>Sourced from <a href="${b.source_url}" target="_blank" rel="noopener" class="underline">${b.source_url}</a></p>`; if (b.source) s += `<p class="text-stone-400 mt-1">${b.source}${b.source_id ? ' · #' + b.source_id : ''}</p>`; document.getElementById('source').innerHTML = s || '<span class="italic">Source not listed.</span>';
     document.getElementById('download').href = `/api/v1/books/${b.id}/download`;
     const readBtn = document.getElementById('read-online'), readCard = document.getElementById('read-card-btn');

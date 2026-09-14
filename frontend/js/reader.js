@@ -55,14 +55,24 @@ async function load(){
   var id=bookId();
   var loading=document.getElementById('loading'), err=document.getElementById('err'), content=document.getElementById('content');
   try{
+    // Fetch meta first: we gate suppressed works before pulling any text.
+    var meta={title:'',author:''};
+    try{ var m=await (await fetch('/api/v1/books/'+id)).json(); meta=m; }catch(e){}
+    document.documentElement.title=(meta.title||'Read')+" — Babe's Bookstore";
+    var suppressed=(meta.tags||[]).some(function(t){ return /suppress|banned/i.test(t) });
+    if(suppressed && !localStorage.getItem('bb-spp-'+id)){
+      var gate=document.getElementById('suppressed-gate');
+      loading.style.display='none'; gate.style.display='block';
+      document.getElementById('suppressed-acknowledge').addEventListener('click',function(){
+        localStorage.setItem('bb-spp-'+id,'1');
+        gate.style.display='none'; load();
+      },{once:true});
+      return;
+    }
     var r=await fetch('/api/v1/books/'+id+'/text');
     if(!r.ok) throw new Error((await r.json().catch(()=>({}))).detail||('HTTP '+r.status));
     var html=await r.text();
-    // Fetch book meta for the title in parallel just for display
-    var meta={title:'',author:''};
-    try{ var m=await (await fetch('/api/v1/books/'+id)).json(); meta=m; }catch(e){}
     document.getElementById('book-title').textContent=(meta.title||'') + (meta.author? ' — '+meta.author : '');
-    document.documentElement.title=(meta.title||'Read')+" — Babe's Bookstore";
     paras=tidy(html);
     if(!paras.length) paras=['No extractable text.'];
     rendered=0;

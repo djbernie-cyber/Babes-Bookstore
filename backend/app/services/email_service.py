@@ -76,18 +76,26 @@ class EmailService:
         if not self.client:
             logger.warning(f"Email not configured. Would send: {subject} to {to_email}")
             return False
-        try:
-            message = Mail(
-                from_email=Email(self.from_email),
-                to_emails=To(to_email),
-                subject=subject,
-                html_content=Content("text/html", html),
-            )
-            response = self.client.send(message)
-            return response.status_code in (200, 201, 202)
-        except Exception as e:
-            logger.error(f"Email send failed: {e}")
-            return False
+        import time
+        for attempt in range(3):
+            try:
+                message = Mail(
+                    from_email=Email(self.from_email),
+                    to_emails=To(to_email),
+                    subject=subject,
+                    html_content=Content("text/html", html),
+                )
+                response = self.client.send(message)
+                if response.status_code in (200, 201, 202):
+                    return True
+                logger.warning(
+                    f"Email send attempt {attempt + 1} returned {response.status_code}"
+                )
+            except Exception as e:
+                logger.error(f"Email send failed (attempt {attempt + 1}): {e}")
+            if attempt < 2:
+                time.sleep(0.8 * (attempt + 1))
+        return False
 
 
 email_service = EmailService()

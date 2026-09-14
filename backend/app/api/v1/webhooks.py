@@ -692,18 +692,34 @@ async def create_mpesa_checkout(
 
 @router.post("/webhook/mpesa")
 async def mpesa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
-    """Safaricom callback — Body -> stkCallback -> ResultCode 0 = success."""
+    """Safaricom callback — Body -> stkCallback -> ResultCode 0 = success.
+
+    Hardening: Daraja STK-push callbacks are NOT cryptographically signed, so
+    we are strict about the payload shape, coerce/validate ResultCode as an
+    integer, ignore anything without a CheckoutRequestID, and never trust a
+    callback to create a payment — we only transition an existing PENDING
+    purchase that we initiated.
+    """
     try:
         body = await request.json()
     except Exception:
         return {"ResultCode": 1, "ResultDesc": "Invalid JSON"}
+    if not isinstance(body, dict):
+        return {"ResultCode": 1, "ResultDesc": "Invalid payload shape"}
 
     try:
-        stk = body.get("Body", {}).get("stkCallback", {})
+        stk = (body.get("Body") or {}).get("stkCallback") or {}
+        if not isinstance(stk, dict):
+            return {"ResultCode": 0, "ResultDesc": "Ignored — malformed stkCallback"}
         result_code = stk.get("ResultCode")
         checkout_id = stk.get("CheckoutRequestID")
-        if not checkout_id:
+        if not isinstance(checkout_id, str) or not checkout_id:
             return {"ResultCode": 0, "ResultDesc": "Ignored — no CheckoutRequestID"}
+        try:
+            result_code = int(result_code)
+        except (TypeError, ValueError):
+            logger.warning("M-Pesa callback with non-numeric ResultCode %r", result_code)
+            return {"ResultCode": 1, "ResultDesc": "Invalid ResultCode"}
 
         stmt = select(Purchase).where(Purchase.mpesa_checkout_id == checkout_id)
         purchase = (await db.execute(stmt)).scalar_one_or_none()

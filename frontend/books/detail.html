@@ -19,6 +19,7 @@
   <link rel="preconnect" href="https://babes-bookstore.fly.dev" crossorigin>
   <link rel="dns-prefetch" href="https://babes-bookstore.fly.dev">
   <link rel="stylesheet" href="/static/tailwind.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body class="min-h-screen flex flex-col">
 <nav class="sticky top-0 z-50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between items-center h-[68px]">
@@ -97,7 +98,17 @@
   </div>
 </main>
 
-<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Explore</h4><ul class="space-y-2 text-sm"><li><a href="/authors" class="hover:text-white">Authors</a></li><li><a href="/categories/african-literature" class="hover:text-white">African Literature</a></li><li><a href="/search" class="hover:text-white">All books</a></li></ul></div></div></div></footer>
+<div id="suppressed-gate" class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-[#0b0b0c]/70" style="backdrop-filter: blur(4px)">
+  <div class="max-w-lg w-full bg-white rounded-[20px] border p-6 sm:p-8 shadow-2xl">
+    <h2 class="font-serif text-xl font-semibold">Censorship &amp; suppression notice</h2>
+    <p class="text-[15px] text-[#57534e] leading-7 mt-3">This work was once <strong>banned, burned, or otherwise suppressed</strong> by a government, church, or other authority. We keep it in the public-domain catalogue because suppressing a book is a fact about power — and carrying it is a fact about freedom.</p>
+    <p class="text-sm text-[#8a8683] leading-6 mt-2">You are about to read/download the very edition that was taken off shelves. It may contain material that caused its suppression.</p>
+    <button id="suppressed-acknowledge" class="mt-6 w-full px-6 py-3 rounded-full bg-[#0b0b0c] text-white text-sm font-semibold hover:bg-black">I understand — show reading options</button>
+    <a href="/banned-works" class="block mt-3 text-center text-sm underline text-[#57534e]">What is this list?</a>
+  </div>
+</div>
+
+<footer><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><h3 class="font-serif text-xl font-bold mb-3">Babe's Bookstore</h3><p class="text-sm text-stone-400">An honest library.</p></div><div><h4 class="font-semibold text-white mb-3">Shop</h4><ul class="space-y-2 text-sm"><li><a href="/bundles">Bundles</a></li><li><a href="/search">Library</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-sm"><li><a href="/login">Login</a></li><li><a href="/register">Register</a></li></ul></div><div><h4 class="font-semibold text-white mb-3">Legal</h4><ul class="space-y-2 text-sm"><li><a href="/terms" class="hover:underline">Terms</a></li><li><a href="/privacy" class="hover:underline">Privacy</a></li><li><a href="/refunds" class="hover:underline">Refunds &amp; returns</a></li><li><a href="/cookies" class="hover:underline">Cookie policy</a></li></ul></div></div></div></footer>
 
 <script src="/js/coming-soon.js"></script>
 <script src="/js/store.js"></script>
