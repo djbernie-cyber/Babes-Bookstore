@@ -10,7 +10,7 @@ import asyncio
 import logging
 
 import httpx
-from sqlalchemy import or_, select
+from sqlalchemy import select
 
 from ..database import AsyncSessionLocal
 from ..models.book import Book, BookStatus
@@ -80,7 +80,7 @@ async def backfill_covers(limit: int = 2000, delay: float = 0.22) -> dict:
         stmt = (
             select(Book)
             .where(Book.status == BookStatus.APPROVED)
-            .where(or_(Book.cover_path.is_(None), Book.cover_path == ""))
+            .where(Book.cover_path.is_(None))
             .order_by(Book.id)
             .limit(limit)
         )
