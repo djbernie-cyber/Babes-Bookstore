@@ -53,7 +53,10 @@ def book_match_filter(cls, raw: str):
         return None, None
 
     tag_text = cast(cls.tags, SQLString)
-    # AND across tokens; inside a token treat the four fields as OR.
+    # AND across tokens; inside a token, title/author/tags are the primary
+    # fields (description only contributes to ranking — matching against it
+    # made broad phrases like "sol pla" drag in thousands of covers whose
+    # blurbs merely mention a word).
     token_filters = []
     score = case((func.lower(cls.title) == phrase, 100_000), else_=0)
     score += case((cls.title.ilike(f"%{_escape_like(phrase)}%"), 50_000), else_=0)
@@ -65,7 +68,7 @@ def book_match_filter(cls, raw: str):
         in_author = cls.author.ilike(f"%{safe}%")
         in_desc = cls.description.ilike(f"%{safe}%")
         in_tags = tag_text.ilike(f"%{safe}%")
-        token_filters.append(or_(in_title, in_author, in_desc, in_tags))
+        token_filters.append(or_(in_title, in_author, in_tags))
         score += case((in_title, 400), else_=0)
         score += case((in_author, 200), else_=0)
         score += case((in_desc, 40), else_=0)
