@@ -696,6 +696,8 @@ async def create_mpesa_checkout(
             else f"M-Pesa STK push failed (HTTP {e.response.status_code}) with no response body — check MPESA_SHORTCODE and MPESA_PASSKEY."
         )
         raise HTTPException(status_code=502, detail=detail)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("M-Pesa error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
