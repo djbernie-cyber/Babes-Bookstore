@@ -588,7 +588,11 @@ async def _mpesa_access_token() -> str:
             f"{_mpesa_base()}/oauth/v1/generate?grant_type=client_credentials",
             headers={"Authorization": f"Basic {token}"},
         )
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"M-Pesa OAuth token failed (HTTP {resp.status_code}) — check MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET.",
+            )
         return resp.json()["access_token"]
 
 
@@ -684,8 +688,14 @@ async def create_mpesa_checkout(
             session_id=checkout_id or f"mpesa_{purchase.id}",
         )
     except httpx.HTTPStatusError as e:
+        body = (e.response.text or "").strip()[:200]
         logger.error("M-Pesa STK failed: %s %s", e.response.status_code, e.response.text)
-        raise HTTPException(status_code=500, detail=f"M-Pesa STK push failed: {e.response.text[:200]}")
+        detail = (
+            f"M-Pesa STK push failed (HTTP {e.response.status_code}): {body}"
+            if body
+            else f"M-Pesa STK push failed (HTTP {e.response.status_code}) with no response body — check MPESA_SHORTCODE and MPESA_PASSKEY."
+        )
+        raise HTTPException(status_code=502, detail=detail)
     except Exception as e:
         logger.error("M-Pesa error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
