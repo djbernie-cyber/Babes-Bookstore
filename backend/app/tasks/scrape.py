@@ -34,6 +34,7 @@ from ..sources.african_ebooks import (
     CONDEMNED_REVOLUTIONARY_AUTHORS,
     AFRICAN_THEMES,
 )
+from ..sources.suppressed import SUPPRESSED_CLASSICS_TAG as SUPPRESSED_TAG
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,11 @@ async def _ingest_chunk(
                 if AfricanEbooksSource._is_revolutionary_author(metadata.author):
                     if REVOLUTIONARY_TAG not in tags:
                         tags.append(REVOLUTIONARY_TAG)
+
+                from ..sources.suppressed import SuppressedClassicsSource
+                if SuppressedClassicsSource._is_banned_author(metadata.author):
+                    if SUPPRESSED_TAG not in tags:
+                        tags.append(SUPPRESSED_TAG)
 
                 payload = {
                     "title": metadata.title[:500],
@@ -357,6 +363,43 @@ def scrape_african_full_task(limit: int | None = None) -> dict:
     return asyncio.run(_run())
 
 
+@celery_app.task(name="scrape.suppressed_full")
+def scrape_suppressed_full_task(limit: int | None = None) -> dict:
+    """Harvest the full public-domain banned / suppressed shelf.
+
+    Author-priority: sweeps the curated BANNED_AUTHORS plus the condemned
+    revolutionary authors, taking every public-domain English Gutenberg work
+    by each banned writer and tagging it ``Suppressed Classics`` (and
+    ``Revolutionary`` where the author is a condemned revolutionary). Deduped
+    by Gutenberg id, ingested in chunks like the other full harvests.
+    """
+    from ..sources.suppressed import SuppressedClassicsSource
+
+    async def _run() -> dict:
+        from ..database import engine
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+
+        source = SuppressedClassicsSource()
+        try:
+            items = await source.harvest_banned(limit=limit)
+        finally:
+            await source.close()
+
+        report = await _ingest("suppressed", items)
+
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+        return report.as_dict()
+
+    logger.info("Running full Suppressed Classics harvest (limit=%s)", limit)
+    return asyncio.run(_run())
+
+
 def _sources_with_pagination() -> List[str]:
     """Sources that accept ``start_page`` so they can be walked in full.
 
@@ -433,6 +476,19 @@ def scrape_full_catalogue_task(pages_per_source: int = 60) -> dict:
                 pass
             reports["african_ebooks"] = (await _ingest("african_ebooks", items)).as_dict()
 
+        async def _run_full_suppressed() -> None:
+            from ..sources.suppressed import SuppressedClassicsSource
+            src = SuppressedClassicsSource()
+            try:
+                items = await src.harvest_banned(limit=None)
+            finally:
+                await src.close()
+            try:
+                await engine.dispose()
+            except Exception:
+                pass
+            reports["suppressed"] = (await _ingest("suppressed", items)).as_dict()
+
         async def _run_source(name: str, pages: int) -> None:
             from ..database import engine as _engine
             src = source_registry.get(name)
@@ -461,8 +517,13 @@ def scrape_full_catalogue_task(pages_per_source: int = 60) -> dict:
                 return_exceptions=True,
             )
 
-        # Kick off the two heavy harvesters first, then walk the others.
-        await asyncio.gather(_run_full_gutenberg(), _run_full_african(), return_exceptions=True)
+        # Kick off the three heavy harvesters first, then walk the others.
+        await asyncio.gather(
+            _run_full_gutenberg(),
+            _run_full_african(),
+            _run_full_suppressed(),
+            return_exceptions=True,
+        )
         await _run_sources()
 
         try:
@@ -477,7 +538,8 @@ def scrape_full_catalogue_task(pages_per_source: int = 60) -> dict:
 
 @celery_app.task(name="retag.african_literature")
 def retag_african_literature_task() -> dict:
-    """Backfill the African Literature tag tiers over the whole approved shelf.
+    """Backfill the African Literature tag tiers and Suppressed Classics over
+    the whole approved shelf.
 
     Author-priority pass across every approved book:
       - African/diaspora author           -> ``African Literature``
@@ -494,7 +556,7 @@ def retag_african_literature_task() -> dict:
     async def _run() -> dict:
         from ..sources.african_ebooks import AfricanEbooksSource
 
-        stats = {"scanned": 0, "african": 0, "continent": 0, "colonial": 0, "revolutionary": 0}
+        stats = {"scanned": 0, "african": 0, "continent": 0, "colonial": 0, "revolutionary": 0, "suppressed": 0}
         async with AsyncSessionLocal() as session:
             stmt = select(Book).where(Book.status == BookStatus.APPROVED)
             result = await session.execute(stmt)
@@ -529,10 +591,17 @@ def retag_african_literature_task() -> dict:
                         changed = True
                     stats["revolutionary"] += 1
 
+                from ..sources.suppressed import SuppressedClassicsSource
+                if SuppressedClassicsSource._is_banned_author(book.author):
+                    if SUPPRESSED_TAG not in tags:
+                        tags.append(SUPPRESSED_TAG)
+                        changed = True
+                    stats["suppressed"] = stats.get("suppressed", 0) + 1
+
                 if changed:
                     book.tags = tags
             await session.commit()
         return stats
 
-    logger.info("Backfilling African Literature tag tiers")
+    logger.info("Backfilling African Literature tag tiers and Suppressed Classics tags")
     return asyncio.run(_run())

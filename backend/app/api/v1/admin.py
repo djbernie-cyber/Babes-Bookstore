@@ -201,6 +201,26 @@ async def trigger_african_full(
     return {"task_id": task.id, "full_catalogue": limit is None}
 
 
+@router.post("/scrape/suppressed-full")
+async def trigger_suppressed_full(
+    limit: Optional[int] = Query(None, ge=1, description="Total suppressed books to harvest (omit for the full banned-books set)"),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Expand the Suppressed Classics shelf to every public-domain banned book
+    by the banned/condemned author canon (author-priority Gutenberg sweep)."""
+    from ...tasks.scrape import scrape_suppressed_full_task
+    existing = _task_in_flight("scrape.suppressed_full")
+    if existing:
+        return {"task_id": existing, "already_running": True}
+    task = scrape_suppressed_full_task.delay(limit)
+    await log_action(
+        db, action="scrape.suppressed_full", entity_type="source",
+        user_id=admin.id, details={"limit": limit},
+    )
+    return {"task_id": task.id, "full_catalogue": limit is None}
+
+
 @router.post("/scrape/full")
 async def trigger_full_catalogue(
     pages_per_source: int = Query(60, ge=1, le=500, description="Pages walked per non-Gutenberg source"),

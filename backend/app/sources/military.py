@@ -159,6 +159,7 @@ class MilitarySource(BaseSource):
         book_id = raw.get("id")
         if not book_id:
             return None
+        formats: Dict[str, str] = raw.get("formats", {}) or {}
         pick = self._pick_format
         return BookMetadata(
             title=(raw.get("title") or "").strip(),
@@ -171,13 +172,13 @@ class MilitarySource(BaseSource):
             source_metadata={
                 "download_count": raw.get("download_count"),
                 "subjects": (raw.get("subjects") or [])[:8],
-                "text_url": pick("text/plain"),
+                "text_url": pick(formats, "text/plain"),
             },
             license_type="public_domain",
             license_url="https://www.gutenberg.org/policy/license.html",
-            epub_url=pick("application/epub"),
-            pdf_url=pick("application/pdf"),
-            cover_url=pick("image/jpeg"),
+            epub_url=pick(formats, "application/epub"),
+            pdf_url=pick(formats, "application/pdf"),
+            cover_url=pick(formats, "image/jpeg"),
             category="Military",
             language="en",
             publication_year=self._year(raw),
