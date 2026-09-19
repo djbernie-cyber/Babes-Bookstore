@@ -171,7 +171,8 @@ class PackagingService:
         # 1. Cached .txt
         cached = self._try_local_r2(self._cache_key(book, "txt"))
         if cached:
-            return self._human_text(cached)
+            stripped = _html_to_plain(cached) if self._looks_like_html(cached) else None
+            return stripped if stripped is not None else self._human_text(cached)
 
         # 2. Remote URL from source metadata
         url: Optional[str] = None
@@ -205,15 +206,26 @@ class PackagingService:
                     await src.close()
                 if payload:
                     raw = payload if isinstance(payload, bytes) else payload.encode("utf-8", "ignore")
-                    self._cache_content(book, "txt", raw)
-                    return _html_to_plain(raw)
+                    plain = _html_to_plain(raw)
+                    if plain:
+                        self._cache_content(book, "txt", plain.encode("utf-8"))
+                        return plain
+                    return None
             except Exception:
                 logger.debug("On-demand text fetch failed for %s/%s", book.source, book.source_id, exc_info=True)
         return None
 
+    def _looks_like_html(self, data: bytes) -> bool:
+        """Sniff whether cached reader bytes are HTML (legacy Wikibooks taps)."""
+        head = data[:2000].lstrip()
+        return head[:1] == b"<" or b"<div" in head or b"<html" in head.lower() or b"mw-parser-output" in head
+
     def _human_text(self, data: bytes, cap: int = 1_500_000) -> str:
         """Decode reader-facing text, dropping the Gutenberg boilerplate header
-        so the reader starts at the book proper, and cap oversized works."""
+        so the reader starts at the book proper, and cap oversized works.
+        Returns the text unchanged for non-Gutenberg sources."""
+        if self._looks_like_html(data[:cap]):
+            return _html_to_plain(data[:cap]) or ""
         import re
         text = data[:cap]
         for enc in ("utf-8", "utf-16", "latin-1"):

@@ -34,7 +34,7 @@
      var pp=document.getElementById('progress-pct'); if(pp) pp.textContent=(n/target*100).toFixed(1)+'% complete';
      var pf=document.getElementById('progress-fill'); if(pf) pf.style.width=Math.min(100, n/target*100).toFixed(1)+'%';
      // search placeholder
-     document.querySelectorAll('input[placeholder*="62,000"]').forEach(function(i){ i.placeholder='Search '+fmt+' books…'; });
+     document.querySelectorAll('input[data-live-count-placeholder]').forEach(function(i){ i.placeholder='Search '+fmt+' books…'; });
    }
    function live(){
      var target=90000;

@@ -17,7 +17,7 @@ from typing import List, Sequence
 from sqlalchemy import select
 
 from ..celery_app import celery_app
-from ..database import AsyncSessionLocal
+from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..services.license_verifier import license_verifier, LicenseStatus
 from ..sources import source_registry
@@ -489,7 +489,7 @@ def retag_african_literature_task() -> dict:
     (not just the African harvester), so the full catalogue is correctly
     partitioned into African / diaspora / colonial-sauce tiers.
     """
-    from ..database import AsyncSessionLocal
+    from ..celery_db import SessionLocal as AsyncSessionLocal
 
     async def _run() -> dict:
         from ..sources.african_ebooks import AfricanEbooksSource

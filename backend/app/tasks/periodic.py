@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from ..celery_app import celery_app
-from ..database import AsyncSessionLocal
+from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.purchase import Purchase, PurchaseStatus
 
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from ..celery_app import celery_app
-from ..database import AsyncSessionLocal
+from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..services.license_verifier import license_verifier, LicenseStatus
 from sqlalchemy import select

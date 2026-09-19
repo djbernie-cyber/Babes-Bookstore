@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from ..celery_app import celery_app
-from ..database import AsyncSessionLocal
+from ..celery_db import SessionLocal as AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 

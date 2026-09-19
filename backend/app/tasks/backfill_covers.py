@@ -12,7 +12,7 @@ import logging
 import httpx
 from sqlalchemy import select
 
-from ..database import AsyncSessionLocal
+from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..config import settings
 

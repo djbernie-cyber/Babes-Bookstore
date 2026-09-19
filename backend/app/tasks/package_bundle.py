@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from ..celery_app import celery_app
 from ..config import settings
-from ..database import AsyncSessionLocal
+from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..models.bundle import Bundle, BundleBook
 from ..models.purchase import Purchase, PurchaseStatus
