@@ -164,7 +164,7 @@ class SuppressedClassicsSource(BaseSource):
     name = SUPPRESSED_SOURCE_NAME
     description = "Suppressed Classics — banned, burned and censored literary & historical canon"
     license_type = "public_domain"
-    rate_limit = 0.3
+    rate_limit = 1.0
 
     GUTENBERG_API = "https://gutendex.com/books"
 
@@ -218,8 +218,8 @@ class SuppressedClassicsSource(BaseSource):
     async def harvest_banned(
         self,
         limit: Optional[int] = None,
-        max_concurrency: int = 6,
-        batch_size: int = 6,
+        max_concurrency: int = 3,
+        batch_size: int = 3,
     ) -> List[BookMetadata]:
         """Harvest the full public-domain banned / suppressed shelf.
 
@@ -248,22 +248,37 @@ class SuppressedClassicsSource(BaseSource):
 
         async def _fetch_page(query: str, page_num: int) -> dict:
             async with sem:
-                try:
-                    await _aio.sleep(self.rate_limit)
-                    resp = await self.client.get(
-                        self.GUTENBERG_API,
-                        params={
-                            "search": query,
-                            "languages": "en",
-                            "copyright": "false",
-                            "page": page_num,
-                        },
-                    )
-                    resp.raise_for_status()
-                    return resp.json()
-                except Exception:
-                    logger.warning("Banned harvest search query failed: %s (page %s)", query, page_num)
-                    return {}
+                for attempt in range(1, 4):
+                    try:
+                        await _aio.sleep(self.rate_limit)
+                        resp = await self.client.get(
+                            self.GUTENBERG_API,
+                            params={
+                                "search": query,
+                                "languages": "en",
+                                "copyright": "false",
+                                "page": page_num,
+                            },
+                        )
+                        # Gutendex throttles hard (503/500 under load). Back off
+                        # and retry twice before giving up on an author, so the
+                        # harvest doesn't silently miss banned writers.
+                        if resp.status_code in (429, 500, 502, 503):
+                            if attempt < 3:
+                                logger.warning(
+                                    "Banned harvest throttled (%s) for %s page %s, retry %s",
+                                    resp.status_code, query, page_num, attempt,
+                                )
+                                await _aio.sleep(2 ** attempt * 10)
+                                continue
+                        resp.raise_for_status()
+                        return resp.json()
+                    except Exception:
+                        logger.warning("Banned harvest search query failed: %s (page %s)", query, page_num)
+                        if attempt < 3:
+                            await _aio.sleep(2 ** attempt * 10)
+                            continue
+                        return {}
 
         for query in authors:
             page_num = 1
