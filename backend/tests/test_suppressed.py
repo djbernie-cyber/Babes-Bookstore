@@ -61,3 +61,18 @@ def test_suppressed_tag_survives_from_gutenberg():
     assert meta is not None
     src._tag(meta)
     assert SUPPRESSED_CLASSICS_TAG in meta.tags
+
+
+def test_is_suppressed_book_purges_stale_canon_junk():
+    """`is_suppressed_book` keeps legit shelf members but purges the old
+    wrong-ID canon books that resolved to unrelated Gutenberg titles."""
+    keep = SuppressedClassicsSource.is_suppressed_book
+    # Canon book (source=suppressed) keeps its tag.
+    assert keep("James Joyce", "suppressed", "4300") is True
+    # Banned author's work surfaced by the plain gutenberg source keeps it.
+    assert keep("Marx, Karl", "gutenberg", "61") is True
+    # Old junk: 3315 resolved to 'Down the Mother Lode' (Hemphill) — purge.
+    assert keep("Hemphill, Vivia", "gutenberg", "3315") is False
+    assert keep("Patton", "gutenberg", "10989") is False
+    # Unknown author, non-suppressed source — never tagged.
+    assert keep("Jane Austen", "african_ebooks", "12") is False

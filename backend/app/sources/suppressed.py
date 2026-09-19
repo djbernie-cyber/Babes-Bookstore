@@ -325,6 +325,25 @@ class SuppressedClassicsSource(BaseSource):
                 return True
         return False
 
+    @classmethod
+    def is_suppressed_book(
+        cls,
+        author: Optional[str],
+        source: Optional[str],
+        source_id: Optional[str],
+    ) -> bool:
+        """True when a *specific* book still belongs on the Suppressed shelf.
+
+        Keeps (or adds) the tag when either:
+          - a credited author matches the banned/condemned canon, or
+          - it came from the hand-curated canon (source ``suppressed``,
+            whose Gutenberg IDs are all verified — excludes the stale
+            wrong-ID canon junk that resolved to unrelated titles).
+        """
+        if source and source == SUPPRESSED_SOURCE_NAME and source_id:
+            return True
+        return cls._is_banned_author(author)
+
     def _tag(self, meta: BookMetadata) -> None:
         tags = list(dict.fromkeys((meta.tags or []) + [SUPPRESSED_CLASSICS_TAG]))
         # Authors condemned by their own governments also carry the

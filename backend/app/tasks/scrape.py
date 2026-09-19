@@ -152,7 +152,8 @@ async def _ingest_chunk(
                         tags.append(REVOLUTIONARY_TAG)
 
                 from ..sources.suppressed import SuppressedClassicsSource
-                if SuppressedClassicsSource._is_banned_author(metadata.author):
+                if SuppressedClassicsSource.is_suppressed_book(
+                        metadata.author, source_name, str(metadata.source_id or "")):
                     if SUPPRESSED_TAG not in tags:
                         tags.append(SUPPRESSED_TAG)
 
@@ -592,11 +593,18 @@ def retag_african_literature_task() -> dict:
                     stats["revolutionary"] += 1
 
                 from ..sources.suppressed import SuppressedClassicsSource
-                if SuppressedClassicsSource._is_banned_author(book.author):
+                if SuppressedClassicsSource.is_suppressed_book(book.author, book.source, book.source_id):
                     if SUPPRESSED_TAG not in tags:
                         tags.append(SUPPRESSED_TAG)
                         changed = True
                     stats["suppressed"] = stats.get("suppressed", 0) + 1
+                elif SUPPRESSED_TAG in tags:
+                    # Purge stale Suppressed Classics tags (wrong-ID canon
+                    # junk that resolved to unrelated books) so the shelf only
+                    # carries genuinely banned / canon works.
+                    tags.remove(SUPPRESSED_TAG)
+                    changed = True
+                    stats["suppressed_removed"] = stats.get("suppressed_removed", 0) + 1
 
                 if changed:
                     book.tags = tags
