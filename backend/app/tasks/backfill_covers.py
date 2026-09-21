@@ -12,6 +12,7 @@ import logging
 import httpx
 from sqlalchemy import select
 
+from ..celery_app import celery_app
 from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..config import settings
@@ -125,6 +126,12 @@ async def backfill_covers(limit: int = 2000, delay: float = 0.22) -> dict:
 
 def run_backfill(limit: int = 2000, delay: float = 0.22) -> dict:
     return asyncio.run(backfill_covers(limit=limit, delay=delay))
+
+
+@celery_app.task(name="covers.backfill")
+def backfill_covers_task(limit: int = 2000, delay: float = 0.22) -> dict:
+    """Celery wrapper: fill missing book covers from Open Library (batched)."""
+    return run_backfill(limit=limit, delay=delay)
 
 
 if __name__ == "__main__":

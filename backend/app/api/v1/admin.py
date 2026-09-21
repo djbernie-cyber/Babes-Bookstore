@@ -96,6 +96,30 @@ async def get_stats(db: AsyncSession = Depends(get_db), _admin=Depends(require_a
     }
 
 
+@router.post("/backfill/covers")
+async def trigger_cover_backfill(
+    limit: int = Query(2000, ge=1, le=10000),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Fill missing book covers from Open Library in the background.
+
+    Scans approved books with ``cover_path IS NULL`` and stores a cover URL
+    for each (bounded, batched, with backoff). Idempotent: books already
+    covered (or sentineled) are skipped.
+    """
+    from ...tasks.backfill_covers import backfill_covers_task
+    existing = _task_in_flight("covers.backfill")
+    if existing:
+        return {"task_id": existing, "already_running": True}
+    task = backfill_covers_task.delay(limit)
+    await log_action(
+        db, action="backfill.covers", entity_type="book",
+        user_id=admin.id, details={"limit": limit},
+    )
+    return {"task_id": task.id, "limit": limit}
+
+
 @router.post("/scrape/source/{source_name}")
 async def trigger_source_scrape(
     source_name: str,
@@ -374,9 +398,10 @@ async def list_purchases(
 ):
     """List all purchases with pagination — for revenue auditing and refund handling."""
     stmt = select(Purchase, Bundle).outerjoin(Bundle, Purchase.bundle_id == Bundle.id).order_by(Purchase.created_at.desc())
-    count_stmt = select(func.count()).select_from(select(Purchase).where(Purchase.status == status_filter) if status_filter else select(Purchase)).subquery()
+    count_stmt = select(func.count(Purchase.id))
     if status_filter:
         stmt = stmt.where(Purchase.status == status_filter)
+        count_stmt = count_stmt.where(Purchase.status == status_filter)
     total = (await db.execute(count_stmt)).scalar() or 0
     result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
     rows = result.all()

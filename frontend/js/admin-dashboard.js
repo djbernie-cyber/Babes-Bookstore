@@ -1,6 +1,37 @@
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+        function expired() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            location.href = '/login';
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
+                if (res.status === 401) { expired(); return; }
+                if (res.status === 403) { showAccessDenied(); return; }
+                if (!res.ok) throw new Error('Failed to load stats');
+                const stats = await res.json();
+                const books = stats.books || {};
+                const purchases = stats.purchases || {};
+                const set = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val != null ? Number(val).toLocaleString() : fmt(undefined);
+                };
+                set('stat-total', books.total);
+                set('stat-approved', books.approved);
+                set('stat-pending', books.pending);
+                set('stat-rejected', books.rejected);
+                set('stat-purchases', purchases.total);
+                const rev = document.getElementById('stat-revenue');
+                if (rev) rev.textContent = '£' + (Number(purchases.revenue_cents || 0) / 100).toFixed(2);
+            } catch (e) {
+                showToast(e.message || 'Failed to load stats');
+            }
+        }
+
         if (!token) {
             document.getElementById('access-denied').classList.remove('hidden');
         } else {
@@ -107,6 +138,15 @@
             }
         }
 
+        async function backfillCovers() {
+            showToast('Backfilling book covers...');
+            try {
+                await adminPost('/api/v1/admin/backfill/covers?limit=2000', 'Cover backfill started', 'Failed to start cover backfill');
+            } catch (e) {
+                showToast(e.message || 'Failed to start cover backfill');
+            }
+        }
+
         async function scrapeGutenbergFull() {
             if (!confirm('This harvests ~74,000 books and may take a long time. Continue?')) return;
             showToast('Starting full Gutenberg catalogue harvest...');
@@ -126,7 +166,7 @@
                 try {
                     const action = btn.getAttribute('data-action');
                     const fns = { scrapeSource, scrapeAll, scrapePopular, scrapeGutenbergFull,
-                                  scrapeAfrican, scrapeFull, retagAfrican, reverifyAll };
+                                  scrapeAfrican, scrapeFull, retagAfrican, reverifyAll, backfillCovers };
                     if (fns[action]) await fns[action]();
                 } catch (e) {
                     showToast(e.message || 'Action failed');
