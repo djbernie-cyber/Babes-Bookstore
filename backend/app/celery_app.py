@@ -29,6 +29,7 @@ celery_app.conf.update(
     worker_concurrency=4,
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    broker_transport_options={"visibility_timeout": 604800},  # 7d, not 1h, so hour-long harvests don't re-enter the queue as duplicates
     beat_schedule={
         "verify-pending-licenses-daily": {
             "task": "verify.licenses.all",
