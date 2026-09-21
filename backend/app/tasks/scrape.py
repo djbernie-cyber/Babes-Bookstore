@@ -557,58 +557,78 @@ def retag_african_literature_task() -> dict:
     async def _run() -> dict:
         from ..sources.african_ebooks import AfricanEbooksSource
 
-        stats = {"scanned": 0, "african": 0, "continent": 0, "colonial": 0, "revolutionary": 0, "suppressed": 0}
-        async with AsyncSessionLocal() as session:
-            stmt = select(Book).where(Book.status == BookStatus.APPROVED)
-            result = await session.execute(stmt)
-            for book in result.scalars():
-                stats["scanned"] += 1
-                tags = list(book.tags or [])
-                changed = False
+        stats = {"scanned": 0, "african": 0, "continent": 0, "colonial": 0, "revolutionary": 0, "suppressed": 0, "suppressed_removed": 0}
+        # Process in batches with a fresh session+connection per batch. A
+        # single long-lived session that scans ~83k books and then fires one
+        # giant bulk UPDATE at the end has repeatedly died with "connection
+        # was closed in the middle of operation" — the connection sat idle
+        # for hours, then the proxy closed it before the commit. Chunking
+        # bounds the transaction size and keeps each connection's lifetime
+        # short, so partial progress is committed and redelivery is cheap.
+        last_id = 0
+        batch_size = 2000
+        while True:
+            async with AsyncSessionLocal() as session:
+                stmt = (
+                    select(Book)
+                    .where(Book.status == BookStatus.APPROVED, Book.id > last_id)
+                    .order_by(Book.id)
+                    .limit(batch_size)
+                )
+                result = await session.execute(stmt)
+                rows = list(result.scalars())
+                if not rows:
+                    break
+                for book in rows:
+                    stats["scanned"] += 1
+                    tags = list(book.tags or [])
+                    changed = False
 
-                if AfricanEbooksSource._is_african_author(book.author):
-                    if AFRICAN_LITERATURE_TAG not in tags:
-                        tags.insert(0, AFRICAN_LITERATURE_TAG)
-                        changed = True
-                    stats["african"] += 1
-                    if AfricanEbooksSource._is_continent_african(book.author):
-                        if AFRICAN_CONTINENT_TAG not in tags:
-                            tags.insert(1, AFRICAN_CONTINENT_TAG)
+                    if AfricanEbooksSource._is_african_author(book.author):
+                        if AFRICAN_LITERATURE_TAG not in tags:
+                            tags.insert(0, AFRICAN_LITERATURE_TAG)
                             changed = True
-                        stats["continent"] += 1
+                        stats["african"] += 1
+                        if AfricanEbooksSource._is_continent_african(book.author):
+                            if AFRICAN_CONTINENT_TAG not in tags:
+                                tags.insert(1, AFRICAN_CONTINENT_TAG)
+                                changed = True
+                            stats["continent"] += 1
 
-                if AfricanEbooksSource._is_colonial_author(book.author):
-                    if COLONIAL_SOURCE_TAG not in tags and AFRICAN_LITERATURE_TAG not in tags:
-                        tags.insert(0, AFRICAN_LITERATURE_TAG)
-                        changed = True
-                    if COLONIAL_SOURCE_TAG not in tags:
-                        tags.insert(1, COLONIAL_SOURCE_TAG)
-                        changed = True
-                    stats["colonial"] += 1
+                    if AfricanEbooksSource._is_colonial_author(book.author):
+                        if COLONIAL_SOURCE_TAG not in tags and AFRICAN_LITERATURE_TAG not in tags:
+                            tags.insert(0, AFRICAN_LITERATURE_TAG)
+                            changed = True
+                        if COLONIAL_SOURCE_TAG not in tags:
+                            tags.insert(1, COLONIAL_SOURCE_TAG)
+                            changed = True
+                        stats["colonial"] += 1
 
-                if AfricanEbooksSource._is_revolutionary_author(book.author):
-                    if REVOLUTIONARY_TAG not in tags:
-                        tags.append(REVOLUTIONARY_TAG)
-                        changed = True
-                    stats["revolutionary"] += 1
+                    if AfricanEbooksSource._is_revolutionary_author(book.author):
+                        if REVOLUTIONARY_TAG not in tags:
+                            tags.append(REVOLUTIONARY_TAG)
+                            changed = True
+                        stats["revolutionary"] += 1
 
-                from ..sources.suppressed import SuppressedClassicsSource
-                if SuppressedClassicsSource.is_suppressed_book(book.author, book.source, book.source_id):
-                    if SUPPRESSED_TAG not in tags:
-                        tags.append(SUPPRESSED_TAG)
+                    from ..sources.suppressed import SuppressedClassicsSource
+                    if SuppressedClassicsSource.is_suppressed_book(book.author, book.source, book.source_id):
+                        if SUPPRESSED_TAG not in tags:
+                            tags.append(SUPPRESSED_TAG)
+                            changed = True
+                        stats["suppressed"] += 1
+                    elif SUPPRESSED_TAG in tags:
+                        # Purge stale Suppressed Classics tags (wrong-ID canon
+                        # junk that resolved to unrelated books) so the shelf only
+                        # carries genuinely banned / canon works.
+                        tags.remove(SUPPRESSED_TAG)
                         changed = True
-                    stats["suppressed"] = stats.get("suppressed", 0) + 1
-                elif SUPPRESSED_TAG in tags:
-                    # Purge stale Suppressed Classics tags (wrong-ID canon
-                    # junk that resolved to unrelated books) so the shelf only
-                    # carries genuinely banned / canon works.
-                    tags.remove(SUPPRESSED_TAG)
-                    changed = True
-                    stats["suppressed_removed"] = stats.get("suppressed_removed", 0) + 1
+                        stats["suppressed_removed"] += 1
 
-                if changed:
-                    book.tags = tags
-            await session.commit()
+                    if changed:
+                        book.tags = tags
+                    last_id = book.id
+                await session.commit()
+                session.expunge_all()
         return stats
 
     logger.info("Backfilling African Literature tag tiers and Suppressed Classics tags")
