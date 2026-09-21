@@ -418,7 +418,7 @@ async def list_purchases(
                 "amount_cents": p.amount_cents,
                 "currency": p.currency,
                 "status": p.status.value if hasattr(p.status, 'value') else str(p.status),
-                "payment_provider": p.payment_provider.value if p.payment_provider else None,
+                "payment_provider": p.payment_provider.value if hasattr(p.payment_provider, 'value') else p.payment_provider,
                 "download_count": p.download_count,
                 "max_downloads": p.max_downloads,
                 "zip_path": p.zip_path,
