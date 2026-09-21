@@ -112,6 +112,31 @@ NEW_BUNDLES = [
             "generation — this bundle collects the library's Revolutionary-tagged works by "
             "African and diaspora writers: the banned, the imprisoned, and the unsilenced.",
     ),
+    dict(
+        name="Socialist Theory — The Founding Texts",
+        slug="socialist-theory-canon",
+        category="Politics & Theory",
+        tags=["Socialist Theory"],
+        featured=True,
+        description="Marx and Engels, Lenin and Trotsky, Kropotkin and Goldman, Luxemburg "
+            "and Debs — the public-domain canon of socialism, anarchism and labour.",
+        long_description="From the Communist Manifesto and Capital to Mutual Aid and "
+            "Anarchism and Other Essays, these are the founding documents of the socialist, "
+            "communist, anarchist and labour traditions — every edition public-domain and "
+            "author-verified.",
+    ),
+    dict(
+        name="Military Library — Strategy & Field",
+        slug="military-library-canon",
+        category="Military & Strategy",
+        tags=["Military Library"],
+        featured=False,
+        description="Sun Tzu, Clausewitz, Jomini and Mahan beside the drill, field-service "
+            "and engineer manuals of the public domain.",
+        long_description="The strategy classics and the practical field manuals that built "
+            "modern armies — all public-domain, cleaned and print-ready. No weapons or "
+            "explosives instruction: this shelf is history and military education.",
+    ),
 ]
 
 AMERICAN = ["twain, mark", "hawthorne, nathaniel", "melville, herman", "poe, edgar",
@@ -238,6 +263,10 @@ async def main():
                     chosen = chosen + fill[: max(0, 40 - len(chosen))]
             elif slug == "revolutionary-voices":
                 chosen = sorted(revolutionary, key=lambda b: b["id"])[:40]
+            elif slug == "socialist-theory-canon":
+                chosen = [b for b in books if "Socialist Theory" in b["tags"]][:60]
+            elif slug == "military-library-canon":
+                chosen = [b for b in books if "Military Library" in b["tags"]][:40]
             elif slug == "modernist-voices-new":
                 chosen = pick(MODERN, cap=40)
             elif slug == "mythology-legends":

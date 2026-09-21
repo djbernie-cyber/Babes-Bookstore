@@ -155,6 +155,75 @@ BANNED_AUTHORS: List[str] = [
     "J. A. Hobson",
     "Scott Nearing",
     "Victor Serge",
+    # ── Science & philosophy suppressed by church and state ──
+    "Galileo Galilei",
+    "Nicolaus Copernicus",
+    "Giordano Bruno",
+    "Baruch Spinoza",
+    "Benedict de Spinoza",
+    "Thomas Hobbes",
+    "David Hume",
+    "Desiderius Erasmus",
+    "Michel de Montaigne",
+    "Niccolo Machiavelli",
+    "Niccolò Machiavelli",
+    "Friedrich Nietzsche",
+    "Claude Adrien Helvetius",
+    "Claude Adrien Helvétius",
+    "Julien Offray de La Mettrie",
+    "Ernest Renan",
+    "David Friedrich Strauss",
+    # ── Enlightenment & French radical thought ──
+    "William Godwin",
+    "Mary Wollstonecraft",
+    "Pierre Choderlos de Laclos",
+    "Germaine de Stael",
+    "Madame de Stael",
+    "Victor Hugo",
+    "George Sand",
+    "Eugene Sue",
+    "Eugène Sue",
+    "Heinrich Heine",
+    "Ludwig Borne",
+    "Ludwig Börne",
+    "Georg Buchner",
+    "Georg Büchner",
+    "Paul Verlaine",
+    # ── Abolitionist & anti-slavery texts (banned in slave states) ──
+    "Frederick Douglass",
+    "William Lloyd Garrison",
+    "Wendell Phillips",
+    "Lydia Maria Child",
+    "Angelina Grimke",
+    "Angelina Grimké",
+    "Theodore Dwight Weld",
+    "David Walker",
+    "Henry Highland Garnet",
+    "Martin Delany",
+    # ── Suffrage, feminism & birth control (prosecuted) ──
+    "Elizabeth Cady Stanton",
+    "Susan B. Anthony",
+    "Annie Besant",
+    "Charles Knowlton",
+    "Ida B. Wells",
+    "Ida B. Wells-Barnett",
+    "Charlotte Perkins Gilman",
+    "Olive Schreiner",
+    # ── Political economy, labour & anti-imperial writers ──
+    "Henry George",
+    "Edward Bellamy",
+    "Eugene V. Debs",
+    "Daniel De Leon",
+    "Jack London",
+    "William Morris",
+    "Robert Owen",
+    "William Godwin",
+    "Thomas Spence",
+    "Richard Carlile",
+    "William Hone",
+    "William Cobbett",
+    "John Thelwall",
+    "Joseph Priestley",
 ]
 
 
@@ -220,6 +289,7 @@ class SuppressedClassicsSource(BaseSource):
         limit: Optional[int] = None,
         max_concurrency: int = 3,
         batch_size: int = 3,
+        author_list: Optional[List[str]] = None,
     ) -> List[BookMetadata]:
         """Harvest the full public-domain banned / suppressed shelf.
 
@@ -232,13 +302,18 @@ class SuppressedClassicsSource(BaseSource):
 
         The result is the honest ceiling of the shelf: every public-domain
         "banned book" the corpus actually contains.
+
+        ``author_list`` overrides the default canon — used by the dedicated
+        revolutionary sweep so the same machinery can address one subset.
         """
         import asyncio as _aio
 
         from .african_ebooks import CONDEMNED_REVOLUTIONARY_AUTHORS, AfricanEbooksSource
 
         authors: List[str] = []
-        for name in list(BANNED_AUTHORS) + list(CONDEMNED_REVOLUTIONARY_AUTHORS):
+        source_names = (list(author_list) if author_list is not None
+                        else list(BANNED_AUTHORS) + list(CONDEMNED_REVOLUTIONARY_AUTHORS))
+        for name in source_names:
             if name not in authors:
                 authors.append(name)
 
@@ -313,6 +388,19 @@ class SuppressedClassicsSource(BaseSource):
                 page_num += len(wave_pages)
 
         return books[:limit]
+
+    async def harvest_revolutionary(self, limit: Optional[int] = None) -> List[BookMetadata]:
+        """Sweep only the condemned-revolutionary canon.
+
+        Same author-priority machinery as :meth:`harvest_banned`, restricted to
+        ``CONDEMNED_REVOLUTIONARY_AUTHORS``. Works are tagged ``Revolutionary``
+        (and ``Suppressed Classics``) by the central ingest pass.
+        """
+        from .african_ebooks import CONDEMNED_REVOLUTIONARY_AUTHORS
+
+        return await self.harvest_banned(
+            limit=limit, author_list=list(CONDEMNED_REVOLUTIONARY_AUTHORS)
+        )
 
     async def download(self, metadata: BookMetadata) -> Optional[bytes]:
         return None

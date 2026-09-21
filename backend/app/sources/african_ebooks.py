@@ -794,6 +794,7 @@ AFRICAN_LITERATURE_TAG = "African Literature"
 AFRICAN_CONTINENT_TAG = "African Author"
 COLONIAL_SOURCE_TAG = "Colonial Sauce"
 REVOLUTIONARY_TAG = "Revolutionary"
+SOCIALIST_THEORY_TAG = "Socialist Theory"
 
 #: Revolutionary writers condemned by their own governments — banned,
 #: imprisoned, exiled, sentenced or killed by state power for their politics.
@@ -1020,6 +1021,94 @@ CONDEMNED_REVOLUTIONARY_AUTHORS: List[str] = [
     "Ruth First",
     "Henry Nxumalo",
     "Ingrid Jonker",
+    # ── Wider anti-colonial & liberation canon (public-domain figures) ──
+    # Nationalist / anti-imperial writers whose books were seized, banned or
+    # burned by colonial or post-colonial states. Only PD editions resolve.
+    "Sun Yat-sen",
+    "Sun Yat Sen",
+    "Mahatma Gandhi",
+    "M. K. Gandhi",
+    "Mohandas Karamchand Gandhi",
+    "B. R. Ambedkar",
+    "Bhimrao Ramji Ambedkar",
+    "Rabindranath Tagore",
+    "Bal Gangadhar Tilak",
+    "Lala Lajpat Rai",
+    "Dadabhai Naoroji",
+    "Gopal Krishna Gokhale",
+    "Aurobindo Ghose",
+    "Sri Aurobindo",
+    "M. N. Roy",
+    "Manabendra Nath Roy",
+    "Bhagat Singh",
+    "Apolinario Mabini",
+    "Emilio Aguinaldo",
+    "Graciano Lopez Jaena",
+    "Marcelo H. del Pilar",
+    "Andres Bonifacio",
+    "Manuel L. Quezon",
+    # ── Latin American & Caribbean revolutionaries (PD) ──
+    "Simon Bolivar",
+    "Simón Bolívar",
+    "Francisco de Miranda",
+    "Jose Marti",
+    "José Martí",
+    "Jose Carlos Mariategui",
+    "José Carlos Mariátegui",
+    "Manuel Gonzalez Prada",
+    "Manuel González Prada",
+    "Ricardo Flores Magon",
+    "Ricardo Flores Magón",
+    "Juan Montalvo",
+    "Euclides da Cunha",
+    "Luis Emilio Recabarren",
+    "Jose Enrique Rodo",
+    "José Enrique Rodó",
+    # ── Russian & Eastern European revolutionaries (PD) ──
+    "Alexander Herzen",
+    "Aleksandr Herzen",
+    "Peter Lavrov",
+    "Pyotr Lavrov",
+    "Vera Figner",
+    "Vera Zasulich",
+    "Sergei Nechayev",
+    "Sergey Nechayev",
+    "Pavel Axelrod",
+    "Leo Deutsch",
+    "Vladimir Bonch-Bruyevich",
+    "Anatoly Lunacharsky",
+    "Alexander Bogdanov",
+    "Christian Rakovsky",
+    "Karl Radek",
+    # ── Italian / Irish / European radicals (PD) ──
+    "Giuseppe Mazzini",
+    "Giuseppe Garibaldi",
+    "Carlo Cafiero",
+    "Andrea Costa",
+    "Francesco Saverio Merlino",
+    "Errico Malatesta",
+    "James Connolly",
+    "Padraig Pearse",
+    "Patrick Pearse",
+    "Constance Markievicz",
+    "Arthur Griffith",
+    "Louise Michel",
+    "Flora Tristan",
+    # ── Black diaspora & American radicals (PD) ──
+    "Booker T. Washington",
+    "Hubert Harrison",
+    "Cyril Briggs",
+    "A. Philip Randolph",
+    "Ida B. Wells",
+    "Ida B. Wells-Barnett",
+    "Frederick Douglass",
+    "Sojourner Truth",
+    "David Walker",
+    "Henry Highland Garnet",
+    "Martin Delany",
+    "Alexander Crummell",
+    "W. E. B. Du Bois",
+    "William Monroe Trotter",
 ]
 
 #: Public-domain socialist / communist classics, hand-curated for the
@@ -1062,6 +1151,120 @@ SOCIALIST_CANON: List[Dict] = [
     # Foundational texts
     {"gutenberg_id": 33062, "title": "The Principles of Communism", "author": "Friedrich Engels"},
     {"gutenberg_id": 25698, "title": "Ludwig Feuerbach and the End of the Classical German Philosophy", "author": "Friedrich Engels"},
+]
+
+#: Public-domain socialist, communist, anarchist and labour-movement writers.
+#: The ``Socialist Theory`` shelf is author-priority: a work is tagged only
+#: when its credited author is on this list, and only public-domain editions
+#: resolve against Gutenberg (still-copyright authors simply never surface).
+#: Built around the founding texts of scientific socialism plus the wider
+#: utopian, anarchist, syndicalist and labour canon.
+SOCIALIST_AUTHORS: List[str] = [
+    # Founders — Marx & Engels
+    "Karl Marx",
+    "Friedrich Engels",
+    "Frederick Engels",
+    # Russian Marxism & the Bolsheviks (public-domain works only)
+    "Vladimir Lenin",
+    "V. I. Lenin",
+    "Vladimir Ilyich Lenin",
+    "Leon Trotsky",
+    "Lev Davidovich Trotsky",
+    "Rosa Luxemburg",
+    "Alexandra Kollontai",
+    "Nadezhda Krupskaya",
+    "Nikolai Bukharin",
+    "Grigory Zinoviev",
+    "Lev Kamenev",
+    "Anatoly Lunacharsky",
+    "Alexander Bogdanov",
+    "Christian Rakovsky",
+    "Karl Radek",
+    "Georgi Plekhanov",
+    "Pavel Axelrod",
+    "Vera Zasulich",
+    "Nikolai Chernyshevsky",
+    "Maxim Gorky",
+    # German & Austrian social democracy
+    "Karl Kautsky",
+    "Karl Liebknecht",
+    "Wilhelm Liebknecht",
+    "August Bebel",
+    "Eduard Bernstein",
+    "Clara Zetkin",
+    "Franz Mehring",
+    "Ferdinand Lassalle",
+    "Rudolf Hilferding",
+    "Otto Bauer",
+    # French socialism & anarchism
+    "Pierre-Joseph Proudhon",
+    "Paul Lafargue",
+    "Laura Marx Lafargue",
+    "Charles Fourier",
+    "Henri de Saint-Simon",
+    "Etienne Cabet",
+    "Louis Blanc",
+    "Louise Michel",
+    "Flora Tristan",
+    "Jean Jaures",
+    "Jules Guesde",
+    "Paul Brousse",
+    "Sebastien Faure",
+    # Anarchist canon
+    "Mikhail Bakunin",
+    "Peter Kropotkin",
+    "Pyotr Kropotkin",
+    "Petr Kropotkin",
+    "Emma Goldman",
+    "Alexander Berkman",
+    "Max Stirner",
+    "Errico Malatesta",
+    "Carlo Cafiero",
+    "Andrea Costa",
+    "Francesco Saverio Merlino",
+    "Nestor Makhno",
+    "Voltairine de Cleyre",
+    "Johann Most",
+    "Rudolf Rocker",
+    "Ricardo Flores Magon",
+    "Ricardo Flores Magón",
+    "Buenaventura Durruti",
+    # British socialism, Fabians & labour
+    "Robert Owen",
+    "William Morris",
+    "George Bernard Shaw",
+    "Sidney Webb",
+    "Beatrice Webb",
+    "H. M. Hyndman",
+    "Robert Blatchford",
+    "Keir Hardie",
+    "Ramsay MacDonald",
+    "H. G. Wells",
+    # American socialism, labour & utopians
+    "Edward Bellamy",
+    "Laurence Gronlund",
+    "Eugene V. Debs",
+    "Daniel De Leon",
+    "Bill Haywood",
+    "Albert Parsons",
+    "August Spies",
+    "Lucy Parsons",
+    "Mother Jones",
+    "Mary Harris Jones",
+    "Upton Sinclair",
+    "Jack London",
+    "Henry Demarest Lloyd",
+    "Wendell Phillips",
+    # Italian & Iberian
+    "Antonio Labriola",
+    "Filippo Turati",
+    "Giuseppe Mazzini",
+    "Giuseppe Garibaldi",
+    "Francisco Pi y Margall",
+    # Eastern Europe & the Balkans
+    "Milovan Djilas",
+    "Gyorgy Lukacs",
+    "György Lukács",
 ]
 
 
@@ -1178,6 +1381,109 @@ class AfricanEbooksSource(BaseSource):
 
         return books[:limit]
 
+    async def harvest_socialist(
+        self,
+        limit: Optional[int] = None,
+        max_concurrency: int = 6,
+        batch_size: int = 6,
+    ) -> List[BookMetadata]:
+        """Harvest the public-domain Socialist Theory shelf.
+
+        Two passes, author-priority throughout:
+
+        1.  The hand-curated ``SOCIALIST_CANON`` (Marx, Engels, Lenin, Trotsky)
+            resolved by exact Gutenberg id, so the founding texts are always
+            present even if a name search is throttled.
+        2.  A Gutendex sweep of every name in ``SOCIALIST_AUTHORS`` taking the
+            public-domain English works each surfaces.
+
+        Only public-domain editions resolve (Gutendex ``copyright=false``), so
+        still-copyright socialists simply never appear.
+        """
+        import asyncio as _aio
+
+        sem = _aio.Semaphore(max_concurrency)
+        seen: set[int] = set()
+        books: List[BookMetadata] = []
+
+        # Pass 1 — curated canon by id.
+        for entry in SOCIALIST_CANON:
+            if limit is not None and len(books) >= limit:
+                return books[:limit]
+            meta = await self._resolve_socialist(entry)
+            if meta is None:
+                continue
+            if meta.source_id in seen:
+                continue
+            seen.add(int(meta.source_id))
+            books.append(meta)
+
+        # Pass 2 — author-name sweep.
+        async def _fetch_page(query: str, page_num: int) -> dict:
+            async with sem:
+                for attempt in range(1, 4):
+                    try:
+                        await _aio.sleep(self.rate_limit)
+                        resp = await self.client.get(
+                            self.GUTENBERG_API,
+                            params={
+                                "search": query,
+                                "languages": "en",
+                                "copyright": "false",
+                                "page": page_num,
+                            },
+                        )
+                        if resp.status_code in (429, 500, 502, 503):
+                            if attempt < 3:
+                                await _aio.sleep(2 ** attempt * 10)
+                                continue
+                        resp.raise_for_status()
+                        return resp.json()
+                    except Exception:
+                        logger.warning(
+                            "Socialist harvest search query failed: %s (page %s)",
+                            query, page_num,
+                        )
+                        if attempt < 3:
+                            await _aio.sleep(2 ** attempt * 10)
+                            continue
+                        return {}
+
+        authors: List[str] = []
+        for name in SOCIALIST_AUTHORS:
+            if name not in authors:
+                authors.append(name)
+
+        for author in authors:
+            page_num = 1
+            pages_to_fetch = 1
+            while page_num <= pages_to_fetch:
+                wave_pages = list(range(page_num, min(page_num + batch_size, pages_to_fetch) + 1))
+                payloads = await _aio.gather(
+                    *(_fetch_page(author, p) for p in wave_pages),
+                    return_exceptions=True,
+                )
+                for payload in payloads:
+                    if isinstance(payload, BaseException) or not payload:
+                        continue
+                    total = payload.get("count") or 0
+                    pages_to_fetch = -(-total // 32)  # Gutendex fixed page size
+                    for raw in payload.get("results", []):
+                        bid = raw.get("id")
+                        if bid is None or bid in seen:
+                            continue
+                        meta = self._from_gutenberg(raw)
+                        if not meta or not self._is_socialist_author(meta.author):
+                            continue
+                        seen.add(bid)
+                        self._apply_socialist_tags(meta)
+                        books.append(meta)
+                        if limit is not None and len(books) >= limit:
+                            return books[:limit]
+                page_num += len(wave_pages)
+
+        return books[:limit]
+
     async def get_metadata(self, source_id: str) -> Optional[BookMetadata]:
         return await self._resolve_remote(source_id)
 
@@ -1198,6 +1504,21 @@ class AfricanEbooksSource(BaseSource):
         src = f"https://www.gutenberg.org/ebooks/{entry['gutenberg_id']}"
         meta.source_url = src
         self._apply_african_tags(meta)
+        return meta
+
+    async def _resolve_socialist(self, entry: Dict) -> Optional[BookMetadata]:
+        meta = await self._resolve_remote(str(entry["gutenberg_id"]))
+        if meta is None:
+            return None
+        meta.title = entry["title"]
+        if entry.get("author"):
+            meta.author = entry["author"]
+        meta.source = self.name
+        meta.source_id = str(entry["gutenberg_id"])
+        meta.source_url = f"https://www.gutenberg.org/ebooks/{entry['gutenberg_id']}"
+        if SOCIALIST_THEORY_TAG not in (meta.tags or []):
+            meta.tags = list(dict.fromkeys((meta.tags or []) + [SOCIALIST_THEORY_TAG]))
+        self._apply_socialist_tags(meta)
         return meta
 
     async def _resolve_remote(self, gutenberg_id: str) -> Optional[BookMetadata]:
@@ -1280,6 +1601,21 @@ class AfricanEbooksSource(BaseSource):
         if extra:
             meta.tags = list(dict.fromkeys((meta.tags or []) + extra))
 
+    def _apply_socialist_tags(self, meta: BookMetadata) -> None:
+        """Tag a BookMetadata for the Socialist Theory shelf.
+
+        Author-priority: the tag is added only when the credited author is on
+        the public-domain socialist canon. Condemned revolutionaries also keep
+        the ``Revolutionary`` tag so both shelves surface them.
+        """
+        extra: List[str] = []
+        if self._is_socialist_author(meta.author):
+            extra.append(SOCIALIST_THEORY_TAG)
+        if self._is_revolutionary_author(meta.author):
+            extra.append(REVOLUTIONARY_TAG)
+        if extra:
+            meta.tags = list(dict.fromkeys((meta.tags or []) + extra))
+
     @staticmethod
     def _is_revolutionary_author(author: Optional[str]) -> bool:
         """True when the author is a revolutionary writer condemned by their
@@ -1288,6 +1624,18 @@ class AfricanEbooksSource(BaseSource):
         if not author:
             return False
         for candidate in CONDEMNED_REVOLUTIONARY_AUTHORS:
+            if (AfricanEbooksSource._name_matches(author, candidate)
+                    or AfricanEbooksSource._name_matches(candidate, author)):
+                return True
+        return False
+
+    @staticmethod
+    def _is_socialist_author(author: Optional[str]) -> bool:
+        """True when the credited author is on the public-domain socialist
+        canon. Tagged ``Socialist Theory``."""
+        if not author:
+            return False
+        for candidate in SOCIALIST_AUTHORS:
             if (AfricanEbooksSource._name_matches(author, candidate)
                     or AfricanEbooksSource._name_matches(candidate, author)):
                 return True
@@ -1395,6 +1743,17 @@ class AfricanEbooksSource(BaseSource):
         nc = AfricanEbooksSource._normalize(candidate)
         if nr and nc and nr == nc:
             return True
+        # Guard given-name/surname collisions before the loose passes: a
+        # "Walter, A." record must not match "Walter A. Rodney" merely because
+        # "waltera" is a prefix of "walterarodney". Compare likely surnames
+        # (text before the comma for "Surname, Given" records, the final token
+        # otherwise) and refuse when they are clearly different people. This
+        # keeps legitimate initials idioms ("Henty, G. A." == "G. A. Henty").
+        sr = AfricanEbooksSource._surname_token(record)
+        sc = AfricanEbooksSource._surname_token(candidate)
+        if sr and sc and len(sr) >= 2 and len(sc) >= 2:
+            if sr != sc and sr not in sc and sc not in sr:
+                return False
         if nr and nc:
             shorter, longer = (nr, nc) if len(nr) < len(nc) else (nc, nr)
             if len(shorter) >= 7 and shorter in longer:
@@ -1404,3 +1763,20 @@ class AfricanEbooksSource(BaseSource):
         if AfricanEbooksSource._tokens_are_degenerate(rt) or AfricanEbooksSource._tokens_are_degenerate(ct):
             return False
         return bool(ct <= rt or rt <= ct)
+
+    @staticmethod
+    def _surname_token(name: Optional[str]) -> Optional[str]:
+        """Best-effort surname token for a personal-name record.
+
+        Gutenberg stores names as ``"Surname, Given (Aliases)"``; curated lists
+        use ``"Given Surname"``. For the comma form the text before the comma is
+        the surname; otherwise the final token is. Returns the last
+        alphanumeric token, lowercased, or ``None``.
+        """
+        import re
+        n = (name or "").strip()
+        if not n:
+            return None
+        head = n.split(",", 1)[0] if "," in n else n
+        toks = re.findall(r"[a-z0-9]+", head.lower())
+        return toks[-1] if toks else None

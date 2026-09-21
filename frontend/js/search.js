@@ -24,7 +24,7 @@ function card(b) {
 let curPage = 1, lastQ = "", lastCat = "";
 // Category dropdown entries that are shelves backed by a book *tag* rather
 // than the subject ``category`` column.
-const TAG_OPS = { 'African Literature': 'African Literature', 'Revolutionary': 'Revolutionary', 'Banned & Suppressed': 'Suppressed Classics' };
+const TAG_OPS = { 'African Literature': 'African Literature', 'Revolutionary': 'Revolutionary', 'Socialist Theory': 'Socialist Theory', 'Banned & Suppressed': 'Suppressed Classics' };
 async function search(p) {
   if (p) curPage = p;
   const q = document.getElementById('q').value.trim();

@@ -119,6 +119,45 @@
             }
         }
 
+        async function scrapeSuppressed() {
+            if (!confirm('Expands the Banned & Suppressed shelf to every public-domain banned book by the banned/condemned author canon. Continue?')) return;
+            showToast('Starting full Banned & Suppressed harvest...');
+            try {
+                await adminPost('/api/v1/admin/scrape/suppressed-full', 'Suppressed harvest started', 'Failed to start suppressed harvest');
+            } catch (e) {
+                showToast(e.message || 'Failed to start suppressed harvest');
+            }
+        }
+
+        async function scrapeRevolutionary() {
+            if (!confirm('Expands the Revolutionary shelf by sweeping the condemned-revolutionary author canon for public-domain works. Continue?')) return;
+            showToast('Starting full Revolutionary harvest...');
+            try {
+                await adminPost('/api/v1/admin/scrape/revolutionary-full', 'Revolutionary harvest started', 'Failed to start revolutionary harvest');
+            } catch (e) {
+                showToast(e.message || 'Failed to start revolutionary harvest');
+            }
+        }
+
+        async function scrapeSocialist() {
+            if (!confirm('Expands the Socialist Theory shelf from the curated canon and the public-domain socialist/anarchist/labour authors. Continue?')) return;
+            showToast('Starting full Socialist Theory harvest...');
+            try {
+                await adminPost('/api/v1/admin/scrape/socialist-full', 'Socialist harvest started', 'Failed to start socialist harvest');
+            } catch (e) {
+                showToast(e.message || 'Failed to start socialist harvest');
+            }
+        }
+
+        async function scrapeMilitary() {
+            showToast('Scraping the Military Library canon...');
+            try {
+                await adminPost('/api/v1/admin/scrape/source/military?limit=100&start_page=1', 'Military Library scrape started', 'Failed to start military scrape');
+            } catch (e) {
+                showToast(e.message || 'Failed to start military scrape');
+            }
+        }
+
         async function scrapeFull() {
             if (!confirm('Kicks off the full Gutenberg (~74k) + African shelf + all other sources in parallel to drive the catalogue toward its honest ceiling. This takes a long time. Continue?')) return;
             showToast('Starting ~90k catalogue harvest...');
@@ -166,7 +205,8 @@
                 try {
                     const action = btn.getAttribute('data-action');
                     const fns = { scrapeSource, scrapeAll, scrapePopular, scrapeGutenbergFull,
-                                  scrapeAfrican, scrapeFull, retagAfrican, reverifyAll, backfillCovers };
+                                  scrapeAfrican, scrapeSuppressed, scrapeRevolutionary, scrapeSocialist,
+                                  scrapeMilitary, scrapeFull, retagAfrican, reverifyAll, backfillCovers };
                     if (fns[action]) await fns[action]();
                 } catch (e) {
                     showToast(e.message || 'Action failed');

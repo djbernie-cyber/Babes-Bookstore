@@ -27,6 +27,7 @@ from ..sources.african_ebooks import (
     AFRICAN_CONTINENT_TAG,
     COLONIAL_SOURCE_TAG,
     REVOLUTIONARY_TAG,
+    SOCIALIST_THEORY_TAG,
     AFRICAN_AUTHORS,
     AFRICAN_CONTINENT_AUTHORS,
     COLONIAL_AUTHORS,
@@ -150,6 +151,9 @@ async def _ingest_chunk(
                 if AfricanEbooksSource._is_revolutionary_author(metadata.author):
                     if REVOLUTIONARY_TAG not in tags:
                         tags.append(REVOLUTIONARY_TAG)
+                if AfricanEbooksSource._is_socialist_author(metadata.author):
+                    if SOCIALIST_THEORY_TAG not in tags:
+                        tags.append(SOCIALIST_THEORY_TAG)
 
                 from ..sources.suppressed import SuppressedClassicsSource
                 if SuppressedClassicsSource.is_suppressed_book(
@@ -401,6 +405,79 @@ def scrape_suppressed_full_task(limit: int | None = None) -> dict:
     return asyncio.run(_run())
 
 
+@celery_app.task(name="scrape.socialist_full")
+def scrape_socialist_full_task(limit: int | None = None) -> dict:
+    """Harvest the public-domain Socialist Theory shelf.
+
+    Resolves the hand-curated ``SOCIALIST_CANON`` (Marx, Engels, Lenin,
+    Trotsky …) and sweeps every name in ``SOCIALIST_AUTHORS`` for public-domain
+    English editions, tagging each ``Socialist Theory`` (and ``Revolutionary``
+    where the writer was condemned by a state). Deduped by Gutenberg id and
+    ingested in chunks like the other full harvests.
+    """
+    from ..sources.african_ebooks import AfricanEbooksSource
+
+    async def _run() -> dict:
+        from ..database import engine
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+
+        source = AfricanEbooksSource()
+        try:
+            items = await source.harvest_socialist(limit=limit)
+        finally:
+            await source.close()
+
+        report = await _ingest("african_ebooks", items)
+
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+        return report.as_dict()
+
+    logger.info("Running full Socialist Theory harvest (limit=%s)", limit)
+    return asyncio.run(_run())
+
+
+@celery_app.task(name="scrape.revolutionary_full")
+def scrape_revolutionary_full_task(limit: int | None = None) -> dict:
+    """Harvest the public-domain Revolutionary shelf.
+
+    Sweeps the condemned-revolutionary author canon (writers banned,
+    imprisoned, exiled or killed by their states) for public-domain English
+    editions, tagging each ``Revolutionary`` (and ``Suppressed Classics``).
+    Author-priority and deduped by Gutenberg id like the other full harvests.
+    """
+    from ..sources.suppressed import SuppressedClassicsSource
+
+    async def _run() -> dict:
+        from ..database import engine
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+
+        source = SuppressedClassicsSource()
+        try:
+            items = await source.harvest_revolutionary(limit=limit)
+        finally:
+            await source.close()
+
+        report = await _ingest("suppressed", items)
+
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+        return report.as_dict()
+
+    logger.info("Running full Revolutionary harvest (limit=%s)", limit)
+    return asyncio.run(_run())
+
+
 def _sources_with_pagination() -> List[str]:
     """Sources that accept ``start_page`` so they can be walked in full.
 
@@ -557,7 +634,13 @@ def retag_african_literature_task() -> dict:
     async def _run() -> dict:
         from ..sources.african_ebooks import AfricanEbooksSource
 
-        stats = {"scanned": 0, "african": 0, "continent": 0, "colonial": 0, "revolutionary": 0, "suppressed": 0, "suppressed_removed": 0}
+        stats = {
+            "scanned": 0, "african": 0, "continent": 0, "colonial": 0,
+            "revolutionary": 0, "socialist": 0, "suppressed": 0,
+            "african_removed": 0, "continent_removed": 0, "colonial_removed": 0,
+            "revolutionary_removed": 0, "socialist_removed": 0,
+            "suppressed_removed": 0,
+        }
         # Process in batches with a fresh session+connection per batch. A
         # single long-lived session that scans ~83k books and then fires one
         # giant bulk UPDATE at the end has repeatedly died with "connection
@@ -584,31 +667,67 @@ def retag_african_literature_task() -> dict:
                     tags = list(book.tags or [])
                     changed = False
 
-                    if AfricanEbooksSource._is_african_author(book.author):
-                        if AFRICAN_LITERATURE_TAG not in tags:
-                            tags.insert(0, AFRICAN_LITERATURE_TAG)
-                            changed = True
-                        stats["african"] += 1
-                        if AfricanEbooksSource._is_continent_african(book.author):
-                            if AFRICAN_CONTINENT_TAG not in tags:
-                                tags.insert(1, AFRICAN_CONTINENT_TAG)
-                                changed = True
-                            stats["continent"] += 1
+                    is_afr = AfricanEbooksSource._is_african_author(book.author)
+                    is_col = AfricanEbooksSource._is_colonial_author(book.author)
+                    is_cont = AfricanEbooksSource._is_continent_african(book.author)
+                    is_rev = AfricanEbooksSource._is_revolutionary_author(book.author)
+                    is_soc = AfricanEbooksSource._is_socialist_author(book.author)
 
-                    if AfricanEbooksSource._is_colonial_author(book.author):
-                        if COLONIAL_SOURCE_TAG not in tags and AFRICAN_LITERATURE_TAG not in tags:
-                            tags.insert(0, AFRICAN_LITERATURE_TAG)
-                            changed = True
-                        if COLONIAL_SOURCE_TAG not in tags:
-                            tags.insert(1, COLONIAL_SOURCE_TAG)
-                            changed = True
+                    # This pass is authoritative for computed tags: a tag is
+                    # added when the book now matches and *removed* when it no
+                    # longer does. Earlier looser matchers left stale tags on
+                    # junk records ("E. M.", "Walter, A.") that never belonged
+                    # on the shelf; recomputing here purges them.
+                    should_afr = is_afr or is_col
+                    if should_afr and AFRICAN_LITERATURE_TAG not in tags:
+                        tags.insert(0, AFRICAN_LITERATURE_TAG)
+                        changed = True
+                    elif not should_afr and AFRICAN_LITERATURE_TAG in tags:
+                        tags.remove(AFRICAN_LITERATURE_TAG)
+                        changed = True
+                        stats["african_removed"] += 1
+                    if is_afr:
+                        stats["african"] += 1
+
+                    if is_cont and AFRICAN_CONTINENT_TAG not in tags:
+                        tags.insert(1, AFRICAN_CONTINENT_TAG)
+                        changed = True
+                    elif not is_cont and AFRICAN_CONTINENT_TAG in tags:
+                        tags.remove(AFRICAN_CONTINENT_TAG)
+                        changed = True
+                        stats["continent_removed"] += 1
+                    if is_cont:
+                        stats["continent"] += 1
+
+                    if is_col and COLONIAL_SOURCE_TAG not in tags:
+                        tags.insert(1, COLONIAL_SOURCE_TAG)
+                        changed = True
+                    elif not is_col and COLONIAL_SOURCE_TAG in tags:
+                        tags.remove(COLONIAL_SOURCE_TAG)
+                        changed = True
+                        stats["colonial_removed"] += 1
+                    if is_col:
                         stats["colonial"] += 1
 
-                    if AfricanEbooksSource._is_revolutionary_author(book.author):
-                        if REVOLUTIONARY_TAG not in tags:
-                            tags.append(REVOLUTIONARY_TAG)
-                            changed = True
+                    if is_rev and REVOLUTIONARY_TAG not in tags:
+                        tags.append(REVOLUTIONARY_TAG)
+                        changed = True
+                    elif not is_rev and REVOLUTIONARY_TAG in tags:
+                        tags.remove(REVOLUTIONARY_TAG)
+                        changed = True
+                        stats["revolutionary_removed"] += 1
+                    if is_rev:
                         stats["revolutionary"] += 1
+
+                    if is_soc and SOCIALIST_THEORY_TAG not in tags:
+                        tags.append(SOCIALIST_THEORY_TAG)
+                        changed = True
+                    elif not is_soc and SOCIALIST_THEORY_TAG in tags:
+                        tags.remove(SOCIALIST_THEORY_TAG)
+                        changed = True
+                        stats["socialist_removed"] += 1
+                    if is_soc:
+                        stats["socialist"] += 1
 
                     from ..sources.suppressed import SuppressedClassicsSource
                     if SuppressedClassicsSource.is_suppressed_book(book.author, book.source, book.source_id):

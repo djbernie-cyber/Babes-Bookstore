@@ -245,6 +245,49 @@ async def trigger_suppressed_full(
     return {"task_id": task.id, "full_catalogue": limit is None}
 
 
+@router.post("/scrape/socialist-full")
+async def trigger_socialist_full(
+    limit: Optional[int] = Query(None, ge=1, description="Total socialist books to harvest (omit for the full PD socialist canon)"),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Expand the Socialist Theory shelf.
+
+    Resolves the curated socialist canon (Marx, Engels, Lenin, Trotsky …) and
+    sweeps the public-domain socialist / anarchist / labour author canon
+    (author-priority Gutenberg sweep, ``copyright=false``)."""
+    from ...tasks.scrape import scrape_socialist_full_task
+    existing = _task_in_flight("scrape.socialist_full")
+    if existing:
+        return {"task_id": existing, "already_running": True}
+    task = scrape_socialist_full_task.delay(limit)
+    await log_action(
+        db, action="scrape.socialist_full", entity_type="source",
+        user_id=admin.id, details={"limit": limit},
+    )
+    return {"task_id": task.id, "full_catalogue": limit is None}
+
+
+@router.post("/scrape/revolutionary-full")
+async def trigger_revolutionary_full(
+    limit: Optional[int] = Query(None, ge=1, description="Total revolutionary books to harvest (omit for the full condemned-revolutionary canon)"),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Expand the Revolutionary shelf: author-priority Gutenberg sweep of the
+    condemned-revolutionary canon (public-domain editions only)."""
+    from ...tasks.scrape import scrape_revolutionary_full_task
+    existing = _task_in_flight("scrape.revolutionary_full")
+    if existing:
+        return {"task_id": existing, "already_running": True}
+    task = scrape_revolutionary_full_task.delay(limit)
+    await log_action(
+        db, action="scrape.revolutionary_full", entity_type="source",
+        user_id=admin.id, details={"limit": limit},
+    )
+    return {"task_id": task.id, "full_catalogue": limit is None}
+
+
 @router.post("/scrape/full")
 async def trigger_full_catalogue(
     pages_per_source: int = Query(60, ge=1, le=500, description="Pages walked per non-Gutenberg source"),
