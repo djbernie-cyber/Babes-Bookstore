@@ -69,6 +69,13 @@ SUPPRESSED_CANON: List[Dict] = [
     {"gutenberg_id": 31824, "title": "The \"Genius\"", "author": "Theodore Dreiser"},
     {"gutenberg_id": 8771, "title": "Jurgen: A Comedy of Justice", "author": "James Branch Cabell"},
     {"gutenberg_id": 1228, "title": "On the Origin of Species", "author": "Charles Darwin"},
+    # ── Banned Works of the World reference list (public-domain wings) ───
+    {"gutenberg_id": 27773, "title": "Ghosts: A Domestic Tragedy in Three Acts", "author": "Henrik Ibsen"},
+    {"gutenberg_id": 153, "title": "Jude the Obscure", "author": "Thomas Hardy"},
+    {"gutenberg_id": 2130, "title": "Utopia", "author": "Thomas More"},
+    {"gutenberg_id": 972, "title": "The Devil's Dictionary", "author": "Ambrose Bierce"},
+    {"gutenberg_id": 2720, "title": "The Prophet", "author": "Kahlil Gibran"},
+    {"gutenberg_id": 20705, "title": "Justine; or, The Misfortunes of Virtue", "author": "Marquis de Sade"},
     {"gutenberg_id": 203, "title": "Uncle Tom's Cabin", "author": "Harriet Beecher Stowe"},
     {"gutenberg_id": 370, "title": "Moll Flanders", "author": "Daniel Defoe"},
     {"gutenberg_id": 601, "title": "The Monk: A Romance", "author": "M. G. Lewis"},
@@ -136,6 +143,14 @@ BANNED_AUTHORS: List[str] = [
     "Langston Hughes",
     "Richard Wright",
     "Sutton E. Griggs",
+    # Banned Works of the World reference list — indexed, burned, suppressed
+    "Henrik Ibsen",
+    "Thomas Hardy",
+    "Thomas More",
+    "Saint Thomas More",
+    "Percy Bysshe Shelley",
+    "Ambrose Bierce",
+    "Kahlil Gibran",
     # Anarchist, socialist & labour classics burned by states
     "Karl Marx",
     "Friedrich Engels",
