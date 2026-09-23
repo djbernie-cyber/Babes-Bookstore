@@ -91,8 +91,10 @@ def _resolve(book: Book) -> tuple[bool, str]:
         return False, "standardebooks w/o slug url"
     if book.source == "open_library":
         gid = OL_KNOWN.get((book.source_id or "").strip())
+        if gid and book.epub_path:
+            return True, f"open_library known edition ({gid})"
         if gid:
-            return True, f"open_library known edition -> gutenberg {gid}"
+            return False, f"open_library known edition ({gid}) needs epub backfill"
         return False, "open_library w/o known free edition"
     if book.source in ("suppressed", "military", "banned", "african_ebooks"):
         gid = _gid_from_url(book.source_url or "")
