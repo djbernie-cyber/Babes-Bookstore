@@ -63,8 +63,31 @@ def _se_epub_from_url(url: str) -> str | None:
     m = SE_SLUG_RE.search(url or "")
     if not m:
         return None
-    slug = m.group(1).replace("/", "-")
+    slug = m.group(1).replace("/", "_")
     return f"https://standardebooks.org/ebooks/{m.group(1)}/downloads/{slug}.epub"
+
+
+async def _url_alive(url: str) -> bool:
+    """HEAD-check a source file. Only strong 404/410 evidence means dead;
+    blocks, throttles and network errors are treated as alive so a flaky
+    source can never mass-reject healthy titles."""
+
+    def _do() -> bool:
+        try:
+            r = httpx.head(url, timeout=25, headers={"User-Agent": UA},
+                           follow_redirects=True)
+            if r.status_code in (404, 410):
+                return False
+            if r.status_code in (405, 501) or r.status_code == 403:
+                # HEAD unsupported / challenged — confirm with a ranged GET
+                g = httpx.get(url, timeout=25, headers={"User-Agent": UA,
+                              "Range": "bytes=0-600"}, follow_redirects=True)
+                return g.status_code not in (404, 410)
+            return True
+        except Exception:
+            return True
+
+    return await asyncio.to_thread(_do)
 
 
 def _resolve(book: Book) -> tuple[bool, str]:
@@ -110,7 +133,7 @@ def _resolve(book: Book) -> tuple[bool, str]:
     return False, f"{book.source} w/o direct file"
 
 
-async def audit(fix: bool, all_catalog: bool) -> None:
+async def audit(fix: bool, all_catalog: bool, verify_se: bool) -> None:
     async with AsyncSessionLocal() as db:
         bundles = (await db.execute(select(Bundle))).scalars().all()
         bundle_links: dict[int, list[str]] = {}
@@ -141,6 +164,50 @@ async def audit(fix: bool, all_catalog: bool) -> None:
                                    source_url=bk.source_url or "", why=why,
                                    bundles=",".join(bundle_links.get(bk.id, [])) or "-"))
 
+        se_updates: list[dict] = []
+        if verify_se:
+            se_targets = [bk for bk in targets if bk.source == "standard_ebooks"]
+            print(f"\nVerifying {len(se_targets)} standardebooks epub urls (concurrent HEAD)...")
+            sem = asyncio.Semaphore(16)
+
+            async def _one(bk: Book):
+                async with sem:
+                    cands = []
+                    if bk.epub_path:
+                        cands.append(bk.epub_path)
+                    d = _se_epub_from_url(bk.source_url or "")
+                    if d and d not in cands:
+                        cands.append(d)
+                    if not cands:
+                        return
+                    for u in cands:
+                        if await _url_alive(u):
+                            return u
+                    return
+
+            results = await asyncio.gather(*(_one(bk) for bk in se_targets))
+            dead_ids = 0
+            for bk, url in zip(se_targets, results):
+                if url is None:
+                    if bk.epub_path:  # had a path but every candidate is dead
+                        dead_ids += 1
+                        if not any(r["id"] == bk.id for r in broken):
+                            broken.append(dict(id=bk.id, title=bk.title,
+                                               author=bk.author or "", source=bk.source or "",
+                                               source_id=bk.source_id or "",
+                                               source_url=bk.source_url or "",
+                                               why="standardebooks epub dead (404/410)",
+                                               bundles=",".join(bundle_links.get(bk.id, [])) or "-", dead=True))
+                    continue
+                if bk.epub_path != url:
+                    se_updates.append(dict(id=bk.id, title=bk.title,
+                                           author=bk.author or "", source=bk.source or "",
+                                           source_id=bk.source_id or "",
+                                           source_url=bk.source_url or "",
+                                           why="stale standardebooks path", url=url,
+                                           bundles=",".join(bundle_links.get(bk.id, [])) or "-"))
+            print(f"  live={len(se_targets)} dead={dead_ids} stale_path_to_rewrite={len(se_updates)}")
+
         by_source: dict[str, int] = {}
         for bk in targets:
             by_source[bk.source or "?"] = by_source.get(bk.source or "?", 0) + 1
@@ -167,10 +234,21 @@ async def audit(fix: bool, all_catalog: bool) -> None:
         def _gutenberg_epub(book, gid):
             book.epub_path = f"https://www.gutenberg.org/ebooks/{gid}.epub3.images"
 
+        for r in se_updates:
+            bk = books.get(r["id"])
+            if bk is None:
+                continue
+            bk.epub_path = r["url"]
+            _mark_fixed(r, f"epub_path={r['url']} (rewrote stale path)")
+
         for r in broken:
             bk = books.get(r["id"])
             if bk is None:
                 rejected.append(r)
+                continue
+
+            if r.get("dead"):
+                rejected.append({**r, "why": "standardebooks epub dead (404/410)"})
                 continue
 
             # 1. PG-scraped buckets (suppressed / military / african_ebooks…) → epub path
@@ -187,11 +265,14 @@ async def audit(fix: bool, all_catalog: bool) -> None:
                 _mark_fixed(r, f"epub_path={bk.epub_path}")
                 continue
 
-            # 2. standard_ebooks
+            # 2. standard_ebooks (verify before trusting a derived URL)
             epub = _se_epub_from_url(bk.source_url or "")
             if epub:
-                bk.epub_path = epub
-                _mark_fixed(r, f"epub_path={epub}")
+                if await _url_alive(epub):
+                    bk.epub_path = epub
+                    _mark_fixed(r, f"epub_path={epub}")
+                else:
+                    rejected.append({**r, "why": "standardebooks epub dead (404/410)"})
                 continue
 
             # 3. open_library known editions
@@ -298,4 +379,5 @@ async def audit(fix: bool, all_catalog: bool) -> None:
 if __name__ == "__main__":
     all_catalog = "--all" in sys.argv
     fix = "--fix" in sys.argv
-    asyncio.run(audit(fix=fix, all_catalog=all_catalog))
+    verify_se = "--verify-se" in sys.argv
+    asyncio.run(audit(fix=fix, all_catalog=all_catalog, verify_se=verify_se))

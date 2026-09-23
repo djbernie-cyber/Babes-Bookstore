@@ -80,7 +80,7 @@ class PackagingService:
         match = STANDARD_EBOOKS_URL_RE.search(url)
         if not match:
             return None
-        slug = match.group(1).replace("/", "-")
+        slug = match.group(1).replace("/", "_")
         return f"https://standardebooks.org/ebooks/{match.group(1)}/downloads/{slug}.epub"
 
     def _gutenberg_gid(self, book: Book) -> Optional[str]:

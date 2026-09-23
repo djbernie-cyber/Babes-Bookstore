@@ -118,3 +118,15 @@ async def test_standardebooks_slug_derives_epub_runtime(client, db, monkeypatch)
     content, ext = packaging._resolve_book_content(book)
     assert content
     assert ext == "epub"
+
+
+def test_standardebooks_derivation_uses_underscore():
+    """The SE download path joins collection and work with an underscore, not a
+    dash — a dash slug 404s and makes the whole download look broken."""
+    from app.services.packaging import packaging
+
+    url = packaging._standard_ebooks_epub(
+        type("B", (), {"source_url": "https://standardebooks.org/ebooks/h-g-wells/the-time-machine"})()
+    )
+    assert url == ("https://standardebooks.org/ebooks/h-g-wells/the-time-machine"
+                   "/downloads/h-g-wells_the-time-machine.epub")
