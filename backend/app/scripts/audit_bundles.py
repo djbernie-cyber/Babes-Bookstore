@@ -67,27 +67,40 @@ def _se_epub_from_url(url: str) -> str | None:
     return f"https://standardebooks.org/ebooks/{m.group(1)}/downloads/{slug}.epub"
 
 
-async def _url_alive(url: str) -> bool:
-    """HEAD-check a source file. Only strong 404/410 evidence means dead;
-    blocks, throttles and network errors are treated as alive so a flaky
-    source can never mass-reject healthy titles."""
+def _shape_ok(data: bytes, ext: str) -> bool:
+    head = data[:32]
+    if ext == "epub":
+        return head.startswith(b"PK")
+    if ext == "pdf":
+        return head.startswith((b"%PDF", b"%\xE2\xE3\xCF\xD3"))
+    if ext == "txt":
+        s = data.lstrip(b"\xef\xbb\xbf \t\r\n")
+        return not s.startswith((b"<!DOCTYPE", b"<html", b"<?xml", b"<meta"))
+    return True
 
-    def _do() -> bool:
+
+async def _url_alive(url: str, ext: str = "epub") -> bool:
+    """Verify a source file by content shape, not just status code. Error
+    pages (HTML/XML stubs served with 200) would pass a HEAD check, so read a
+    small preview and confirm the container/format magic bytes. Transient
+    errors (429/5xx/network) are treated as alive so flaky sources can never
+    mass-reject otherwise healthy titles."""
+
+    def _do(pattern: str) -> bool:
         try:
-            r = httpx.head(url, timeout=25, headers={"User-Agent": UA},
-                           follow_redirects=True)
+            r = httpx.get(url, timeout=25, headers={"User-Agent": UA,
+                          "Range": "bytes=0-2048"}, follow_redirects=True)
             if r.status_code in (404, 410):
                 return False
-            if r.status_code in (405, 501) or r.status_code == 403:
-                # HEAD unsupported / challenged — confirm with a ranged GET
-                g = httpx.get(url, timeout=25, headers={"User-Agent": UA,
-                              "Range": "bytes=0-600"}, follow_redirects=True)
-                return g.status_code not in (404, 410)
-            return True
+            if r.status_code >= 400:
+                return True if (r.status_code == 429 or r.status_code >= 500) else False
+            if not r.content:
+                return False
+            return _shape_ok(r.content[:2048], ext)
         except Exception:
             return True
 
-    return await asyncio.to_thread(_do)
+    return await asyncio.to_thread(_do, "")
 
 
 def _resolve(book: Book) -> tuple[bool, str]:
@@ -181,7 +194,7 @@ async def audit(fix: bool, all_catalog: bool, verify_se: bool) -> None:
                     if not cands:
                         return
                     for u in cands:
-                        if await _url_alive(u):
+                        if await _url_alive(u, "epub"):
                             return u
                     return
 
@@ -268,7 +281,7 @@ async def audit(fix: bool, all_catalog: bool, verify_se: bool) -> None:
             # 2. standard_ebooks (verify before trusting a derived URL)
             epub = _se_epub_from_url(bk.source_url or "")
             if epub:
-                if await _url_alive(epub):
+                if await _url_alive(epub, "epub"):
                     bk.epub_path = epub
                     _mark_fixed(r, f"epub_path={epub}")
                 else:

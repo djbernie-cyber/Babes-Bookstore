@@ -130,3 +130,34 @@ def test_standardebooks_derivation_uses_underscore():
     )
     assert url == ("https://standardebooks.org/ebooks/h-g-wells/the-time-machine"
                    "/downloads/h-g-wells_the-time-machine.epub")
+
+
+@pytest.mark.asyncio
+async def test_epub_stub_error_page_not_accepted(client, db, monkeypatch):
+    """An error page (HTML/XML served with 200) must not pass as an epub —
+    it is larger than the naive length gate but has no ZIP magic."""
+    from app.models.book import Book, BookStatus
+    from app.services.packaging import packaging
+
+    stub = (b"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n"
+            + b"\x00" * 4000)
+    monkeypatch.setattr(packaging, "_try_local_r2", lambda key: None)
+    monkeypatch.setattr(packaging, "_fetch_remote", lambda url, timeout=30.0: stub)
+
+    book = Book(
+        title="Stub",
+        author="Test",
+        source="standard_ebooks",
+        source_id="stub",
+        category="Classics",
+        tags=[],
+        license_type="public_domain",
+        status=BookStatus.APPROVED,
+        license_verified=True,
+        epub_path="https://standardebooks.org/ebooks/x/y/downloads/x_y.epub",
+    )
+    db.add(book)
+    await db.commit()
+
+    content, ext = packaging._resolve_book_content(book)
+    assert content is None

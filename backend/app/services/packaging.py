@@ -118,6 +118,24 @@ class PackagingService:
         sid = book.source_id or str(book.id)
         return f"{self.BOOK_CACHE_PREFIX}{book.source}/{sid}.{ext}"
 
+    @staticmethod
+    def _valid_shape(data: bytes, ext: str) -> bool:
+        """Shape-check downloaded bytes for a given extension. Error pages and
+        other HTML/XML stubs pass a naive 'larger than a few hundred bytes'
+        gate, so verify the actual container/format magic."""
+        if not data or len(data) <= 500:
+            return False
+        head = data[:32]
+        if ext == "epub":
+            # EPUBs are ZIP containers and must begin with the PK magic
+            return head.startswith(b"PK")
+        if ext == "pdf":
+            return head.startswith((b"%PDF", b"%\xE2\xE3\xCF\xD3"))
+        if ext == "txt":
+            stripped = data.lstrip(b"\xef\xbb\xbf \t\r\n")
+            return not stripped.startswith((b"<!DOCTYPE", b"<html", b"<?xml", b"<meta"))
+        return True
+
     def _resolve_book_content(self, book: Book) -> Tuple[Optional[bytes], str]:
         """Return (bytes, extension) for the best available file for a book.
 
@@ -133,14 +151,16 @@ class PackagingService:
         if book.source and source_id:
             for ext in ("epub", "pdf", "txt"):
                 cached = self._try_local_r2(self._cache_key(book, ext))
-                if cached:
+                if cached and self._valid_shape(cached, ext):
                     return cached, ext
+                if cached:
+                    logger.debug("discarding invalid cached %s for book %s", ext, book.id)
 
         # 2. Legacy direct-stored paths (R2 keys, not URLs)
         for attr, ext in [(book.epub_path, "epub"), (book.pdf_path, "pdf"), (book.cover_path, "jpg")]:
             if attr and not attr.startswith("http"):
                 data = self._try_local_r2(attr)
-                if data:
+                if data and self._valid_shape(data, ext):
                     return data, ext
 
         # 3. Remote URLs in priority order (fetch once, then cache)
@@ -172,9 +192,11 @@ class PackagingService:
 
         for url, ext in candidates:
             data = self._fetch_remote(url)
-            if data and len(data) > 500:  # avoid tiny error pages
-                self._cache_content(book, ext, data)
-                return data, ext
+            if not self._valid_shape(data, ext):
+                logger.debug("skipping %s (%s): bad shape for %s", url, len(data or b""), ext)
+                continue
+            self._cache_content(book, ext, data)
+            return data, ext
 
         logger.warning("No downloadable file found for book %s (id=%s, source=%s/%s)", book.title, book.id, book.source, book.source_id)
         return None, "txt"
