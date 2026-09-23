@@ -1,10 +1,19 @@
-"""Backfill missing book covers from Open Library's public cover service.
+"""Backfill missing book covers.
 
-Open Library returns cover images via `covers.openlibrary.org` which are keyed
-by its internal `cover_i`. We query `/search.json` by title, accept the first
-result whose author name overlaps ours, and store the cover URL. Idempotent:
-books that already have a cover are skipped, and misses are marked with an
-empty-string sentinel so we never hammer Open Library twice for the same book.
+Two passes, in order:
+
+1. **Gutenberg derivation.** Most storefront books are Gutenberg-backed, but
+   Gutendex only advertises ``image/jpeg`` in ``formats`` when it has cached a
+   cover itself — so books ingested straight from Gutendex can land with a
+   ``NULL`` cover even though Gutenberg serves one at its standard cache path.
+   We build that URL from ``source_id``, verify it with a HEAD, and store it.
+   Newest-first so freshly harvested shelves fill immediately.
+
+2. **Open Library search** for the non-Gutenberg remainder (keyed by
+   ``cover_i`` via ``covers.openlibrary.org``).
+
+Idempotent: books that already have a cover are skipped, and Open Library
+misses are marked with an empty-string sentinel so we never hammer it twice.
 """
 import asyncio
 import logging
@@ -16,12 +25,16 @@ from ..celery_app import celery_app
 from ..celery_db import SessionLocal as AsyncSessionLocal
 from ..models.book import Book, BookStatus
 from ..config import settings
+from ..sources.gutenberg import GUTENBERG_ID_SOURCES, gutenberg_cache_cover
 
 logger = logging.getLogger(__name__)
 
 COVER_URL = "{cover_i}-M.jpg"
 COVER_TMPL = "https://covers.openlibrary.org/b/id/{cover_i}-M.jpg"
 OL_SEARCH = "https://openlibrary.org/search.json"
+
+#: Light pause between Gutenberg HEADs — they're cheap but we still pace them.
+GUTENBERG_HEAD_DELAY = 0.08
 
 USER_AGENT = "BabeBookstore/{0} (+https://babesbooks.store)".format(
     getattr(settings, "APP_VERSION", "0.1")
@@ -36,6 +49,24 @@ def _author_overlap(book_author: str, candidate_authors) -> bool:
         return True
     haystack = " ".join(candidate_authors or []).lower()
     return any(t in haystack for t in tokens)
+
+
+async def _head_ok(client: httpx.AsyncClient, url: str):
+    """Probe a derived Gutenberg cover URL.
+
+    Returns ``True`` when it's a live image, ``False`` on a definite miss
+    (404/410), and ``None`` on a transient condition (429/5xx/conn error) so
+    the caller leaves the book untouched for a later run.
+    """
+    try:
+        resp = await client.head(url, follow_redirects=True, timeout=12.0)
+    except (httpx.TransportError, httpx.HTTPStatusError):
+        return None
+    if resp.status_code == 200:
+        return (resp.headers.get("content-type", "") or "").startswith("image")
+    if resp.status_code in (404, 410):
+        return False
+    return None
 
 
 async def _fetch_one(client: httpx.AsyncClient, book) -> str:
@@ -73,27 +104,65 @@ async def _fetch_one(client: httpx.AsyncClient, book) -> str:
 
 
 async def backfill_covers(limit: int = 2000, delay: float = 0.22) -> dict:
-    """Scan approved books without a cover and try to fill them from OL."""
-    processed = 0
-    filled = 0
-    missed = 0
+    """Fill missing covers: Gutenberg derivation first (newest-first), then OL."""
+    processed = filled = 0
+    g_filled = g_miss = g_transient = 0
+    ol_filled = ol_missed = 0
     async with AsyncSessionLocal() as db:
-        stmt = (
-            select(Book)
-            .where(Book.status == BookStatus.APPROVED)
-            .where(Book.cover_path.is_(None))
-            .order_by(Book.id)
-            .limit(limit)
-        )
-        books = (await db.execute(stmt)).scalars().all()
-        total = len(books)
-        if not total:
-            return {"processed": 0, "filled": 0, "missed": 0, "total": 0}
-
         async with httpx.AsyncClient(
             headers={"User-Agent": USER_AGENT}, timeout=15.0
         ) as client:
-            for book in books:
+            # ── Pass 1: Gutenberg-derived covers (fast, HEAD-verified) ─────
+            # Newest-first so freshly harvested shelves (Military, Socialist,
+            # Suppressed) fill immediately instead of waiting behind ~80k
+            # older titles when ordering by id.
+            g_stmt = (
+                select(Book)
+                .where(Book.status == BookStatus.APPROVED)
+                .where(Book.cover_path.is_(None))
+                .where(Book.source.in_(GUTENBERG_ID_SOURCES))
+                .order_by(Book.id.desc())
+                .limit(limit)
+            )
+            g_books = (await db.execute(g_stmt)).scalars().all()
+            for book in g_books:
+                url = gutenberg_cache_cover(book.source, book.source_id)
+                if url:
+                    ok = await _head_ok(client, url)
+                    if ok is True:
+                        book.cover_path = url
+                        g_filled += 1
+                        filled += 1
+                    elif ok is False:
+                        g_miss += 1
+                    else:
+                        g_transient += 1
+                    processed += 1
+                if GUTENBERG_HEAD_DELAY > 0:
+                    await asyncio.sleep(GUTENBERG_HEAD_DELAY)
+                if processed and processed % 250 == 0:
+                    await db.commit()
+                    logger.info(
+                        "gutenberg cover pass: %s/%s (filled %s)",
+                        processed, len(g_books), g_filled,
+                    )
+            await db.commit()
+            logger.info(
+                "gutenberg cover pass done: tried=%s filled=%s miss=%s transient=%s",
+                len(g_books), g_filled, g_miss, g_transient,
+            )
+
+            # ── Pass 2: Open Library search for non-Gutenberg titles ───────
+            ol_stmt = (
+                select(Book)
+                .where(Book.status == BookStatus.APPROVED)
+                .where(Book.cover_path.is_(None))
+                .where(Book.source.notin_(GUTENBERG_ID_SOURCES))
+                .order_by(Book.id)
+                .limit(limit)
+            )
+            ol_books = (await db.execute(ol_stmt)).scalars().all()
+            for book in ol_books:
                 url = await _fetch_one(client, book)
                 if url is None:
                     logger.warning(
@@ -103,25 +172,30 @@ async def backfill_covers(limit: int = 2000, delay: float = 0.22) -> dict:
                     break
                 if url:
                     book.cover_path = url
+                    ol_filled += 1
                     filled += 1
                 else:
                     book.cover_path = ""  # sentinel: known miss
-                    missed += 1
+                    ol_missed += 1
                 processed += 1
                 if delay > 0:
                     await asyncio.sleep(delay)
-                if processed % 250 == 0:
-                    await db.commit()
-                    logger.info(
-                        "cover backfill progress: %s/%s (filled %s)",
-                        processed,
-                        total,
-                        filled,
-                    )
-        await db.commit()
+            await db.commit()
+            logger.info("open library pass: tried=%s filled=%s missed=%s",
+                        len(ol_books), ol_filled, ol_missed)
 
-    logger.info("cover backfill done: processed=%s filled=%s missed=%s", processed, filled, missed)
-    return {"processed": processed, "filled": filled, "missed": missed, "total": total}
+    logger.info("cover backfill done: processed=%s filled=%s missed=%s",
+                processed, filled, ol_missed)
+    return {
+        "processed": processed,
+        "filled": filled,
+        "missed": ol_missed,
+        "gutenberg_filled": g_filled,
+        "gutenberg_miss": g_miss,
+        "gutenberg_transient": g_transient,
+        "ol_filled": ol_filled,
+        "total": processed,
+    }
 
 
 def run_backfill(limit: int = 2000, delay: float = 0.22) -> dict:

@@ -22,6 +22,7 @@ from ..models.book import Book, BookStatus
 from ..services.license_verifier import license_verifier, LicenseStatus
 from ..sources import source_registry
 from ..sources.base import BookMetadata
+from ..sources.gutenberg import gutenberg_cache_cover
 from ..sources.african_ebooks import (
     AFRICAN_LITERATURE_TAG,
     AFRICAN_CONTINENT_TAG,
@@ -179,7 +180,9 @@ async def _ingest_chunk(
                     "license_verified": approved,
                     "isbn": metadata.isbn,
                     "page_count": metadata.page_count,
-                    "cover_path": metadata.cover_url,
+                    "cover_path": metadata.cover_url or gutenberg_cache_cover(
+                        source_name, str(metadata.source_id or "")
+                    ),
                     "epub_path": metadata.epub_url,
                     "pdf_path": metadata.pdf_url,
                 }

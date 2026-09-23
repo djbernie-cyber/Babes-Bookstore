@@ -61,17 +61,27 @@
 
 /* ── Theme switcher (floating) ─────────────────────────────────────── */
 .babes-theme-switcher{ position:fixed; right:18px; bottom:18px; z-index:9998;
-  display:flex; gap:4px; padding:4px; border-radius:999px;
-  background:rgba(11,11,12,.9); border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 6px 24px rgba(0,0,0,.25); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px) }
-[data-theme="dark"] .babes-theme-switcher{ background:rgba(244,240,232,.92); border-color:rgba(0,0,0,.14) }
-.babes-theme-switcher button{ min-width:38px; height:34px; border:0; border-radius:999px;
-  font-family:Inter,system-ui,sans-serif; font-size:12px; font-weight:600; cursor:pointer;
-  color:#e7e5e4; background:transparent; transition:background .15s }
-.babes-theme-switcher button:hover{ background:rgba(255,255,255,.12) }
-.babes-theme-switcher button.active{ background:#fff; color:#0b0b0c }
-[data-theme="dark"] .babes-theme-switcher button:hover{ background:rgba(0,0,0,.08) }
-[data-theme="dark"] .babes-theme-switcher button.active{ background:#0b0b0c; color:#fff }
-.babes-theme-switcher b{ display:flex; align-items:center; padding:0 6px 0 4px;
-  font-family:Inter,system-ui,sans-serif; font-size:11px; font-weight:600; letter-spacing:.06em;
-  text-transform:uppercase; color:#a8a29e }
+  display:flex; align-items:center; gap:3px; padding:5px 6px; border-radius:999px;
+  background:rgba(11,11,12,.92); border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 8px 28px rgba(0,0,0,.28); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px) }
+.babes-theme-label{ padding:0 8px 0 6px; font-family:Inter,system-ui,sans-serif; font-size:10px;
+  font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#a8a29e; user-select:none }
+.babes-theme-switcher button{ display:flex; align-items:center; gap:6px; min-width:52px; height:32px;
+  padding:0 12px; border:0; border-radius:999px; font-family:Inter,system-ui,sans-serif; font-size:12px;
+  font-weight:600; color:#e7e5e4; background:transparent; cursor:pointer;
+  transition:background .15s, color .15s, transform .1s }
+.babes-theme-switcher button svg{ width:14px; height:14px; flex:none }
+.babes-theme-switcher button:hover{ background:rgba(255,255,255,.14) }
+.babes-theme-switcher button:active{ transform:scale(.96) }
+.babes-theme-switcher button.active{ background:#fff; color:#0b0b0c; box-shadow:0 1px 6px rgba(0,0,0,.25) }
+.babes-theme-switcher button:focus-visible{ outline:2px solid #e0b468; outline-offset:2px }
+
+@media (max-width:520px){
+  .babes-theme-switcher{ right:12px; bottom:12px }
+  .babes-theme-label{ display:none }
+  .babes-theme-switcher button{ min-width:38px; padding:0 10px }
+  .babes-theme-switcher button span{ display:none }
+}
+@media (prefers-reduced-motion: reduce){
+  .babes-theme-switcher button{ transition:none }
+}

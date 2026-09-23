@@ -76,3 +76,33 @@ def test_is_suppressed_book_purges_stale_canon_junk():
     assert keep("Patton", "gutenberg", "10989") is False
     # Unknown author, non-suppressed source — never tagged.
     assert keep("Jane Austen", "african_ebooks", "12") is False
+
+def test_gutenberg_cache_cover_derivation():
+    """Gutendex omits image/jpeg for many books even though Gutenberg serves a
+    cover at the standard cache path — the helper must build that URL, and
+    never for non-Gutenberg sources or non-numeric ids (OpenStax numeric ids
+    would resolve to unrelated Gutenberg books)."""
+    from app.sources.gutenberg import (
+        GUTENBERG_ID_SOURCES,
+        gutenberg_cache_cover,
+    )
+
+    assert gutenberg_cache_cover("military", "132") == (
+        "https://www.gutenberg.org/cache/epub/132/pg132.cover.medium.jpg"
+    )
+    assert gutenberg_cache_cover("suppressed", "46333")
+    assert gutenberg_cache_cover("african_ebooks", "12")
+    assert gutenberg_cache_cover("gutenberg", "1")
+
+    # Non-Gutenberg sources → None, even with a numeric id.
+    assert gutenberg_cache_cover("openstax", "14") is None
+    assert gutenberg_cache_cover("wikibooks", "123") is None
+    assert gutenberg_cache_cover("internet_archive", "42") is None
+
+    # Non-numeric ids → None.
+    assert gutenberg_cache_cover("military", "Nothing-Else-But-A-Number") is None
+    assert gutenberg_cache_cover("military", "") is None
+    assert gutenberg_cache_cover("military", None) is None
+
+    # Discipline list matches what ingest/backfill rely on.
+    assert GUTENBERG_ID_SOURCES == {"gutenberg", "military", "african_ebooks", "suppressed"}

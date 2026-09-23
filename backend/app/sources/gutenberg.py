@@ -17,6 +17,29 @@ logger = logging.getLogger(__name__)
 
 LICENSE_URL = "https://www.gutenberg.org/policy/license.html"
 
+#: Sources whose ``source_id`` is a Project Gutenberg ebook id (so a cover can
+#: be built deterministically even when Gutendex omits ``image/jpeg`` — it
+#: does that whenever it has no cached cover, while Gutenberg itself still
+#: serves one at the standard cache path).
+GUTENBERG_ID_SOURCES = {"gutenberg", "military", "african_ebooks", "suppressed"}
+
+GUTENBERG_COVER_TMPL = "https://www.gutenberg.org/cache/epub/{0}/pg{0}.cover.medium.jpg"
+
+
+def gutenberg_cache_cover(source: str, source_id: Optional[str]) -> Optional[str]:
+    """Return the standard Gutenberg cover URL for a Gutenberg-sourced book.
+
+    Returns ``None`` for non-Gutenberg sources or a non-numeric id so callers
+    never derive a URL that would resolve to an unrelated book (e.g. an
+    OpenStax numeric id).
+    """
+    if source not in GUTENBERG_ID_SOURCES:
+        return None
+    sid = (source_id or "").strip()
+    if not sid.isdigit():
+        return None
+    return GUTENBERG_COVER_TMPL.format(sid)
+
 
 class GutenbergSource(BaseSource):
     """Project Gutenberg — ~79,000 public domain ebooks."""
