@@ -1,5 +1,6 @@
 import os
 import io
+import re
 import zipfile
 import logging
 from typing import List, Optional, Tuple
@@ -27,6 +28,9 @@ def _html_to_plain(raw: bytes, cap: int = 1_500_000) -> Optional[str]:
         text = html
     lines = [ln.strip() for ln in text.splitlines()]
     return "\n\n".join(ln for ln in lines if ln).strip()
+
+
+GUTENBERG_URL_RE = re.compile(r"gutenberg\.org/(?:ebooks|files|cache/epub)/(\d+)")
 
 
 class PackagingService:
@@ -62,6 +66,24 @@ class PackagingService:
                 logger.warning("Remote fetch %s -> %s", url, resp.status_code)
         except Exception as e:
             logger.warning("Remote fetch failed %s: %s", url, e)
+        return None
+
+    def _gutenberg_gid(self, book: Book) -> Optional[str]:
+        """A numeric Project Gutenberg id whenever this book has one.
+
+        Works for the canonical ``gutenberg`` source and also for books
+        harvested under sibling source buckets (``suppressed``, ``military``,
+        banned canon, …) whose records still carry ``gutenberg.org`` URLs or
+        numeric ids — so their downloads and reader text stay reachable.
+        """
+        if book.source == "gutenberg" and book.source_id and book.source_id.isdigit():
+            return book.source_id
+        url = book.source_url or ""
+        match = GUTENBERG_URL_RE.search(url)
+        if match:
+            return match.group(1)
+        if book.source_id and book.source_id.isdigit() and "gutenberg.org" in url:
+            return book.source_id
         return None
 
     def _try_local_r2(self, key: str) -> Optional[bytes]:
@@ -119,9 +141,9 @@ class PackagingService:
                 candidates.append((text_url, "txt"))
         except Exception:
             pass
-        # Gutenberg fallback URLs based on source_id
-        if book.source == "gutenberg" and book.source_id and book.source_id.isdigit():
-            gid = book.source_id
+        # Gutenberg fallback URLs based on a resolvable Gutenberg id
+        gid = self._gutenberg_gid(book)
+        if gid:
             candidates.append((f"https://www.gutenberg.org/ebooks/{gid}.txt.utf-8", "txt"))
             candidates.append((f"https://www.gutenberg.org/cache/epub/{gid}/pg{gid}.txt", "txt"))
             candidates.append((f"https://www.gutenberg.org/files/{gid}/{gid}-0.txt", "txt"))
@@ -185,8 +207,8 @@ class PackagingService:
             pass
 
         # 3. Gutenberg plain-text mirrors
-        if book.source == "gutenberg" and source_id.isdigit():
-            gid = source_id
+        gid = self._gutenberg_gid(book)
+        if gid:
             url = f"https://www.gutenberg.org/ebooks/{gid}.txt.utf-8"
 
         if url:
