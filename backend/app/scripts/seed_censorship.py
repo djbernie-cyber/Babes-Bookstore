@@ -257,9 +257,6 @@ def resolve(spec: dict, by_title: dict[str, Book]) -> Book | None:
                 if author_ok(book, spec):
                     candidates.append((abs(len(key) - len(k)), len(key), book))
                 break
-        else:
-            continue
-        break
     if not candidates:
         return None
     candidates.sort(key=lambda t: (t[0], t[1]))
