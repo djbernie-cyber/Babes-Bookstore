@@ -24,14 +24,16 @@ var CATEGORY_DESCS = {
   'drama': 'Plays and dramatic works from Sophocles to Shaw.',
   'non-fiction': 'Essays, science, travel writing and general non-fiction from the public domain.',
   'revolutionary': 'Writers banned, imprisoned, exiled or killed by their own states — Marx, Luxemburg, McKay, Goldman, Fanon, Sankara and the political canon that official systems declared dangerous. Each work is public-domain or openly licensed.',
-  'socialist-theory': 'The founding texts of socialism, communism, anarchism and the labour movement — Marx and Engels, Lenin and Trotsky, Kropotkin and Goldman, Debs and Luxemburg — in public-domain editions, author-verified.'
+  'socialist-theory': 'The founding texts of socialism, communism, anarchism and the labour movement — Marx and Engels, Lenin and Trotsky, Kropotkin and Goldman, Debs and Luxemburg — in public-domain editions, author-verified.',
+  'military-library': 'Campaigns, strategy and the art of war — Sun Tzu, Clausewitz, Caesar and the whole public-domain military canon, author-verified.'
 };
 
 //: Categories backed by a book *tag* (the ``category`` column is a subject
 //: shelf; the political shelves live in tags).
 var TAG_CATS = {
   'revolutionary': 'Revolutionary',
-  'socialist-theory': 'Socialist Theory'
+  'socialist-theory': 'Socialist Theory',
+  'military-library': 'Military Library'
 };
 
 function descFor(slug) {
