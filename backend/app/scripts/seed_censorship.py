@@ -63,7 +63,7 @@ RECORDS = [
                     "obscenity rulings relaxed enforcement.",
          notes="Customs seizure lists repeatedly included it."),
     # ── One Thousand and One Nights ──────────────────────────────────────
-    dict(match=["arabian nights", "thousand and one nights"], author="",
+    dict(match=["the arabian nights entertainments", "thousand and one nights"], author="",
          country_code="EG", country_name="Egypt", status=CensorshipStatus.CONTESTED,
          banned_since="modern era",
          ban_reason="Full, unexpurgated editions of the Nights have periodically been "
@@ -255,12 +255,15 @@ def resolve(spec: dict, by_title: dict[str, Book]) -> Book | None:
         for k in keys:
             if k in key or key in k:
                 if author_ok(book, spec):
-                    candidates.append((abs(len(key) - len(k)), len(key), book))
+                    lang = norm(book.language or "")
+                    lang_rank = 1 if lang and not lang.startswith("en") else 0
+                    candidates.append((lang_rank, abs(len(key) - len(k)), len(key), book))
                 break
     if not candidates:
         return None
-    candidates.sort(key=lambda t: (t[0], t[1]))
-    return candidates[0][2]
+    # English first, then title length closest to the spec key
+    candidates.sort(key=lambda t: (t[0], t[1], t[2]))
+    return candidates[0][3]
 
 
 async def main():
