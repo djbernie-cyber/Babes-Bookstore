@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, "/app")
 
-from sqlalchemy import select
+from sqlalchemy import select, delete as sa_delete
 
 from app.database import AsyncSessionLocal
 from app.models.book import Book, BookStatus
@@ -63,7 +63,7 @@ RECORDS = [
                     "obscenity rulings relaxed enforcement.",
          notes="Customs seizure lists repeatedly included it."),
     # ── One Thousand and One Nights ──────────────────────────────────────
-    dict(match=["arabian nights", "thousand and one nights", "nights"], author="",
+    dict(match=["arabian nights", "thousand and one nights"], author="",
          country_code="EG", country_name="Egypt", status=CensorshipStatus.CONTESTED,
          banned_since="modern era",
          ban_reason="Full, unexpurgated editions of the Nights have periodically been "
@@ -218,8 +218,64 @@ def norm(s: str) -> str:
     return re.sub(r"[^a-z0-9 ]+", " ", (s or "").lower())
 
 
+def author_tokens(spec: dict) -> list[str]:
+    """Distinctive tokens from the spec author field, e.g. 'Joyce, James' -> ['joyce','james']."""
+    raw = spec.get("author") or ""
+    tokens = []
+    for part in re.split(r"[|,/&()]+", raw):
+        part = norm(part).strip()
+        if part and part not in ("unknown", "anonymous", "?") and part not in tokens:
+            tokens.append(part)
+    return tokens
+
+
+def author_ok(book: Book, spec: dict) -> bool:
+    """Author disambiguation: the catalogue title may differ (translations,
+    subtitles), so require the author to agree unless the spec is anonymous —
+    in which case only a long, unambiguous title key is trusted."""
+    tokens = author_tokens(spec)
+    if not tokens:
+        longest = max((len(norm(m)) for m in spec["match"] if norm(m)), default=0)
+        return longest >= 18
+    author = norm(book.author or "")
+    return any(t in author for t in tokens)
+
+
+def resolve(spec: dict, by_title: dict[str, Book]) -> Book | None:
+    """Author-aware title resolution, preferring exact-length titles."""
+    keys = [norm(m) for m in spec["match"] if norm(m)]
+    if not keys:
+        return None
+    direct = next((by_title[k] for k in keys if k in by_title), None)
+    if direct and author_ok(direct, spec):
+        return direct
+
+    candidates = []
+    for key, book in by_title.items():
+        for k in keys:
+            if k in key or key in k:
+                if author_ok(book, spec):
+                    candidates.append((abs(len(key) - len(k)), len(key), book))
+                break
+        else:
+            continue
+        break
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: (t[0], t[1]))
+    return candidates[0][2]
+
+
 async def main():
     async with AsyncSessionLocal() as db:
+        # Seed rows are curated by script; purge and re-seed so matching fixes
+        # take effect. Admin-verified / user-flagged records are untouched.
+        purge = await db.execute(
+            sa_delete(CensorshipRecord).where(CensorshipRecord.verified_by == "seed")
+        )
+        await db.commit()
+        print(f"purged {purge.rowcount} previous seed rows")
+
         rows = (await db.execute(
             select(Book).where(Book.status == BookStatus.APPROVED)
         )).scalars().all()
@@ -234,16 +290,10 @@ async def main():
 
         created = skipped = 0
         for spec in RECORDS:
-            n = norm(spec["match"][0])
-            book = by_title.get(n)
+            book = resolve(spec, by_title)
             if not book:
-                keys = [norm(m) for m in spec["match"] if m]
-                book = next(
-                    (b for key, b in by_title.items() if any(k and (k in key or key in k) for k in keys)),
-                    None,
-                )
-            if not book:
-                print(f"skip (not in catalogue): {spec['country_code']} {spec['match'][0]}{' — '+spec['author'] if spec['author'] else ''}")
+                print(f"skip (not in catalogue): {spec['country_code']} {spec['match'][0]}"
+                      f"{' — '+spec['author'] if spec.get('author') else ''}")
                 skipped += 1
                 continue
 
