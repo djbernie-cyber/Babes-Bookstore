@@ -3,27 +3,37 @@
 Living document. Anything "pending" in the RFCs lands here as a checklist.
 Ordered roughly by next-action value, not written order.
 
-## Deploy / ops (do first)
+## Deploy / ops
 
-- [ ] **Roll the worker machine** to the current image so `covers.backfill`
-      (and any new Celery task registration) is live:
-      `flyctl machines update 2873535a967e08 -a babes-bookstore -i registry.fly.io/babes-bookstore:deployment-01M377T7108R3R5PZ21JH68MPT --restart always --yes`
-      (use `FLY_API_TOKEN` from `~/.fly/config.yml`; deploy from repo root).
-- [ ] Verify app machine + migrations post-deploy; trigger a covers backfill
-      and confirm the Military Library has 23/23 covers.
-- [ ] Run seeders on prod (upload via `fly ssh console`):
-      `/tmp/add_richest.py` → `seed_premium_bundles.py` → `seed_censorship.py`.
-      Verify: foie gras bundle ~1000 books, Presidents bundle live, Richest Man
-      + classics in the showcase, `/api/v1/banned/countries` populated.
-- [ ] Deploy the censorship backend (migration `c1d2e3f4a5b6` + `/banned`
-      routes) to app and worker; confirm the Illegal Books Catalog renders live.
+- [x] Worker rolled to the current image so `covers.backfill` and new Celery
+      task registrations are live (`flyctl machines update 2873535a967e08 …`).
+- [x] Seeders run on prod and verified: foie gras (~2700), Presidents (~5600),
+      Richest Man id 87437, censorship 23 records (author-aware matcher,
+      English-edition preference; all canonical picks verified on prod).
+- [x] Censorship backend + `/banned` routes deployed; Illegal Books Catalog
+      and Banned Works reference render live.
+- [x] Banned Works reference list wired into the catalogue: Ibsen, Hardy,
+      More, Shelley, Bierce, Gibran added to the banned-author sweep; the
+      reference PD titles (Ghosts, Jude the Obscure, Utopia, Devil's
+      Dictionary, The Prophet, Justine, …) tagged/ingested via
+      `POST /api/v1/admin/scrape/suppressed-full`.
+- [x] SECRET_KEY set via `fly secrets set` (base secret moved off the
+      placeholder; config refuses the placeholder in non-DEBUG).
+- [x] `get_current_user` now raises 401 (added `get_optional_user` for the
+      anonymous-tolerant readers); bulk approve / approve-all gated on
+      `license_verified`.
 
 ## Product build pending
 
-- [ ] Admin dashboard pages: `/admin` overview linking users, themes,
-      censorship review (`/admin/banned-records`), site-config editor.
+- [x] Personalized home feed: `GET /api/v1/home/feed` (Continue reading,
+      Picked for you from the reader's own shelves/progress/reviews, curated
+      tag rows, seasonal band) + Netflix-style rows on `index.html`.
+- [x] Admin banned-records review queue (`/admin/banned-records`).
+- [x] `account/reset.html` fixed (CSP: inline script extracted to
+      `/js/reset.js`; correct token storage + redirect).
 - [ ] Theme generator UI in the account area (RFC-003).
-- [ ] Seasonal / Author-birthday homepage modules wired through `/themes/active`.
+- [ ] Seasonal / Author-birthday homepage modules wired through `/themes/active`
+      (feed already surfaces the site-config `seasonal` band when set).
 - [ ] Illegal Books: per-book "classified" page (all records for one book),
       and a `?uncensored=1` deep-link so OCR/ad-fragments can cite a banner
       without a separate page.
@@ -32,10 +42,11 @@ Ordered roughly by next-action value, not written order.
 
 ## Ergonomics (account / library)
 
-- [ ] Fix `frontend/account/reset.html` (broken password reset flow).
 - [ ] Empty-states for `my-library` / purchases / wishlist.
 - [ ] `my-library.js`: move rename/delete/empty-shelf into the shelf header
       dropdown; expose progress resume tiles ("Continue reading").
+- [ ] Admin dashboard: overview links already cover books/bundles/purchases/
+      banned-records; add users + themes + site-config editors.
 
 ## Bundles & shelves
 
@@ -46,11 +57,11 @@ Ordered roughly by next-action value, not written order.
 
 ## Audit (security P1s)
 
-- [ ] JWT: move off default `SECRET_KEY` (`config.py:18-20`) to env at deploy.
-- [ ] `get_current_user` should 401 — today it returns `None` and callers
-      decide (`deps.py:26-43`).
-- [ ] Mass-approve endpoints bypass licence checks (`admin.py:454-461,
-      475-495`) — gate on `license_verified` before `approve-all`.
+- [x] JWT: base secret moved off the default (`config.py`) to the `fly
+      secrets`-provided `SECRET_KEY`.
+- [x] `get_current_user` now 401s; `get_optional_user` used where anonymous
+      access is intentional.
+- [x] Mass-approve endpoints gate on `license_verified` before approval.
 
 ## Docs
 

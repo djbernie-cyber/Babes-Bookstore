@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from typing import Optional
 from functools import lru_cache
 
@@ -18,6 +19,21 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production-please-use-openssl-rand-hex-32"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+
+    @model_validator(mode="after")
+    def _guard_secret_key(self):
+        # The default is a placeholder. Prod must supply a real secret via
+        # the SECRET_KEY environment variable (set with `fly secrets set`).
+        if (
+            not self.DEBUG
+            and "SECRET_KEY" not in self.model_fields_set
+        ):
+            raise ValueError(
+                "SECRET_KEY must be set to a real value in production "
+                "(generate one with `openssl rand -hex 32` and deploy it "
+                "via `fly secrets set SECRET_KEY=...`)"
+            )
+        return self
 
     # Standard pricing (£10 GBP)
     STANDARD_PRICE_PENCE: int = 1000

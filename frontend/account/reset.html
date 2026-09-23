@@ -47,41 +47,6 @@
 </main>
 
 <script src="/js/api.js"></script>
-<script>
-var token = new URLSearchParams(location.search).get('token');
-window.addEventListener('DOMContentLoaded', function () {
-  if (token) resetView();
-  document.getElementById('forgot-form').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var msg = document.getElementById('forgot-msg');
-    msg.classList.remove('hidden'); msg.textContent = 'Sending…';
-    try {
-      var r = await fetch('/api/v1/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value }) });
-      if (!r.ok) throw new Error(r.status);
-      document.getElementById('email-view').innerHTML = '<h1 class="font-serif text-3xl font-bold tracking-[-.02em]">Check your inbox</h1><p class="text-sm text-stone-600 mt-2 leading-6">If that address has an account, a reset link is on its way. The link expires in 30 minutes.</p><a href="/login" class="inline-block mt-6 text-sm font-medium underline">Back to login</a>';
-    } catch (err) {
-      msg.textContent = 'Something went wrong sending that. Please try again.';
-    }
-  });
-  document.getElementById('reset-form').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var msg = document.getElementById('reset-msg');
-    msg.classList.remove('hidden'); msg.textContent = 'Saving…';
-    try {
-      var r = await fetch('/api/v1/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token, password: document.getElementById('pw').value }) });
-      if (!r.ok) throw new Error(r.status);
-      var d = await r.json();
-      localStorage.setItem('bb_token', d.access_token);
-      location.href = '/account/library';
-    } catch (err) {
-      msg.textContent = 'That link is invalid or has expired. Please request a new one.';
-    }
-  });
-});
-function resetView() {
-  document.getElementById('email-view').classList.add('hidden');
-  document.getElementById('reset-view').classList.remove('hidden');
-}
-</script>
+<script src="/js/reset.js"></script>
 </body>
 </html>

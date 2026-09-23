@@ -497,24 +497,29 @@ async def bulk_book_action(
         await db.commit()
     else:
         target = BookStatus.APPROVED if req.action == "approve" else BookStatus.REJECTED
-        for bid in req.book_ids:
-            book = await db.get(Book, bid)
-            if book:
-                book.status = target
-                if req.action == "approve":
-                    book.license_verified = True
-                count += 1
-        await db.commit()
+        skipped = 0
+    for bid in req.book_ids:
+        book = await db.get(Book, bid)
+        if not book:
+            continue
+        if req.action == "approve" and not book.license_verified:
+            # Licensing is the whole point of this library: a book whose
+            # licence was never verified does not go on the shelf.
+            skipped += 1
+            continue
+        book.status = target
+        count += 1
+    await db.commit()
 
     await log_action(
         db,
         action=f"book.bulk_{req.action}",
         entity_type="book",
         user_id=admin.id,
-        details={"book_ids": req.book_ids, "affected": count},
+        details={"book_ids": req.book_ids, "affected": count, "skipped": skipped},
     )
     await db.commit()
-    return {"affected": count, "action": req.action}
+    return {"affected": count, "action": req.action, "skipped_unverified": skipped}
 
 
 @router.post("/books/approve-all")
@@ -522,22 +527,31 @@ async def approve_all_pending_books(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    """Approve every pending book in a single pass."""
+    """Approve every licence-verified pending book in a single pass.
+
+    Unverified books are left pending — approval without a verified licence
+    is exactly the failure mode this library refuses to repeat.
+    """
     result = await db.execute(
         update(Book)
-        .where(Book.status == BookStatus.PENDING)
-        .values(status=BookStatus.APPROVED, license_verified=True)
+        .where(Book.status == BookStatus.PENDING, Book.license_verified == True)
+        .values(status=BookStatus.APPROVED)
     )
     count = result.rowcount or 0
+    still_pending = (await db.execute(
+        select(func.count()).select_from(Book).where(
+            Book.status == BookStatus.PENDING
+        )
+    )).scalar() or 0
     await log_action(
         db,
         action="book.approve_all",
         entity_type="book",
         user_id=admin.id,
-        details={"affected": count},
+        details={"affected": count, "still_pending": still_pending},
     )
     await db.commit()
-    return {"affected": count, "action": "approve"}
+    return {"affected": count, "still_pending_unverified": still_pending, "action": "approve"}
 
 
 @router.get("/bundles/{bundle_id}/books", response_model=None)

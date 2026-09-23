@@ -23,9 +23,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db),
+async def _resolve_user(
+    token: Optional[str],
+    db: AsyncSession,
 ) -> Optional[User]:
     if not token:
         return None
@@ -40,6 +40,37 @@ async def get_current_user(
     user = await db.get(User, int(user_id))
     if not user or not user.is_active:
         return None
+    return user
+
+
+async def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """The current user when signed in, ``None`` otherwise.
+
+    Use this for endpoints that work for anonymous readers and add
+    personalised touches only when a user is present.
+    """
+    return await _resolve_user(token, db)
+
+
+async def get_current_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """The signed-in user, or an explicit 401.
+
+    Endpoints that must be authenticated depend on this; they never see a
+    ``None`` user and never have to guess what 'missing login' means.
+    """
+    user = await _resolve_user(token, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 

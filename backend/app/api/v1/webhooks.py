@@ -9,7 +9,7 @@ from typing import Optional
 import stripe
 import httpx
 
-from .deps import get_db, get_current_user, require_admin
+from .deps import get_db, get_current_user, get_optional_user, require_admin
 from ...models.bundle import Bundle
 from ...models.purchase import Purchase, PurchaseStatus, PaymentProvider
 from ...models.refund import Refund, RefundStatus
@@ -116,7 +116,7 @@ async def get_checkout_config():
 async def create_stripe_checkout(
     req: CheckoutRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
@@ -208,7 +208,7 @@ async def _get_paypal_access_token() -> str:
 async def create_paypal_checkout(
     req: CheckoutRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
@@ -283,7 +283,7 @@ async def create_paypal_checkout(
 async def create_square_checkout(
     req: CheckoutRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     bundle = await _resolve_bundle(req, db)
     _s, _c = _urls(req)
@@ -376,7 +376,7 @@ async def create_square_checkout(
 async def create_apple_pay_session(
     req: CheckoutRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Apple Pay is handled client-side via Stripe. Return payment intent."""
     bundle = await _resolve_bundle(req, db)
@@ -433,7 +433,7 @@ async def create_apple_pay_session(
 async def create_google_pay_session(
     req: CheckoutRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Google Pay is handled client-side via Stripe. Return payment intent."""
     bundle = await _resolve_bundle(req, db)
@@ -600,7 +600,7 @@ async def _mpesa_access_token() -> str:
 async def create_mpesa_checkout(
     req: CheckoutRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Initiate M-Pesa STK push — funds settle to your Daraja shortcode.
 

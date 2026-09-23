@@ -4,12 +4,14 @@ The wishlist is modelled as a user's default shelf, so existing clients keep
 working while users gain multiple named shelves and per-book reading progress.
 All endpoints live under /api/v1/library and require a logged-in user.
 """
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete as sa_delete, or_
 
-from .deps import get_db, get_current_user
+from .deps import get_db, get_current_user, get_optional_user
 from ...models.book import Book, BookStatus
 from ...models.bundle import Bundle
 from ...models.user import User
@@ -304,7 +306,7 @@ async def save_progress(
 async def get_progress(
     book_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Return the current user's reading progress for a book."""
     if not current_user:
@@ -365,7 +367,7 @@ async def continue_reading(
 @router.get("/prefs")
 async def get_prefs(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Return the user's saved theme / reader preferences."""
     if not current_user:

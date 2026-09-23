@@ -7,7 +7,7 @@ from typing import Optional, List
 from fastapi import status
 import re
 
-from .deps import get_db, get_current_user, require_admin
+from .deps import get_db, get_optional_user, require_admin
 from ...models.bundle import Bundle, BundleBook
 from ...models.book import Book, BookStatus
 from ...models.user import User
@@ -116,7 +116,7 @@ def _slugify(value: str) -> str:
 async def create_custom_bundle(
     bundle_in: BundleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """Create a user-curated custom bundle (no admin required).
 

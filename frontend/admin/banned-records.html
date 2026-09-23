@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Banned records — Admin · Babe's Bookstore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/site.css">
+    <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="bg-stone-50 font-sans text-stone-800 min-h-screen flex flex-col">
+    <nav class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-serif text-2xl font-bold text-amber-700">Babe's Bookstore</a>
+                    <div class="hidden md:flex ml-10 space-x-8">
+                        <a href="/admin" class="text-stone-700 hover:text-amber-700 font-medium">Dashboard</a>
+                        <a href="/admin/books" class="text-stone-700 hover:text-amber-700 font-medium">Books</a>
+                        <a href="/admin/bundles" class="text-stone-700 hover:text-amber-700 font-medium">Bundles</a>
+                        <a href="/admin/purchases" class="text-stone-700 hover:text-amber-700 font-medium">Purchases</a>
+                        <a href="/admin/banned-records" class="text-amber-700 font-medium">Banned records</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/account" class="text-sm text-stone-700 hover:text-amber-700">Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="access-denied" class="hidden text-center py-20">
+            <h1 class="font-serif text-4xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p class="text-stone-600 mb-6">Super-admin access is required for censorship review.</p>
+            <a href="/" class="inline-block bg-amber-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-amber-800 transition">Go Home</a>
+        </div>
+
+        <div id="admin-content" class="hidden">
+            <div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="font-serif text-3xl font-bold text-stone-900">Banned records review</h1>
+                    <p class="text-stone-600 mt-1">Reader-flagged censorship submissions awaiting verification, plus the verified canon.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-stone-600 font-medium">Only pending</label>
+                    <input id="pending-only" type="checkbox" checked class="h-4 w-4 rounded">
+                </div>
+            </div>
+
+            <div id="records-loading" class="bg-white rounded-xl border border-stone-200 p-10 text-center text-stone-500">Loading…</div>
+            <div id="records-empty" class="hidden bg-white rounded-xl border border-stone-200 p-10 text-center">
+                <p class="font-serif text-xl text-stone-700">Nothing here yet.</p>
+                <p class="text-stone-500 text-sm mt-1">Reader flags will appear in this queue.</p>
+            </div>
+            <div id="records-table-wrap" class="hidden bg-white rounded-xl border border-stone-200 overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-stone-100 text-stone-600 text-left">
+                        <tr>
+                            <th class="px-5 py-3 font-medium">Book</th>
+                            <th class="px-5 py-3 font-medium">Country</th>
+                            <th class="px-5 py-3 font-medium">Status</th>
+                            <th class="px-5 py-3 font-medium">Proposed reason</th>
+                            <th class="px-5 py-3 font-medium">Proposed by</th>
+                            <th class="px-5 py-3 font-medium">Source</th>
+                            <th class="px-5 py-3 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/admin-banned-records.js"></script>
+</body>
+</html>

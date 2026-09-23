@@ -7,7 +7,7 @@ import re
 
 from ...sources.african_ebooks import AFRICAN_CONTINENT_TAG
 
-from .deps import get_db, require_admin, get_current_user
+from .deps import get_db, require_admin, get_current_user, get_optional_user
 from ...models.book import Book, BookStatus
 from ...schemas.book import BookResponse, BookListResponse, BookUpdate
 from ...models.user import User
@@ -29,7 +29,7 @@ async def list_books(
     status_filter: Optional[BookStatus] = Query(None, alias="status"),
     search: Optional[str] = None,
     approved_only: bool = True,
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """List books.
 
