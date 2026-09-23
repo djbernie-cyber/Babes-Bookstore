@@ -8,6 +8,7 @@ from .review import Review
 from .wishlist import WishlistItem
 from .library import Shelf, ShelfItem, ReadingProgress
 from .seasonal_theme import SeasonalTheme, SiteConfig
+from .censorship import CensorshipRecord
 
 __all__ = [
     "Book",
@@ -24,4 +25,5 @@ __all__ = [
     "ReadingProgress",
     "SeasonalTheme",
     "SiteConfig",
+    "CensorshipRecord",
 ]

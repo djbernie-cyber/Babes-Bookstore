@@ -12,6 +12,7 @@ from .reviews import router as reviews_router
 from .wishlist import router as wishlist_router
 from .library import router as library_router
 from .themes import router as themes_router
+from .censorship import router as censorship_router, admin_router as censorship_admin_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -28,3 +29,5 @@ api_router.include_router(reviews_router)
 api_router.include_router(wishlist_router)
 api_router.include_router(library_router)
 api_router.include_router(themes_router)
+api_router.include_router(censorship_router)
+api_router.include_router(censorship_admin_router)

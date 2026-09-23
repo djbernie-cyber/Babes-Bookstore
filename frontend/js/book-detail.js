@@ -146,6 +146,89 @@ async function _deleteReview() {
   else { msg.textContent = 'No review to delete.'; msg.className = 'text-sm mt-2 text-stone-500'; }
 }
 
+/* ── Shelves (add to a personal shelf) ──────────────────────────────── */
+let _shelves = [];
+let _inShelves = [];
+
+async function loadShelves() {
+  const card = document.getElementById('shelf-card'); if (!card) return;
+  card.classList.remove('hidden');
+  if (!token) {
+    card.innerHTML = '<p class="text-xs font-semibold uppercase tracking-wide text-[#8a8683]">Shelves</p><p class="text-sm text-[#57534e] mt-1"><a href="/login" class="underline">Log in</a> to keep this book on your shelves.</p>';
+    return;
+  }
+  try {
+    const shelvesRes = await fetch(`/api/v1/library`, { headers: authHeaders() });
+    if (!shelvesRes.ok) return;
+    const data = await shelvesRes.json();
+    _shelves = data.items || [];
+  } catch (e) { }
+  await _refreshShelfCard();
+}
+
+async function _refreshShelfCard(keepMsg) {
+  const card = document.getElementById('shelf-card'); if (!card) return;
+  const ids = new Set();
+  try {
+    const results = await Promise.all(_shelves.map(s =>
+      fetch(`/api/v1/library/${s.id}/books?page_size=100`, { headers: authHeaders() }).then(r => r.ok ? r.json() : null)
+    ));
+    _inShelves = results.filter(Boolean).filter(r => (r.items || []).some(b => String(b.id) === BID)).map(r => r.id);
+  } catch (e) { _inShelves = []; }
+
+  const options = _shelves.map(s =>
+    `<option value="${s.id}">${esc(s.name)}${s.book_count ? ` (${s.book_count})` : ''}</option>`).join('');
+  card.innerHTML = `
+    <p class="text-xs font-semibold uppercase tracking-wide text-[#8a8683]">Shelves</p>
+    <div class="flex gap-2 mt-2">
+      <select id="shelf-pick" class="flex-1 px-3 py-2 rounded-xl border bg-white text-sm min-w-0">${options}</select>
+      <button id="shelf-add" class="shrink-0 px-4 py-2 rounded-xl bg-[#0b0b0c] text-white text-sm font-semibold hover:bg-black">${_inShelves.length ? '✓ On shelf' : '+ Add'}</button>
+    </div>
+    <div class="flex items-center gap-2 mt-2">
+      <input id="shelf-new" type="text" maxlength="120" placeholder="or make a new shelf…" class="flex-1 px-3 py-2 rounded-xl border bg-white text-sm min-w-0">
+      <button id="shelf-create" class="shrink-0 px-4 py-2 rounded-xl border text-sm font-medium hover:bg-[#f6f1e7]">Create</button>
+    </div>
+    <p id="shelf-msg" class="text-xs mt-1.5 ${keepMsg ? '' : 'text-[#8a8683]'}">${keepMsg || ''}</p>`;
+
+  document.getElementById('shelf-add').addEventListener('click', _addToPickedShelf);
+  document.getElementById('shelf-create').addEventListener('click', _createAndAddShelf);
+  const newEl = document.getElementById('shelf-new');
+  if (newEl) newEl.addEventListener('keydown', e => { if (e.key === 'Enter') _createAndAddShelf(); });
+}
+
+async function _addToPickedShelf() {
+  const pick = document.getElementById('shelf-pick');
+  const msg = document.getElementById('shelf-msg');
+  const shelfId = pick && pick.value;
+  if (!shelfId) return;
+  const r = await fetch(`/api/v1/library/${shelfId}/books/${BID}`, { method: 'POST', headers: authHeaders() });
+  if (r.ok) {
+    const body = await r.json();
+    msg.textContent = body.already ? 'Already on that shelf.' : 'Saved to shelf.';
+    msg.className = 'text-xs mt-1.5 text-emerald-600';
+    _refreshShelfCard(true);
+  } else {
+    msg.textContent = 'Could not save.'; msg.className = 'text-xs mt-1.5 text-red-600';
+  }
+}
+
+async function _createAndAddShelf() {
+  const input = document.getElementById('shelf-new');
+  const msg = document.getElementById('shelf-msg');
+  const name = (input && input.value.trim()) || '';
+  if (!name) return;
+  const r = await fetch('/api/v1/library', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ name })
+  });
+  if (!r.ok) { msg.textContent = (await r.json().catch(() => ({}))).detail || 'Could not create shelf.'; msg.className = 'text-xs mt-1.5 text-red-600'; return; }
+  const shelf = await r.json();
+  const r2 = await fetch(`/api/v1/library/${shelf.id}/books/${BID}`, { method: 'POST', headers: authHeaders() });
+  if (r2.ok) { msg.textContent = 'Created shelf & saved this book.'; msg.className = 'text-xs mt-1.5 text-emerald-600'; }
+  _shelves.push(shelf);
+  _refreshShelfCard(true);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-  load(); loadWishlist(); loadReviews(); _bindReviewForm();
+  load(); loadWishlist(); loadReviews(); loadShelves(); _bindReviewForm();
 });

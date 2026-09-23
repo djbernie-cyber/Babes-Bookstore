@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>The William Majanja Illegal Books Catalog — Babe's Bookstore</title>
+  <meta name="description" content="Books the world has tried to ban — and why. Read any of them, decide for yourself. Public-domain editions only.">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/site.css">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://babes-bookstore.fly.dev https://*.fly.dev; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+  <link rel="stylesheet" href="/static/theme.css">
+  <script src="/js/theme.js"></script>
+  <link rel="preconnect" href="https://babes-bookstore.fly.dev" crossorigin>
+  <link rel="dns-prefetch" href="https://babes-bookstore.fly.dev">
+  <link rel="stylesheet" href="/static/tailwind.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body class="bg-[#161514] text-stone-200 min-h-screen flex flex-col">
+<nav class="sticky top-0 z-50 bg-[#0b0b0c] border-b border-[#1f1f1f]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <div class="flex items-center gap-8">
+        <a href="/" class="font-serif text-[1.3rem] font-semibold tracking-[-0.02em]">Babe’s Bookstore</a>
+        <div class="hidden md:flex items-center gap-6 text-[13px] uppercase tracking-wide font-medium text-stone-400">
+          <a href="/bundles" class="hover:text-white">Bundles</a>
+          <a href="/search" class="hover:text-white">Catalogue</a>
+          <a href="/banned-works" class="hover:text-white">Reference</a>
+          <a href="/illegal-books" class="text-white border-b border-red-700 pb-0.5">Illegal Books</a>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/account" class="hidden sm:inline-flex px-4 py-2 rounded-full bg-white text-[#0b0b0c] text-sm font-medium hover:bg-stone-200">Account</a>
+        <button class="md:hidden p-2 -mr-2 text-stone-400" data-action="menu-toggle" data-menu-id="m" aria-label="Menu"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <div id="m" class="hidden md:hidden border-t border-[#1f1f1f] px-4 py-3 space-y-1 text-sm">
+    <a href="/bundles" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Bundles</a>
+    <a href="/search" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Catalogue</a>
+    <a href="/banned-works" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Banned Works reference</a>
+    <a href="/account" class="block px-3 py-2.5 rounded-lg hover:bg-[#1a1a1c]">Account</a>
+  </div>
+</nav>
+
+<!-- Cookie-based disclaimer gate. Shown once per device; clears with 'reset'. -->
+<div id="gate" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+  <div class="bg-[#1c1b1a] border border-stone-700 rounded-2xl max-w-2xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+    <p class="text-[11px] tracking-[0.18em] uppercase font-semibold text-red-400">Restricted content — reader discretion</p>
+    <h1 class="font-serif text-2xl sm:text-3xl font-bold mt-2 text-stone-100">The William Majanja<br>Illegal Books Catalog</h1>
+    <p class="text-sm leading-7 text-stone-300 mt-4">This catalog documents books that have been <strong class="text-stone-100">banned, burned, restricted or contested</strong> by governments, churches, schools and other authorities — and lets you read the public-domain editions and understand <em>why</em> each one was suppressed.</p>
+    <div class="mt-4 rounded-xl border border-red-900/50 bg-red-950/30 p-4 text-sm leading-6 text-stone-300">
+      <p class="font-semibold text-red-300">Disclaimer — read before continuing</p>
+      <p class="mt-1">Babesbooks.store is a <strong class="text-stone-100">tool and an archive of information</strong>. We carry only public-domain and openly-licensed editions. You are responsible for your own actions on this site and for complying with the laws of the jurisdiction you are in. What was banned in one country may be perfectly lawful — or not — in yours. We are no one's censor and no one's lawyer.</p>
+    </div>
+    <p class="text-sm text-stone-400 mt-4 leading-6">If you are under the age of majority in your jurisdiction, or if the display of works critical in your country is itself unlawful, please use the Home link below.</p>
+    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+      <button id="gate-accept" class="flex-1 px-5 py-3 rounded-full bg-white text-[#0b0b0c] text-sm font-semibold hover:bg-stone-200">I understand — show the catalog</button>
+      <a href="/" class="px-5 py-3 rounded-full border border-stone-600 text-center text-sm font-medium hover:bg-stone-900">No thanks — back to Home</a>
+    </div>
+    <label class="mt-4 flex items-center gap-2 text-xs text-stone-400 justify-center">
+      <input type="checkbox" id="gate-remember" checked class="accent-stone-200"> Remember my choice on this device (cookie)
+    </label>
+  </div>
+</div>
+
+<main class="flex-1 w-full max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+  <a href="/" class="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-200">← Home</a>
+  <div class="mb-8">
+    <p class="text-[11px] tracking-[0.18em] uppercase font-semibold text-red-400">Censorship map · by country</p>
+    <h1 class="font-serif text-4xl sm:text-5xl font-bold tracking-[-.03em] mt-2 text-stone-100 leading-[.98]">The Illegal Books Catalog</h1>
+    <p class="text-stone-400 mt-4 leading-7 max-w-3xl">Every entry below names the work, the country that suppressed it, and the <em>reason</em> — so you can read the book and make your own decision. Nothing here is withheld. Censorship is a fact about power, not a moral judgement.</p>
+    <p class="text-xs text-stone-500 mt-3 leading-6 max-w-3xl">Liability framing: Babe's Bookstore only serves public-domain / openly-licensed editions. Archive links point at Project Gutenberg, Wikisource and the Internet Archive's public collections. As a user you are responsible for the laws of your own jurisdiction.</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label for="f-country" class="block text-[11px] uppercase tracking-wide font-semibold text-stone-500 mb-1.5">Country</label>
+      <select id="f-country" class="w-full bg-[#1c1b1a] border border-stone-700 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none focus:border-stone-500">
+        <option value="">All countries</option>
+      </select>
+    </div>
+    <div class="flex-1 min-w-[200px]">
+      <label for="f-status" class="block text-[11px] uppercase tracking-wide font-semibold text-stone-500 mb-1.5">Status</label>
+      <select id="f-status" class="w-full bg-[#1c1b1a] border border-stone-700 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none focus:border-stone-500">
+        <option value="">Any status</option>
+        <option value="banned">Banned</option>
+        <option value="restricted">Restricted</option>
+        <option value="contested">Contested</option>
+      </select>
+    </div>
+    <div class="flex-1 min-w-[200px]">
+      <label for="f-q" class="block text-[11px] uppercase tracking-wide font-semibold text-stone-500 mb-1.5">Search title / author</label>
+      <input id="f-q" type="search" placeholder="Ulysses, Voltaire, Clason…" class="w-full bg-[#1c1b1a] border border-stone-700 rounded-xl px-3 py-2.5 text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none focus:border-stone-500">
+    </div>
+    <button id="f-apply" class="px-5 py-2.5 rounded-xl bg-white text-[#0b0b0c] text-sm font-semibold hover:bg-stone-200">Filter</button>
+  </div>
+
+  <div class="mt-6" id="results-meta"></div>
+  <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4"></div>
+  <div id="loading" class="py-14 text-center text-stone-500">Scouring the censorship archives…</div>
+  <div id="empty" class="hidden py-14 text-center text-stone-500">No records match — try another country or search.</div>
+  <div id="error" class="hidden py-14 text-center text-red-400"></div>
+
+  <!-- Read-elsewhere / archives strip -->
+  <section class="mt-12 rounded-2xl border border-stone-800 bg-[#1c1b1a] p-6 sm:p-8">
+    <h2 class="font-serif text-xl font-semibold text-stone-100">Where to read these, legally</h2>
+    <p class="text-sm text-stone-400 mt-2 leading-7">Babe's Bookstore serves public-domain editions of everything on this catalog. If a title here is in-copyright for you but out of copyright for others, the free public archives below are the honest way to find it:</p>
+    <ul class="mt-4 grid sm:grid-cols-3 gap-3 text-sm">
+      <li><a href="https://www.gutenberg.org" class="block rounded-xl border border-stone-700 p-4 hover:border-stone-500"><span class="font-semibold text-stone-100">Project Gutenberg</span><span class="block text-stone-400 mt-1 text-xs">70k+ all-time classics, US public domain.</span></a></li>
+      <li><a href="https://en.wikisource.org" class="block rounded-xl border border-stone-700 p-4 hover:border-stone-500"><span class="font-semibold text-stone-100">Wikisource</span><span class="block text-stone-400 mt-1 text-xs">Transcribed public-domain texts, many languages.</span></a></li>
+      <li><a href="https://archive.org/details/texts" class="block rounded-xl border border-stone-700 p-4 hover:border-stone-500"><span class="font-semibold text-stone-100">Internet Archive Texts</span><span class="block text-stone-400 mt-1 text-xs">Public-domain and openly-licensed scans &amp; e-books.</span></a></li>
+    </ul>
+  </section>
+</main>
+
+<footer class="bg-[#0b0b0c] text-stone-400 mt-4">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8 text-sm">
+    <div><h3 class="font-serif text-lg font-semibold text-white">Babe's Bookstore</h3><p class="mt-2 text-stone-500 leading-6 text-xs">An honest library. We keep the record of censorship because a bookstore is only honest if it refuses to flinch.</p></div>
+    <div><h4 class="font-semibold text-white mb-3">Library</h4><ul class="space-y-2 text-xs"><li><a href="/bundles" class="hover:text-white">Bundles</a></li><li><a href="/search" class="hover:text-white">Catalogue</a></li><li><a href="/banned-works" class="hover:text-white">Banned works reference</a></li></ul></div>
+    <div><h4 class="font-semibold text-white mb-3">Account</h4><ul class="space-y-2 text-xs"><li><a href="/login" class="hover:text-white">Sign in</a></li><li><a href="/register" class="hover:text-white">Create account</a></li><li><a href="/account" class="hover:text-white">My library</a></li></ul></div>
+    <div><h4 class="font-semibold text-white mb-3">Legal</h4><ul class="space-y-2 text-xs"><li><a href="/terms" class="hover:text-white">Terms</a></li><li><a href="/privacy" class="hover:text-white">Privacy</a></li><li><a href="/cookies" class="hover:text-white">Cookies</a></li><li><a href="/refunds" class="hover:text-white">Refunds</a></li></ul></div>
+  </div>
+  <div class="border-t border-[#1f1f1f] py-6 text-center text-xs text-stone-600 px-4">© 2026 Babe's Bookstore · babesbooks.store is a tool: all users are responsible for their own actions and for the laws of their jurisdiction.</div>
+</footer>
+
+<script src="/js/store.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/illegal-books.js"></script>
+</body>
+</html>

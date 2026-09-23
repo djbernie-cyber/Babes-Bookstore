@@ -36,6 +36,26 @@
     .btt{ position:fixed; bottom:22px; right:22px; width:44px; height:44px; border-radius:50%; background:var(--ink); color:var(--paper); border:0; font-size:18px; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,.2); display:none }
     /* font sizes */
     html[data-size="s"] .text-body{ font-size:18px } html[data-size="m"] .text-body{ font-size:22px } html[data-size="l"] .text-body{ font-size:27px }
+    /* Kindle-style modes */
+    .mode-btn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink) }
+    #toc-sel{ display:inline-block }
+    .pager{ position:fixed; bottom:0; left:0; right:0; z-index:30; display:none; align-items:center; justify-content:center; gap:14px; padding:10px 12px; background:var(--toolbar); backdrop-filter:blur(8px); border-top:1px solid var(--line); font-family:"Inter",system-ui,sans-serif; font-size:13px }
+    .pager button{ font-family:"Inter",system-ui,sans-serif; font-size:13px; padding:8px 18px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer }
+    .pager button:hover{ background:var(--btn-hover) }
+    .pager button:disabled{ opacity:.35; cursor:default }
+    .pager .page-indicator{ color:var(--muted); white-space:nowrap }
+    #page{ display:none }
+    #page .text-body{ max-width:760px; margin:0 auto }
+    body.pages #page{ display:block }
+    body.pages #text-body, body.pages #scroll-end{ display:none }
+    body.pages{ padding-bottom:72px }
+    #progressbar{ position:fixed; top:0; left:0; right:0; height:3px; background:transparent; z-index:40 }
+    #progressbar > i{ display:block; height:100%; width:0%; background:var(--ink); transition:width .2s ease }
+    .export-pop{ position:fixed; right:16px; bottom:70px; z-index:45; width:290px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,.22); font-family:"Inter",system-ui,sans-serif; display:none }
+    .export-pop h4{ margin:0 0 8px; font-size:14px }
+    .export-pop p{ margin:0 0 12px; font-size:12px; color:var(--muted); line-height:1.6 }
+    .export-pop a.btn{ display:block; text-align:center; padding:9px; border-radius:999px; background:var(--ink); color:var(--paper); font-size:13px; font-weight:600; text-decoration:none; margin-bottom:6px }
+    .export-pop a.btn.ghost{ background:transparent; color:var(--ink); border:1px solid var(--line) }
   </style>
   <meta name="theme-color" content="#0b0b0c">
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
@@ -52,17 +72,33 @@
   <div class="toolbar">
     <a href="#" data-action="back">← Back</a>
     <div class="spacer"></div>
-    <span id="toc" style="display:none"></span>
-    <div class="fs-btn">
+    <select id="toc-sel" disabled><option>Chapters…</option></select>
+    <span class="fs-btn">
       <button data-size="s">A−</button>
       <button data-size="m" class="active">A</button>
       <button data-size="l">A+</button>
-    </div>
+      <button data-size="xl">A++</button>
+    </span>
     <select id="theme">
       <option value="sepia">Sepia</option>
       <option value="light">Light</option>
       <option value="dark">Dark</option>
     </select>
+    <span id="mode-btns">
+      <button class="mode-btn" data-mode="pages">Pages</button>
+      <button class="mode-btn" data-mode="scroll">Scroll</button>
+    </span>
+    <button id="export-btn" type="button" aria-label="Download / send to device">⇩ Read elsewhere</button>
+  </div>
+
+  <div id="progressbar"><i></i></div>
+
+  <div class="export-pop" id="export-pop" role="dialog" aria-label="Export" hidden>
+    <h4>Read elsewhere / on your device</h4>
+    <p>Download the file and open it in your reading app. Amazon's Kindle accepts <strong>EPUB</strong> directly; send the PDF/EPUB to your own &ldquo;Send to Kindle&rdquo; email, or plug the device in via USB for Calibre or drag-and-drop transfer.</p>
+    <a class="btn" href="#" id="dl-book" download>⬇ Download this book</a>
+    <a class="btn ghost" href="#" id="dl-gate" hidden>Proceed to download</a>
+    <button class="btn ghost" type="button" id="export-close" style="width:100%;background:transparent;border:1px solid var(--line);border-radius:999px;padding:9px;font-size:13px;color:var(--ink);cursor:pointer">Close</button>
   </div>
 
   <div id="loading" class="loading">Loading text…</div>
@@ -80,11 +116,16 @@
 
   <div class="reader-wrap" id="content" style="display:none">
     <p class="book-title" id="book-title"></p>
-    <h1 class="chap-title" id="chap-title"></h1>
     <div class="text-body" id="text-body"></div>
-    <div style="text-align:center;margin-top:32px">
-      <button id="more" class="btt" style="position:static;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:0 22px;height:46px;font-size:14px" data-action="loadMore">Continue reading ↓</button>
-    </div>
+    <div id="scroll-end" style="text-align:center;margin-top:32px;color:var(--muted);font-size:14px">— End of edition —</div>
+  </div>
+
+  <div id="page"><div class="text-body" id="page-body"></div></div>
+
+  <div class="pager" id="pager">
+    <button id="p-prev" data-action="prev-page">← Previous</button>
+    <span class="page-indicator" id="page-ind">…</span>
+    <button id="p-next" data-action="next-page">Next →</button>
   </div>
 
   <button class="btt" id="btt" data-action="scroll-top">↑</button>
