@@ -31,6 +31,7 @@ def _html_to_plain(raw: bytes, cap: int = 1_500_000) -> Optional[str]:
 
 
 GUTENBERG_URL_RE = re.compile(r"gutenberg\.org/(?:ebooks|files|cache/epub)/(\d+)")
+STANDARD_EBOOKS_URL_RE = re.compile(r"standardebooks\.org/ebooks/([a-z0-9-]+/[a-z0-9-]+)", re.I)
 
 
 class PackagingService:
@@ -67,6 +68,20 @@ class PackagingService:
         except Exception as e:
             logger.warning("Remote fetch failed %s: %s", url, e)
         return None
+
+    def _standard_ebooks_epub(self, book: Book) -> Optional[str]:
+        """Derive a Standard Ebooks epub URL from the record's slug.
+
+        The scraper stores the landing URL (…/ebooks/<collection>/<work>)
+        but not always the download path; the download endpoint then found
+        nothing to fetch. Deriving it here keeps those titles downloadable.
+        """
+        url = book.source_url or ""
+        match = STANDARD_EBOOKS_URL_RE.search(url)
+        if not match:
+            return None
+        slug = match.group(1).replace("/", "-")
+        return f"https://standardebooks.org/ebooks/{match.group(1)}/downloads/{slug}.epub"
 
     def _gutenberg_gid(self, book: Book) -> Optional[str]:
         """A numeric Project Gutenberg id whenever this book has one.
@@ -141,6 +156,11 @@ class PackagingService:
                 candidates.append((text_url, "txt"))
         except Exception:
             pass
+        # Standard Ebooks download URL derived from the stored slug
+        if book.source == "standard_ebooks":
+            se_epub = self._standard_ebooks_epub(book)
+            if se_epub:
+                candidates.append((se_epub, "epub"))
         # Gutenberg fallback URLs based on a resolvable Gutenberg id
         gid = self._gutenberg_gid(book)
         if gid:

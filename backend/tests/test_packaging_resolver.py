@@ -88,3 +88,33 @@ async def test_epub_only_book_downloads(client, db, monkeypatch):
     content, ext = packaging._resolve_book_content(book)
     assert content
     assert ext == "epub"
+
+
+@pytest.mark.asyncio
+async def test_standardebooks_slug_derives_epub_runtime(client, db, monkeypatch):
+    """A standardebooks record with only a landing URL still downloads — the
+    resolver derives the download path from the slug at runtime."""
+    from app.models.book import Book, BookStatus
+    from app.services.packaging import packaging
+
+    monkeypatch.setattr(packaging, "_try_local_r2", lambda key: None)
+    monkeypatch.setattr(packaging, "_fetch_remote", lambda url, timeout=30.0: b"PK" + b"E" * 600)
+
+    book = Book(
+        title="Runtime Derived",
+        author="Test",
+        source="standard_ebooks",
+        source_id="runtime-derived",
+        category="Classics",
+        tags=[],
+        license_type="public_domain",
+        status=BookStatus.APPROVED,
+        license_verified=True,
+        source_url="https://standardebooks.org/ebooks/g-k-chesterton/the-man-who-was-thursday",
+    )
+    db.add(book)
+    await db.commit()
+
+    content, ext = packaging._resolve_book_content(book)
+    assert content
+    assert ext == "epub"
