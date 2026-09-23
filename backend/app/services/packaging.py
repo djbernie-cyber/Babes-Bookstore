@@ -213,7 +213,91 @@ class PackagingService:
                     return None
             except Exception:
                 logger.debug("On-demand text fetch failed for %s/%s", book.source, book.source_id, exc_info=True)
+
+        # 5. Last resort: fetch the EPUB (the same file /download serves) and
+        #    render it to plain text so every downloadable book is readable
+        #    in-browser. The converted text is cached like a native txt.
+        try:
+            content, ext = self._resolve_book_content(book)
+            if content:
+                if ext == "txt":
+                    plain = self._human_text(content)
+                elif ext == "epub":
+                    plain = self._epub_to_plain(content)
+                else:
+                    plain = None
+                if plain:
+                    self._cache_content(book, "txt", plain.encode("utf-8"))
+                    return plain
+        except Exception:
+            logger.debug("EPUB rain text fallback failed for %s/%s", book.source, book.source_id, exc_info=True)
         return None
+
+    def _epub_to_plain(self, epub_bytes: bytes, cap: int = 1_500_000) -> Optional[str]:
+        """Render an EPUB file to plain text.
+
+        Reads the package document (content.opf) and walks the spine in
+        reading order, stripping each HTML chapter with BeautifulSoup. Returns
+        None when the EPUB can't be parsed (keeps the reader's epub-only
+        fallback path intact).
+        """
+        try:
+            import io
+            import xml.etree.ElementTree as ET
+            from zipfile import ZipFile
+
+            def _local(tag: str) -> str:
+                return tag.rsplit("}", 1)[-1]
+
+            zf = ZipFile(io.BytesIO(epub_bytes))
+            opf_path: Optional[str] = None
+            try:
+                container = zf.read("META-INF/container.xml")
+                root = ET.fromstring(container)
+                for el in root.iter():
+                    if _local(el.tag) == "rootfile" and el.get("full-path"):
+                        opf_path = el.get("full-path")
+                        break
+            except Exception:
+                pass
+
+            if not opf_path:
+                for name in zf.namelist():
+                    if name.endswith(".opf"):
+                        opf_path = name
+                        break
+            if not opf_path:
+                return None
+
+            import posixpath
+            base = posixpath.dirname(opf_path)
+            opf = ET.fromstring(zf.read(opf_path))
+            manifest = {el.get("id"): el.get("href") for el in opf.iter() if _local(el.tag) == "item"}
+            spine = [el.get("idref") for el in opf.iter() if _local(el.tag) == "itemref"]
+
+            parts: list[str] = []
+            total = 0
+            for idref in spine:
+                href = manifest.get(idref)
+                if not href:
+                    continue
+                member = posixpath.join(base, href) if base else href
+                try:
+                    raw = zf.read(member)
+                except KeyError:
+                    continue
+                plain = _html_to_plain(raw)
+                if plain:
+                    parts.append(plain)
+                    total += len(plain)
+                    if total >= cap:
+                        break
+            zf.close()
+            text = "\n\n".join(parts).strip()
+            return text[:cap] or None
+        except Exception as e:  # noqa: BLE001
+            logger.debug("_epub_to_plain failed: %s", e)
+            return None
 
     def _looks_like_html(self, data: bytes) -> bool:
         """Sniff whether cached reader bytes are HTML (legacy Wikibooks taps)."""
