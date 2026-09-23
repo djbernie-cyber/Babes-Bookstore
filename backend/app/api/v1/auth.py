@@ -9,6 +9,7 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from urllib.parse import urlencode
 import httpx
+import json
 
 from .deps import get_db, get_current_user
 from ...models.user import User
@@ -50,6 +51,21 @@ class GoogleCallbackRequest(BaseModel):
     state: str = None
 
 
+ALLOWED_THEME_KEYS = {
+    "accent", "accent_text", "bg", "surface", "surface_hover", "text",
+    "muted", "border", "font_serif", "font_body", "radius", "density",
+    "paper", "link",
+}
+
+
+class UpdateProfileRequest(BaseModel):
+    name: Optional[str] = Field(None, max_length=200)
+    theme: Optional[str] = Field(None, pattern="^(light|dark|sepia)$")
+    reader_font_size: Optional[str] = Field(None, pattern="^(s|m|l|xl)$")
+    locale: Optional[str] = Field(None, max_length=10)
+    theme_prefs: Optional[dict] = None
+
+
 def create_access_token(user_id: int) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": str(user_id), "exp": expire}
@@ -64,6 +80,16 @@ def create_reset_token(email: str) -> str:
 
 def _norm_email(email: str) -> str:
     return (email or "").strip().lower()
+
+
+def _user_payload(user: User) -> dict:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "is_admin": user.is_admin,
+        "is_superadmin": user.is_superadmin,
+    }
 
 
 async def get_or_create_google_user(email: str, name: str, google_id: str) -> User:
@@ -178,7 +204,7 @@ async def google_callback(code: str, state: str = None, db: AsyncSession = Depen
     app_token = create_access_token(user.id)
     return TokenResponse(
         access_token=app_token,
-        user={"id": user.id, "email": user.email, "name": user.name, "is_admin": user.is_admin},
+        user=_user_payload(user),
     )
 
 
@@ -198,7 +224,7 @@ async def google_token_login(body: GoogleCallbackRequest, db: AsyncSession = Dep
     app_token = create_access_token(user.id)
     return TokenResponse(
         access_token=app_token,
-        user={"id": user.id, "email": user.email, "name": user.name, "is_admin": user.is_admin},
+        user=_user_payload(user),
     )
 
 
@@ -305,8 +331,46 @@ async def get_me(current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "name": current_user.name,
-        "is_admin": current_user.is_admin,
+        **_user_payload(current_user),
+        "theme": current_user.theme,
+        "theme_prefs": current_user.theme_prefs,
+        "locale": current_user.locale,
+        "reader_font_size": current_user.reader_font_size,
+        "free_downloads": current_user.free_downloads,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+    }
+
+
+@router.put("/me")
+async def update_me(
+    body: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update account profile + reading/theme preferences (syncs per-account)."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    if body.name is not None:
+        current_user.name = body.name.strip() or None
+    if body.theme is not None:
+        current_user.theme = body.theme
+    if body.reader_font_size is not None:
+        current_user.reader_font_size = body.reader_font_size
+    if body.locale is not None:
+        current_user.locale = body.locale.strip() or None
+    if body.theme_prefs is not None:
+        clean = {}
+        for k, v in body.theme_prefs.items():
+            if k in ALLOWED_THEME_KEYS and isinstance(v, str) and len(v) <= 80:
+                clean[k] = v
+        current_user.theme_prefs = json.dumps(clean) if clean else None
+    await db.commit()
+    await db.refresh(current_user)
+    return {
+        **_user_payload(current_user),
+        "theme": current_user.theme,
+        "theme_prefs": current_user.theme_prefs,
+        "locale": current_user.locale,
+        "reader_font_size": current_user.reader_font_size,
     }

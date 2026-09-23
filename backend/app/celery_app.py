@@ -12,6 +12,7 @@ celery_app = Celery(
         "app.tasks.verify_licenses",
         "app.tasks.package_bundle",
         "app.tasks.bundle_randomise",
+        "app.tasks.backfill_covers",
         "app.tasks.periodic",
     ],
 )

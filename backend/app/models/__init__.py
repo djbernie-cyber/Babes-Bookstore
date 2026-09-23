@@ -7,6 +7,7 @@ from .audit import AuditLog
 from .review import Review
 from .wishlist import WishlistItem
 from .library import Shelf, ShelfItem, ReadingProgress
+from .seasonal_theme import SeasonalTheme, SiteConfig
 
 __all__ = [
     "Book",
@@ -21,4 +22,6 @@ __all__ = [
     "Shelf",
     "ShelfItem",
     "ReadingProgress",
+    "SeasonalTheme",
+    "SiteConfig",
 ]

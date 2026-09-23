@@ -47,3 +47,11 @@ async def require_admin(current_user: Optional[User] = Depends(get_current_user)
     if not current_user or not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
     return current_user
+
+
+async def require_superadmin(current_user: Optional[User] = Depends(get_current_user)) -> User:
+    """Owners/maintenance staff. Everything an admin can do, plus managing
+    admin accounts, passwords and 'repair' maintenance tasks."""
+    if not current_user or not (current_user.is_admin and current_user.is_superadmin):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super-admin required")
+    return current_user

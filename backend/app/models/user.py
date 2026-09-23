@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Integer
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -16,13 +16,20 @@ class User(Base):
     stripe_customer_id = Column(String(100), nullable=True)
     square_customer_id = Column(String(100), nullable=True)
     is_admin = Column(Boolean, default=False)
+    #: Super-administrators can manage staff/admin accounts, reset passwords,
+    #: run destructive maintenance ("repair") tasks and promote/demote admins.
+    is_superadmin = Column(Boolean, default=False)
     free_downloads = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
 
     # Reader / account preferences, synced per-account so they follow the user
     # across devices. Theme is one of "light" | "dark" | "sepia"; reader_font_size
-    # is one of "s" | "m" | "l" | "xl".
+    # is one of "s" | "m" | "l" | "xl". Locale is the ISO language/region the
+    # user wants to experience holiday theming through (e.g. "en-KE"). theme_prefs
+    # is a JSON dict of generated CSS variables that skin the whole site.
     theme = Column(String(20), nullable=True)
+    theme_prefs = Column(Text, nullable=True)
+    locale = Column(String(10), nullable=True)
     reader_font_size = Column(String(5), nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())

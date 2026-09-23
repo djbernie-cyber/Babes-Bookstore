@@ -2,19 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import time
 
-from .deps import get_db, require_admin
+from .deps import get_db, require_admin, require_superadmin
 from ...models.book import Book, BookStatus
 from ...models.bundle import Bundle, BundleBook
 from ...models.purchase import Purchase, PurchaseStatus
 from ...models.refund import Refund, RefundStatus
 from ...models.user import User
 from ...models.audit import AuditLog
+from ...models.seasonal_theme import SeasonalTheme, SiteConfig
 from ...sources import source_registry
 from ...services.audit import log_action
 from ...services import mpesa_b2c
+from ...services.security import hash_password, MIN_PASSWORD_LENGTH
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -836,3 +838,294 @@ async def refund_purchase(
         details={"refund_id": refund.id, "amount": kes_amount, "status": refund.status},
     )
     return _refund_dict(refund)
+
+
+# ─── User / account administration (super-admin only) ───────────────────
+
+
+def _user_dict(u: User, purchase_count: int = 0) -> dict:
+    return {
+        "id": u.id,
+        "email": u.email,
+        "name": u.name,
+        "is_admin": u.is_admin,
+        "is_superadmin": u.is_superadmin,
+        "is_active": u.is_active,
+        "free_downloads": u.free_downloads,
+        "theme": u.theme,
+        "locale": u.locale,
+        "created_at": u.created_at.isoformat() if u.created_at else None,
+        "purchases": purchase_count,
+    }
+
+
+@router.get("/users")
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    _super=Depends(require_superadmin),
+    q: str = Query("", max_length=200),
+    role: str = Query("all"),  # all | admin | superadmin | user
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+):
+    """Search and page through accounts. Staff dashboard entry point for
+    password resets, admin promotions and account state."""
+    filters = []
+    if q:
+        like = f"%{q.strip()}%"
+        filters.append(func.lower(User.email).like(like.lower()) | func.lower(User.name).like(like.lower()))
+    if role == "admin":
+        filters.append(User.is_admin == True)
+    elif role == "superadmin":
+        filters.append(User.is_superadmin == True)
+    elif role == "user":
+        filters.append(User.is_admin == False)
+
+    since = None
+    total_q = select(User).where(*filters) if filters else select(User)
+    total = (await db.execute(total_q.with_only_columns(func.count()))).scalar() or 0
+
+    q = (
+        select(User, func.count(Purchase.id).label("cnt"))
+        .outerjoin(Purchase, Purchase.user_id == User.id)
+        .group_by(User.id)
+        .order_by(User.created_at.desc())
+    )
+    if filters:
+        q = q.where(*filters)
+    q = q.offset((page - 1) * page_size).limit(page_size)
+    rows = (await db.execute(q)).all()
+
+    return {
+        "items": [_user_dict(u, cnt) for u, cnt in rows],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+class UserRoleUpdate(BaseModel):
+    is_admin: Optional[bool] = None
+    is_superadmin: Optional[bool] = None
+
+
+@router.post("/users/{user_id}/role")
+async def update_user_role(
+    user_id: int,
+    body: UserRoleUpdate,
+    db: AsyncSession = Depends(get_db),
+    super: User = Depends(require_superadmin),
+):
+    """Promote/demote admin and super-admin roles. A super-admin can never
+    demote themselves — prevent locking the site out of its own control."""
+    target = await db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.id == super.id and (body.is_admin is False or body.is_superadmin is False):
+        raise HTTPException(status_code=400, detail="You cannot demote your own account")
+
+    if body.is_admin is not None:
+        target.is_admin = body.is_admin
+    if body.is_superadmin is not None:
+        target.is_superadmin = body.is_superadmin
+    await db.commit()
+    await db.refresh(target)
+    await log_action(
+        db, action="user.role", entity_type="user", entity_id=target.id,
+        user_id=super.id, details={"admin": target.is_admin, "superadmin": target.is_superadmin},
+    )
+    return _user_dict(target)
+
+
+class UserActiveUpdate(BaseModel):
+    is_active: bool
+
+
+@router.post("/users/{user_id}/activation")
+async def set_user_active(
+    user_id: int,
+    body: UserActiveUpdate,
+    db: AsyncSession = Depends(get_db),
+    super: User = Depends(require_superadmin),
+):
+    """Enable or disable an account (login blocked when disabled)."""
+    target = await db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.id == super.id and not body.is_active:
+        raise HTTPException(status_code=400, detail="You cannot disable your own account")
+
+    target.is_active = body.is_active
+    await db.commit()
+    await db.refresh(target)
+    await log_action(
+        db, action="user.active", entity_type="user", entity_id=target.id,
+        user_id=super.id, details={"is_active": body.is_active},
+    )
+    return _user_dict(target)
+
+
+class AdminPasswordReset(BaseModel):
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH, max_length=256)
+
+
+@router.post("/users/{user_id}/password")
+async def admin_reset_password(
+    user_id: int,
+    body: AdminPasswordReset,
+    db: AsyncSession = Depends(get_db),
+    super: User = Depends(require_superadmin),
+):
+    """Force a new password for any account (used when a user is locked out
+    or the reset email cannot be delivered)."""
+    target = await db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    target.hashed_password = hash_password(body.password)
+    await db.commit()
+    await log_action(
+        db, action="user.password_reset", entity_type="user", entity_id=target.id,
+        user_id=super.id, details={"admin_initiated": True},
+    )
+    return {"ok": True, "user_id": target.id}
+
+
+# ─── Seasonal/holiday themes + site furniture (site arrangement) ────────
+
+
+class SeasonalThemePayload(BaseModel):
+    name: str
+    slug: Optional[str] = None
+    locale: str = "all"
+    country_code: Optional[str] = None
+    starts_at: Optional[str] = None
+    ends_at: Optional[str] = None
+    is_default: bool = False
+    active: bool = True
+    overrides: Optional[dict] = None
+    shelf_config: Optional[dict] = None
+
+
+class SiteFurniturePayload(BaseModel):
+    furniture: dict
+
+
+def _seasonal_dict(t) -> dict:
+    import json as _json
+    def _loads(v):
+        try:
+            return _json.loads(v) if v else {}
+        except Exception:
+            return {}
+    return {
+        "id": t.id, "name": t.name, "slug": t.slug, "locale": t.locale,
+        "country_code": t.country_code,
+        "starts_at": t.starts_at.isoformat() if t.starts_at else None,
+        "ends_at": t.ends_at.isoformat() if t.ends_at else None,
+        "is_default": t.is_default, "active": t.active,
+        "overrides": _loads(t.overrides), "shelf_config": _loads(t.shelf_config),
+    }
+
+
+@router.get("/themes")
+async def list_seasonal_themes(db: AsyncSession = Depends(get_db), _admin=Depends(require_admin)):
+    rows = (await db.execute(select(SeasonalTheme).order_by(SeasonalTheme.name))).scalars().all()
+    return {"items": [_seasonal_dict(t) for t in rows]}
+
+
+@router.post("/themes")
+async def create_seasonal_theme(
+    payload: SeasonalThemePayload,
+    db: AsyncSession = Depends(get_db),
+    super: User = Depends(require_superadmin),
+):
+    import json as _json
+    from datetime import datetime as _dt
+    slug = payload.slug or payload.name.lower().replace(" ", "-")
+    if await db.execute(select(SeasonalTheme).where(SeasonalTheme.slug == slug)):
+        raise HTTPException(status_code=409, detail="Slug already exists")
+    t = SeasonalTheme(
+        name=payload.name, slug=slug, locale=payload.locale,
+        country_code=payload.country_code,
+        starts_at=_dt.fromisoformat(payload.starts_at) if payload.starts_at else None,
+        ends_at=_dt.fromisoformat(payload.ends_at) if payload.ends_at else None,
+        is_default=payload.is_default, active=payload.active,
+        overrides=_json.dumps(payload.overrides) if payload.overrides else None,
+        shelf_config=_json.dumps(payload.shelf_config) if payload.shelf_config else None,
+    )
+    db.add(t)
+    await db.commit()
+    await db.refresh(t)
+    await log_action(db, action="seasonal_theme.create", entity_type="seasonal_theme",
+                     entity_id=t.id, user_id=super.id, details={"slug": t.slug})
+    return _seasonal_dict(t)
+
+
+@router.put("/themes/{theme_id}")
+async def update_seasonal_theme(
+    theme_id: int,
+    payload: SeasonalThemePayload,
+    db: AsyncSession = Depends(get_db),
+    super: User = Depends(require_superadmin),
+):
+    import json as _json
+    from datetime import datetime as _dt
+    t = await db.get(SeasonalTheme, theme_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Theme not found")
+    t.name = payload.name
+    t.slug = payload.slug or t.slug
+    t.locale = payload.locale
+    t.country_code = payload.country_code
+    t.starts_at = _dt.fromisoformat(payload.starts_at) if payload.starts_at else None
+    t.ends_at = _dt.fromisoformat(payload.ends_at) if payload.ends_at else None
+    t.is_default = payload.is_default
+    t.active = payload.active
+    if payload.overrides is not None:
+        t.overrides = _json.dumps(payload.overrides)
+    if payload.shelf_config is not None:
+        t.shelf_config = _json.dumps(payload.shelf_config)
+    await db.commit()
+    await db.refresh(t)
+    await log_action(db, action="seasonal_theme.update", entity_type="seasonal_theme",
+                     entity_id=t.id, user_id=super.id, details={"slug": t.slug})
+    return _seasonal_dict(t)
+
+
+@router.delete("/themes/{theme_id}")
+async def delete_seasonal_theme(theme_id: int, db: AsyncSession = Depends(get_db), super: User = Depends(require_superadmin)):
+    t = await db.get(SeasonalTheme, theme_id)
+    if not t:
+        raise HTTPException(status_code=404, detail="Theme not found")
+    await db.delete(t)
+    await db.commit()
+    await log_action(db, action="seasonal_theme.delete", entity_type="seasonal_theme",
+                     entity_id=theme_id, user_id=super.id, details={})
+    return {"ok": True}
+
+
+@router.get("/site-config")
+async def admin_get_site_config(db: AsyncSession = Depends(get_db), _admin=Depends(require_admin)):
+    import json as _json
+    cfg = (await db.execute(select(SiteConfig).where(SiteConfig.id == 1))).scalar_one_or_none()
+    return {"furniture": _json.loads(cfg.furniture) if cfg and cfg.furniture else {}}
+
+
+@router.put("/site-config")
+async def admin_set_site_config(
+    payload: SiteFurniturePayload,
+    db: AsyncSession = Depends(get_db),
+    super: User = Depends(require_superadmin),
+):
+    """Arrange homepage shelf layout + featured placements ('site furniture')."""
+    import json as _json
+    cfg = (await db.execute(select(SiteConfig).where(SiteConfig.id == 1))).scalar_one_or_none()
+    if not cfg:
+        cfg = SiteConfig(id=1, furniture=_json.dumps(payload.furniture))
+        db.add(cfg)
+    else:
+        cfg.furniture = _json.dumps(payload.furniture)
+    await db.commit()
+    await log_action(db, action="site_config.update", entity_type="site_config",
+                     entity_id=1, user_id=super.id, details={"keys": list(payload.furniture.keys())})
+    return {"ok": True, "furniture": payload.furniture}
