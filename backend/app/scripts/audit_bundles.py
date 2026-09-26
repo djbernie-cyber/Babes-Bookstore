@@ -28,7 +28,7 @@ Repairs applied by --fix, in order:
 import asyncio
 import re
 import sys
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 sys.path.insert(0, "/app")
 
@@ -79,16 +79,26 @@ def _shape_ok(data: bytes, ext: str) -> bool:
     return True
 
 
+def _se_direct(url: str) -> str:
+    """SE serves a 200 HTML funnel unless the epub url carries ?source=download."""
+    if "standardebooks.org" not in url or "source=download" in url:
+        return url
+    if not urlsplit(url).path.endswith(".epub"):
+        return url
+    return f"{url}{'&' if '?' in url else '?'}source=download"
+
+
 async def _url_alive(url: str, ext: str = "epub") -> bool:
-    """Verify a source file by content shape, not just status code. Error
-    pages (HTML/XML stubs served with 200) would pass a HEAD check, so read a
-    small preview and confirm the container/format magic bytes. Transient
-    errors (429/5xx/network) are treated as alive so flaky sources can never
+    """Verify a source file by content shape, not just status code. SE serves a
+    'download has started' funnel page (HTTP 200 HTML) unless the URL carries
+    ``?source=download``, so those are normalized first. Transient errors
+    (429/5xx/network) are treated as alive so flaky sources can never
     mass-reject otherwise healthy titles."""
 
     def _do(pattern: str) -> bool:
+        target = _se_direct(pattern)
         try:
-            r = httpx.get(url, timeout=25, headers={"User-Agent": UA,
+            r = httpx.get(target, timeout=25, headers={"User-Agent": UA,
                           "Range": "bytes=0-2048"}, follow_redirects=True)
             if r.status_code in (404, 410):
                 return False
@@ -100,7 +110,7 @@ async def _url_alive(url: str, ext: str = "epub") -> bool:
         except Exception:
             return True
 
-    return await asyncio.to_thread(_do, "")
+    return await asyncio.to_thread(_do, url)
 
 
 def _resolve(book: Book) -> tuple[bool, str]:

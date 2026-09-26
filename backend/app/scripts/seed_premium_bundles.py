@@ -20,6 +20,28 @@ FOIE_PRICE = 10000    # £100.00
 PRESIDENTS_PRICE = 100000  # £1000.00
 CURRENCY = "gbp"
 
+# The shelf is an open-ended evergreen set (the top-up loop keeps it growing),
+# so the copy must not claim a fixed count it does not honour.
+FOIE_NAME = "The Foie Gras — Evergreen Bestsellers"
+FOIE_DESCRIPTION = (
+    "Every title the canon insists you have read, and then some. "
+    "Foie gras for the shelf: the pretentious non-reader's "
+    "favourite status symbol, in one magnificent, ever-growing set."
+)
+FOIE_LONG_DESCRIPTION = (
+    "Every bookseller's '1000 books to read before you die' list, distilled and "
+    "bound as one — then topped up with the rest of the approved canon's "
+    "greatest hits. Dickens, Tolstoy, Austen, Homer, Hugo, Twain, Dostoevsky, "
+    "Eliot, Wells, Doyle and thousands more works of certified importance for "
+    "the reader who wants to be seen reading. Display it. Photograph it. "
+    "Regret none of it."
+)
+FOIE_META_TITLE = "The Foie Gras — Evergreen Bestsellers | Babes Bookstore"
+FOIE_META_DESCRIPTION = (
+    "The snootiest bundle in publishing: the all-time bestsellers and the "
+    "approved canon, licence-verified, always growing."
+)
+
 
 def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
@@ -198,26 +220,27 @@ async def main():
 
         if not foie:
             foie = Bundle(
-                name="The Foie Gras — Top 1,000 Bestsellers of All Time",
+                name=FOIE_NAME,
                 slug="foie-gras-best-sellers",
-                description="One thousand titles the canon insists you have read. "
-                    "Foie gras for the shelf: the pretentious non-reader's "
-                    "favourite status symbol, now in a single, magnificent set.",
-                long_description="Every bookseller's '1000 books to read before you die' "
-                    "list, distilled and bound as one. Dickens, Tolstoy, Austen, "
-                    "Homer, Hugo, Twain, Dostoevsky, Eliot, Wells, Doyle and the "
-                    "rest of the approved canon's greatest hits — a thousand works "
-                    "of certified importance for the reader who wants to be seen "
-                    "reading. Display it. Photograph it. Regret none of it.",
+                description=FOIE_DESCRIPTION,
+                long_description=FOIE_LONG_DESCRIPTION,
                 price_cents=FOIE_PRICE, currency=CURRENCY,
                 category="Classics", tags=["Classics", "Bestsellers"],
                 bundle_type="curated", active=True, featured=True,
-                meta_title="The Foie Gras — Top 1,000 Bestsellers | Babes Bookstore",
-                meta_description="The snootiest £100 bundle in publishing: 1,000 all-time bestsellers, licence-verified.",
+                meta_title=FOIE_META_TITLE,
+                meta_description=FOIE_META_DESCRIPTION,
             )
             db.add(foie); await db.flush()
             existing["foie-gras-best-sellers"] = foie
             membership["foie-gras-best-sellers"] = set()
+        else:
+            # Keep the on-disk copy honest about how large the shelf actually
+            # is (the top-up loop keeps it growing past any fixed count).
+            foie.name = FOIE_NAME
+            foie.description = FOIE_DESCRIPTION
+            foie.long_description = FOIE_LONG_DESCRIPTION
+            foie.meta_title = FOIE_META_TITLE
+            foie.meta_description = FOIE_META_DESCRIPTION
         have = membership.setdefault("foie-gras-best-sellers", set())
         add = [b["id"] for b in chosen if b["id"] not in have]
         for n, i in enumerate(add):

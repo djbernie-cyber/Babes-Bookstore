@@ -120,16 +120,31 @@ async def test_standardebooks_slug_derives_epub_runtime(client, db, monkeypatch)
     assert ext == "epub"
 
 
-def test_standardebooks_derivation_uses_underscore():
+def test_standardebooks_derivation_uses_underscore_and_direct_download():
     """The SE download path joins collection and work with an underscore, not a
-    dash — a dash slug 404s and makes the whole download look broken."""
+    dash — a dash slug 404s and makes the whole download look broken. It must
+    also carry ``?source=download``: without it SE answers with a 200 HTML
+    'download has started' funnel instead of the file."""
     from app.services.packaging import packaging
 
     url = packaging._standard_ebooks_epub(
         type("B", (), {"source_url": "https://standardebooks.org/ebooks/h-g-wells/the-time-machine"})()
     )
     assert url == ("https://standardebooks.org/ebooks/h-g-wells/the-time-machine"
-                   "/downloads/h-g-wells_the-time-machine.epub")
+                   "/downloads/h-g-wells_the-time-machine.epub?source=download")
+
+
+def test_se_download_url_normalises_stored_paths():
+    """A stored SE epub_path without the query must be upgraded on read, so a
+    path written before the funnel was understood still serves real bytes."""
+    from app.services.packaging import packaging
+
+    raw = ("https://standardebooks.org/ebooks/h-g-wells/the-time-machine"
+           "/downloads/h-g-wells_the-time-machine.epub")
+    assert packaging._se_download_url(raw) == raw + "?source=download"
+    # already normalised, and non-SE urls, are left alone
+    assert packaging._se_download_url(raw + "?source=download") == raw + "?source=download"
+    assert packaging._se_download_url("https://www.gutenberg.org/ebooks/35.epub") is None
 
 
 @pytest.mark.asyncio

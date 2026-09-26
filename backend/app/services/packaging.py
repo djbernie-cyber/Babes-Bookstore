@@ -5,6 +5,7 @@ import zipfile
 import logging
 from typing import List, Optional, Tuple
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -63,11 +64,37 @@ class PackagingService:
                     if "text/html" in ctype and len(resp.content) < 2000 and b"<html" in resp.content.lower():
                         logger.warning("Remote %s returned HTML (%s) — skipping", url, ctype)
                         return None
+                    # Standard Ebooks funnels through a meta-refresh page; the
+                    # real bytes live at the same URL + ?source=download
+                    low = resp.content[:2048].lower()
+                    if b"http-equiv" in low and b"source=download" in low:
+                        target = url + ("&" if "?" in url else "?") + "source=download"
+                        resp = client.get(target)
+                        if resp.status_code != 200 or not resp.content:
+                            logger.warning("SE funnel refetch %s -> %s", target, resp.status_code)
+                            return None
                     return resp.content
                 logger.warning("Remote fetch %s -> %s", url, resp.status_code)
         except Exception as e:
             logger.warning("Remote fetch failed %s: %s", url, e)
         return None
+
+    @staticmethod
+    def _se_download_url(url: str) -> Optional[str]:
+        """Force a Standard Ebooks download URL into direct-file mode.
+
+        Without ``?source=download`` the endpoint returns a 'Download has
+        started' funnel page (HTTP 200 HTML) instead of the file itself, so
+        the query has to ride along on every SE epub fetch. Returns None for
+        anything that is not an SE epub so callers can fall through.
+        """
+        if not url or "standardebooks.org" not in url:
+            return None
+        if not urlsplit(url).path.endswith(".epub"):
+            return None
+        if "source=download" in url:
+            return url
+        return f"{url}{'&' if '?' in url else '?'}source=download"
 
     def _standard_ebooks_epub(self, book: Book) -> Optional[str]:
         """Derive a Standard Ebooks epub URL from the record's slug.
@@ -81,7 +108,9 @@ class PackagingService:
         if not match:
             return None
         slug = match.group(1).replace("/", "_")
-        return f"https://standardebooks.org/ebooks/{match.group(1)}/downloads/{slug}.epub"
+        return self._se_download_url(
+            f"https://standardebooks.org/ebooks/{match.group(1)}/downloads/{slug}.epub"
+        )
 
     def _gutenberg_gid(self, book: Book) -> Optional[str]:
         """A numeric Project Gutenberg id whenever this book has one.
@@ -166,7 +195,7 @@ class PackagingService:
         # 3. Remote URLs in priority order (fetch once, then cache)
         candidates: List[Tuple[str, str]] = []
         if book.epub_path and book.epub_path.startswith("http"):
-            candidates.append((book.epub_path, "epub"))
+            candidates.append((self._se_download_url(book.epub_path) or book.epub_path, "epub"))
         if book.pdf_path and book.pdf_path.startswith("http"):
             candidates.append((book.pdf_path, "pdf"))
         try:
