@@ -42,6 +42,10 @@ class BundleUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     long_description: Optional[str] = None
+    # Editable so SEO copy can be corrected without a migration — the Foie Gras
+    # meta title used to promise a "Top 1,000" the shelf does not honour.
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
     price_cents: Optional[int] = Field(None, ge=0)
     currency: Optional[str] = Field(None, min_length=2, max_length=10)
     category: Optional[str] = None

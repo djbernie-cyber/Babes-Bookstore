@@ -105,3 +105,14 @@ async def test_checkout_config_exposes_price(client):
     assert data["price_display"] == "£10.00"
     # Secrets must never be exposed to the browser.
     assert "stripe_secret_key" not in data
+
+
+def test_bundle_update_accepts_seo_copy():
+    """Admins must be able to correct a bundle's meta title/description —
+    the Foie Gras copy claimed a "Top 1,000" the 2,693-book shelf never was."""
+    from app.schemas.bundle import BundleUpdate
+
+    u = BundleUpdate(name="n", meta_title="t", meta_description="d")
+    assert u.model_dump(exclude_unset=True) == {
+        "name": "n", "meta_title": "t", "meta_description": "d",
+    }
