@@ -31,6 +31,9 @@ class User(Base):
     theme_prefs = Column(Text, nullable=True)
     locale = Column(String(10), nullable=True)
     reader_font_size = Column(String(5), nullable=True)
+    # The reader's own paper colour, kept separate from `theme` so reading
+    # preferences never repaint the storefront (and vice versa).
+    reader_theme = Column(String(5), nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

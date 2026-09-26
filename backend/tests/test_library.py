@@ -135,6 +135,28 @@ async def test_prefs_save_and_get(client, db):
 
 
 @pytest.mark.asyncio
+async def test_reader_theme_is_independent_of_site_theme(client, db):
+    """The reader used to save its paper colour into the site theme column, so
+    reading in Dark recoloured the whole storefront on the next page load."""
+    _, _, token = await _seed_user_and_book(client, db)
+    await client.put("/api/v1/library/prefs", json={"theme": "light"}, headers=_h(token))
+    await client.put("/api/v1/library/prefs", json={"reader_theme": "dark"}, headers=_h(token))
+
+    p = (await client.get("/api/v1/library/prefs", headers=_h(token))).json()
+    assert p["theme"] == "light"          # storefront untouched
+    assert p["reader_theme"] == "dark"   # reader keeps its own choice
+
+    # and the reverse direction
+    await client.put("/api/v1/library/prefs", json={"theme": "sepia"}, headers=_h(token))
+    p = (await client.get("/api/v1/library/prefs", headers=_h(token))).json()
+    assert p["reader_theme"] == "dark"
+    assert p["theme"] == "sepia"
+
+    r = await client.put("/api/v1/library/prefs", json={"reader_theme": "neon"}, headers=_h(token))
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_library_summary_counts(client, db):
     _, b, token = await _seed_user_and_book(client, db)
     sid = await _shelf_lookup(client, token)

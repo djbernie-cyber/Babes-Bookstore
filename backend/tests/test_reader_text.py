@@ -110,3 +110,25 @@ async def test_text_still_422_when_no_epub_and_no_txt(client, db, monkeypatch):
     r = await client.get(f"/api/v1/books/{book.id}/text")
     assert r.status_code == 422
     assert "download the book instead" in r.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_withdrawn_book_reports_gone_not_missing(client, db):
+    """A withdrawn title must be distinguishable from one that never existed:
+    the reader/detail page renders a 'no longer available' state off 410."""
+    from app.models.book import Book, BookStatus
+
+    book = Book(
+        title="Withdrawn Work", author="A. Author", source="standard_ebooks",
+        source_id="a-author/withdrawn-work", status=BookStatus.REJECTED,
+        license_type="public_domain", license_verified=True,
+    )
+    db.add(book)
+    await db.commit()
+
+    r = await client.get(f"/api/v1/books/{book.id}")
+    assert r.status_code == 410
+    assert r.json()["detail"]["code"] == "withdrawn"
+
+    # A genuinely unknown id is still a 404.
+    missing = await client.get(f"/api/v1/books/{book.id + 9999}")
+    assert missing.status_code == 404

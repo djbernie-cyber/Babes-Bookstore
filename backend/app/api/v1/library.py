@@ -41,6 +41,7 @@ class ProgressSave(BaseModel):
 class PrefsSave(BaseModel):
     theme: str | None = None
     reader_font_size: str | None = None
+    reader_theme: str | None = None
 
 
 def _require(user: User | None) -> User:
@@ -371,10 +372,11 @@ async def get_prefs(
 ):
     """Return the user's saved theme / reader preferences."""
     if not current_user:
-        return {"theme": None, "reader_font_size": None, "anonymous": True}
+        return {"theme": None, "reader_font_size": None, "reader_theme": None, "anonymous": True}
     return {
         "theme": current_user.theme or "sepia",
         "reader_font_size": current_user.reader_font_size or "m",
+        "reader_theme": current_user.reader_theme or "sepia",
         "anonymous": False,
     }
 
@@ -395,10 +397,15 @@ async def save_prefs(
         if payload.reader_font_size not in VALID_FONT_SIZES:
             raise HTTPException(status_code=422, detail="reader_font_size must be s, m, l or xl")
         user.reader_font_size = payload.reader_font_size
+    if payload.reader_theme is not None:
+        if payload.reader_theme not in VALID_THEMES:
+            raise HTTPException(status_code=422, detail="reader_theme must be light, dark or sepia")
+        user.reader_theme = payload.reader_theme
     await db.commit()
     return {
         "theme": user.theme or "sepia",
         "reader_font_size": user.reader_font_size or "m",
+        "reader_theme": user.reader_theme or "sepia",
         "anonymous": False,
     }
 

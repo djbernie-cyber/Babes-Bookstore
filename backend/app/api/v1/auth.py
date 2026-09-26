@@ -62,6 +62,7 @@ class UpdateProfileRequest(BaseModel):
     name: Optional[str] = Field(None, max_length=200)
     theme: Optional[str] = Field(None, pattern="^(light|dark|sepia)$")
     reader_font_size: Optional[str] = Field(None, pattern="^(s|m|l|xl)$")
+    reader_theme: Optional[str] = Field(None, pattern="^(sepia|light|dark)$")
     locale: Optional[str] = Field(None, max_length=10)
     theme_prefs: Optional[dict] = None
 
@@ -336,6 +337,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "theme_prefs": current_user.theme_prefs,
         "locale": current_user.locale,
         "reader_font_size": current_user.reader_font_size,
+        "reader_theme": current_user.reader_theme,
         "free_downloads": current_user.free_downloads,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
     }
@@ -357,6 +359,8 @@ async def update_me(
         current_user.theme = body.theme
     if body.reader_font_size is not None:
         current_user.reader_font_size = body.reader_font_size
+    if body.reader_theme is not None:
+        current_user.reader_theme = body.reader_theme
     if body.locale is not None:
         current_user.locale = body.locale.strip() or None
     if body.theme_prefs is not None:
@@ -373,4 +377,5 @@ async def update_me(
         "theme_prefs": current_user.theme_prefs,
         "locale": current_user.locale,
         "reader_font_size": current_user.reader_font_size,
+        "reader_theme": current_user.reader_theme,
     }

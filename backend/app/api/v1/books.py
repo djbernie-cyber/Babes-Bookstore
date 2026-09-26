@@ -153,7 +153,17 @@ async def get_book(book_id: int, db: AsyncSession = Depends(get_db)):
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     if book.status != BookStatus.APPROVED:
-        raise HTTPException(status_code=404, detail="Book not available")
+        # Gone, not missing. The record still exists — it was withdrawn from
+        # the catalogue (unreachable source file, or no lawful free edition) —
+        # and the reader/detail page needs to say so rather than showing a
+        # bare "Book not found" dead end.
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "withdrawn",
+                "reason": "This edition has been withdrawn from the catalogue.",
+            },
+        )
     return BookResponse.model_validate(book)
 
 

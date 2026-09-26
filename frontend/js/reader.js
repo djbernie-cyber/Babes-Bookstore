@@ -14,6 +14,8 @@
   var ID = encodeURIComponent(BID);
   var SCROLL_KEY = 'reader-size', THEME_KEY = 'reader-theme', MODE_KEY = 'reader-mode';
   var CHUNK = 160;
+  var SIZES = ['s', 'm', 'l', 'xl'];
+  var PAPERS = { sepia: 1, light: 1, dark: 1 };
 
   function token() { return localStorage.getItem('token'); }
   function el(id) { return document.getElementById(id); }
@@ -23,11 +25,27 @@
     var size = localStorage.getItem(SCROLL_KEY) || 'm';
     var theme = localStorage.getItem(THEME_KEY) || 'sepia';
     var mode = localStorage.getItem(MODE_KEY) || 'pages';
+    if (SIZES.indexOf(size) < 0) size = 'm';
+    if (!PAPERS[theme]) theme = 'sepia';
     document.documentElement.setAttribute('data-size', size);
+    // The reader paints its own paper colour. It deliberately does not share
+    // the storefront's theme: the two used to fight over one saved preference,
+    // so reading in Dark silently recoloured the whole site and vice versa.
     document.documentElement.setAttribute('data-theme', theme);
-    document.querySelectorAll('.fs-btn button').forEach(function (b) { b.classList.toggle('active', b.dataset.size === size); });
-    el('theme').value = theme;
-    document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === mode); });
+    document.querySelectorAll('.fs-btn button').forEach(function (b) {
+      var on = b.dataset.size === size;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    var ts = el('theme');
+    if (ts) ts.value = theme;
+    document.querySelectorAll('.mode-btn').forEach(function (b) {
+      var on = b.dataset.mode === mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    var label = el('paper-label');
+    if (label) label.textContent = (ts && ts.options[ts.selectedIndex] || {}).textContent || '';
     setMode(mode, false);
   }
   function saveAccountPrefs() {
@@ -36,7 +54,7 @@
     var theme = localStorage.getItem(THEME_KEY) || 'sepia';
     fetch('/api/v1/library/prefs', {
       method: 'PUT', headers: { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ theme: theme, reader_font_size: size === 'xl' ? 'xl' : size })
+      body: JSON.stringify({ reader_font_size: size, reader_theme: theme })
     }).catch(function () {});
   }
   function loadAccountPrefs() {
@@ -45,7 +63,7 @@
     fetch('/api/v1/library/prefs', { headers: { 'Authorization': 'Bearer ' + t } }).then(function (r) {
       if (!r.ok) throw 0; return r.json();
     }).then(function (p) {
-      if (p && p.theme) localStorage.setItem(THEME_KEY, p.theme);
+      if (p && p.reader_theme) localStorage.setItem(THEME_KEY, p.reader_theme);
       if (p && p.reader_font_size) localStorage.setItem(SCROLL_KEY, p.reader_font_size);
       setPrefs();
     }).catch(function () { setPrefs(); });
@@ -108,8 +126,27 @@
   /* ── pagination (measured) ──────────────────────────────────────── */
   var pageCache = {};   // chapterIndex -> array of arrays of block indices
   var measure = null;
-  function pageHeight() { return Math.max(360, (window.innerHeight || 800) - 148); }
-  function pageWidth() { return Math.min(760, (window.innerWidth || 900) - 48); }
+
+  /* Measure the space actually available between the sticky toolbar and the
+     fixed pager instead of assuming a fixed chrome height. The old guess
+     (viewport minus 148px) clipped text on phones — the toolbar wraps to
+     three rows under 600px — and on short landscape screens it produced pages
+     taller than the viewport, hiding whole paragraphs. */
+  function viewportBox() {
+    var bar = document.querySelector('.toolbar');
+    var pager = el('pager');
+    var cs = getComputedStyle(document.body);
+    var top = bar ? bar.getBoundingClientRect().bottom : 0;
+    var bottom = (pager && pager.style.display !== 'none')
+      ? pager.getBoundingClientRect().top
+      : window.innerHeight;
+    var avail = bottom - top - 24;
+    if (!(avail > 120)) avail = Math.max(200, window.innerHeight - 160);
+    var width = el('page');
+    var w = (width && width.clientWidth) || document.documentElement.clientWidth || window.innerWidth;
+    var pad = parseFloat(cs.paddingLeft || 0) + parseFloat(cs.paddingRight || 0);
+    return { h: Math.max(160, Math.floor(avail)), w: Math.max(240, Math.min(760, w - pad)) };
+  }
 
   function buildPages(chapterIndex) {
     if (pageCache[chapterIndex]) return pageCache[chapterIndex];
@@ -119,10 +156,11 @@
       measure.style.cssText = 'position:absolute;left:-10000px;top:0;visibility:hidden;';
       document.body.appendChild(measure);
     }
-    measure.style.width = pageWidth() + 'px';
+    var box = viewportBox();
+    measure.style.width = box.w + 'px';
     measure.textContent = '';
     var blocks = chapters[chapterIndex].blocks;
-    var pages = [], cur = [], curIds = [], maxH = pageHeight();
+    var pages = [], cur = [], curIds = [], maxH = box.h;
     for (var i = 0; i < blocks.length; i++) {
       var block = blocks[i];
       var node = makeEl(block);
@@ -351,7 +389,12 @@
     var m = /^c(\d+):p:(\d+)$/.exec(savedAnchor);
     if (m) {
       setMode('pages', false);
-      pageState.c = Math.min(parseInt(m[1], 10), chapters.length - 1);
+      pageState.c = Math.min(parseInt(m[1], 10), Math.max(0, chapters.length - 1));
+      /* The saved anchor carries the page within the chapter, but only the
+         chapter index was ever restored — so resuming dropped the reader back
+         to the start of the chapter they were part-way through. */
+      var pages = buildPages(pageState.c);
+      pageState.j = Math.min(parseInt(m[2], 10) || 0, pages.length - 1);
       renderPage();
       return;
     }
@@ -365,9 +408,14 @@
 
   async function start(allowGate) {
     if (allowGate !== false && suppressedMeta(meta) && !isAcked()) { showSuppressedGate(); return; }
-    contentVisible = true;
     var r = await fetch('/api/v1/books/' + ID + '/text');
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || ('HTTP ' + r.status));
+    if (!r.ok) {
+      var body = await r.json().catch(function () { return {}; });
+      var f = failureFor(r, body);
+      renderFailure(f[0], f[1]);
+      return;
+    }
+    contentVisible = true;
     var html = await r.text();
     var doc = new DOMParser().parseFromString(html, 'text/html');
     chapters = [];
@@ -392,38 +440,105 @@
     saveProgress();
   }
 
-  window.addEventListener('DOMContentLoaded', function () {
-    (async function () {
-      try {
-        var m = await (await fetch('/api/v1/books/' + ID)).json();
-        if (m.title) meta.title = m.title;
-        if (m.author) meta.author = m.author;
-        if (Array.isArray(m.tags)) meta.tags = m.tags;
-        document.title = (meta.title || 'Read') + " — Babe's Bookstore";
-        await start(true);
-      } catch (e) {
-        el('loading').style.display = 'none';
-        var errEl = el('err');
-        errEl.style.display = 'block';
-        errEl.textContent = 'Could not load the text: ' + (e.message || e) + '  —  try downloading the book instead.';
+  function renderFailure(kind, detail) {
+    el('loading').style.display = 'none';
+    var box = el('err');
+    box.style.display = 'block';
+    box.textContent = '';
+
+    var h = document.createElement('h2');
+    h.className = 'err-title';
+    var p = document.createElement('p');
+    p.className = 'err-body';
+
+    if (kind === 'withdrawn') {
+      h.textContent = 'This edition is no longer available';
+      p.textContent = detail ||
+        'We withdrew this title from the catalogue, so it cannot be read here or downloaded. ' +
+        'It is most often because the only free edition we could find is not a lawful public-domain copy.';
+    } else if (kind === 'forbidden') {
+      h.textContent = 'Not available to read';
+      p.textContent = detail || 'This title is not cleared for reading on Babe’s Bookstore.';
+    } else {
+      h.textContent = 'We could not load the text';
+      p.textContent = (detail || 'The edition could not be fetched from its source.') +
+        ' You can try again, or download the file and open it in another reader.';
+    }
+    box.appendChild(h);
+    box.appendChild(p);
+
+    var actions = document.createElement('div');
+    actions.className = 'err-actions';
+    var back = document.createElement('a');
+    back.className = 'btn';
+    back.href = '#';
+    back.textContent = '← Back to the catalogue';
+    back.addEventListener('click', function (e) { e.preventDefault(); history.back(); });
+    var search = document.createElement('a');
+    search.className = 'btn ghost';
+    search.href = '/search';
+    search.textContent = 'Find another book';
+    actions.appendChild(back);
+    actions.appendChild(search);
+    box.appendChild(actions);
+  }
+
+  /* Map an API failure onto a state a reader can act on. 410 means the title
+     exists but was withdrawn; 403 means it is not cleared. */
+  function failureFor(r, body) {
+    if (r.status === 410) return ['withdrawn', body && body.detail];
+    if (r.status === 403) return ['forbidden', body && body.detail];
+    if (r.status === 404) return ['withdrawn', null];
+    return ['error', (body && body.detail) || ('The source returned HTTP ' + r.status + '.')];
+  }
+
+  async function boot() {
+    try {
+      var mr = await fetch('/api/v1/books/' + ID);
+      if (!mr.ok) {
+        var body = await mr.json().catch(function () { return {}; });
+        var f = failureFor(mr, body);
+        renderFailure(f[0], f[1]);
+        return;
       }
-    })();
-  });
+      var m = await mr.json();
+      if (m.title) meta.title = m.title;
+      if (m.author) meta.author = m.author;
+      if (Array.isArray(m.tags)) meta.tags = m.tags;
+      document.title = (meta.title || 'Read') + " — Babe's Bookstore";
+      await start(true);
+    } catch (e) {
+      renderFailure('error', e.message || String(e));
+    }
+  }
+
+  /* The document may already be parsed if this script is loaded late, in which
+     case DOMContentLoaded has fired and the listener above never runs. */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { boot(); });
+  } else {
+    boot();
+  }
 
   /* controls */
+  function repaginate() { pageCache = {}; if (mode === 'pages') renderPage(); }
+
   document.querySelectorAll('.fs-btn button').forEach(function (b) {
     b.addEventListener('click', function () {
       localStorage.setItem(SCROLL_KEY, b.dataset.size);
       setPrefs();
       saveAccountPrefs();
-      if (mode === 'pages') { pageCache = {}; renderPage(); }
+      repaginate();
     });
   });
-  el('theme').addEventListener('change', function () {
-    localStorage.setItem(THEME_KEY, this.value);
-    setPrefs();
-    saveAccountPrefs();
-  });
+  var themeSel = el('theme');
+  if (themeSel) {
+    themeSel.addEventListener('change', function () {
+      localStorage.setItem(THEME_KEY, this.value);
+      setPrefs();
+      saveAccountPrefs();
+    });
+  }
   document.querySelectorAll('.mode-btn').forEach(function (b) {
     b.addEventListener('click', function () { setMode(b.dataset.mode, true); });
   });
@@ -434,6 +549,41 @@
   el('btt').addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
   el('p-prev').addEventListener('click', function () { turn(-1); });
   el('p-next').addEventListener('click', function () { turn(1); });
+
+  /* ── touch paging ───────────────────────────────────────────────── */
+  /* Page turning was keyboard-only plus two fixed buttons, which left a
+     phone user tapping a dead text column. Kindle-style: tap the outer
+     thirds to turn, centre to open the chapter list, and support a
+     horizontal swipe in either direction. */
+  (function touchPaging() {
+    var area = el('page');
+    if (!area) return;
+    var sx = 0, sy = 0, moved = false;
+
+    function point(e) {
+      var t = e.changedTouches && e.changedTouches[0];
+      return t ? { x: t.clientX, y: t.clientY } : { x: e.clientX, y: e.clientY };
+    }
+    area.addEventListener('touchstart', function (e) {
+      var p = point(e); sx = p.x; sy = p.y; moved = false;
+    }, { passive: true });
+    area.addEventListener('touchmove', function () { moved = true; }, { passive: true });
+    area.addEventListener('touchend', function (e) {
+      if (mode !== 'pages') return;
+      var p = point(e), dx = p.x - sx, dy = p.y - sy;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+        moved = true;
+        turn(dx < 0 ? 1 : -1);
+        return;
+      }
+      if (moved) return;                       // a scroll/drag, not a tap
+      var rect = area.getBoundingClientRect();
+      var frac = (p.x - rect.left) / (rect.width || 1);
+      if (frac < 0.3) turn(-1);
+      else if (frac > 0.7) turn(1);
+      else { var sel = el('toc-sel'); if (sel) sel.focus(); }
+    }, { passive: true });
+  })();
   document.addEventListener('keydown', function (e) {
     if (mode !== 'pages') return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown' || e.key === 'Enter') { e.preventDefault(); turn(1); }
@@ -443,12 +593,15 @@
   });
 
   var resizeTimer = null;
-  window.addEventListener('resize', function () {
+  function onViewportChange() {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
-      if (mode === 'pages') { pageCache = {}; renderPage(); }
-    }, 220);
-  });
+    resizeTimer = setTimeout(repaginate, 220);
+  }
+  window.addEventListener('resize', onViewportChange);
+  // Rotating a phone changes the toolbar height and the page box, so the
+  // measured page breaks have to be rebuilt or text is clipped.
+  window.addEventListener('orientationchange', onViewportChange);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', onViewportChange);
 
   window.addEventListener('scroll', function () {
     var btt = el('btt');

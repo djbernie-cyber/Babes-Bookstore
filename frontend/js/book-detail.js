@@ -2,11 +2,40 @@
 const grads = ['from-amber-400 to-orange-500', 'from-rose-400 to-pink-500', 'from-emerald-400 to-teal-500', 'from-blue-400 to-indigo-500', 'from-violet-400 to-purple-500'];
 function g(id) { return grads[Math.abs(id) % grads.length] }
 function badge(t, c) { return `<span class="px-3 py-1 rounded-full text-xs font-medium border ${c}">${t}</span>` }
+
+/* A withdrawn edition is not a missing page: explain what happened and give
+   the reader somewhere to go next. */
+function showWithdrawn(err, loading, box) {
+  loading.classList.add('hidden');
+  if (box) box.classList.add('hidden');
+  err.classList.remove('hidden');
+  err.innerHTML = `
+    <div class="max-w-xl mx-auto text-center py-16">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a8683]">No longer in the catalogue</p>
+      <h1 class="font-serif text-3xl md:text-4xl mt-3 text-stone-900">This edition has been withdrawn</h1>
+      <p class="text-stone-600 mt-4 leading-relaxed">
+        We pulled this title rather than serve a broken or unlawful copy — usually because the
+        only free edition we could find is not a legitimate public-domain text. We would rather
+        show you an honest gap than a download that fails.
+      </p>
+      <div class="flex flex-wrap gap-3 justify-center mt-8">
+        <a href="/" class="px-5 py-2.5 rounded-full bg-stone-900 text-white text-sm font-semibold no-underline">Back to the catalogue</a>
+        <a href="/bundles" class="px-5 py-2.5 rounded-full border border-stone-300 text-sm font-semibold text-stone-900 no-underline">Browse the bundles</a>
+        <a href="/search" class="px-5 py-2.5 rounded-full border border-stone-300 text-sm font-semibold text-stone-900 no-underline">Find another book</a>
+      </div>
+    </div>`;
+}
 async function load() {
   const id = location.pathname.split('/').filter(Boolean).pop();
   const loading = document.getElementById('loading'), err = document.getElementById('err'), box = document.getElementById('book');
   try {
-    const r = await fetch(`/api/v1/books/${encodeURIComponent(id)}`); if (!r.ok) throw new Error();
+    const r = await fetch(`/api/v1/books/${encodeURIComponent(id)}`);
+    if (!r.ok) {
+      // 410 = the title exists but was withdrawn from the catalogue. Say so
+      // and offer a way out, rather than a bare "Book not found" dead end.
+      if (r.status === 410) return showWithdrawn(err, loading, box);
+      throw new Error();
+    }
     const b = await r.json(); loading.classList.add('hidden'); box.classList.remove('hidden');
     document.title = b.title + " — Babe's Bookstore";
     const cover = document.getElementById('cover');
