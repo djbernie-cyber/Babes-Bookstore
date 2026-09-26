@@ -38,6 +38,43 @@ def _h(token):
 
 
 @pytest.mark.asyncio
+async def test_feed_shelves_do_not_repeat_the_same_books(client, db):
+    """Regression: every row ordered by created_at desc, so "Start with the
+    classics" and "New arrivals" returned identical ids and the two Marx
+    shelves mirrored each other."""
+    for i in range(12):
+        await _make_book(
+            db, f"Overlap {i}", tags=["Revolutionary"],
+            source_id=f"ov-{i}",
+        )
+    for i in range(12):
+        await _make_book(db, f"Plain {i}", source_id=f"pl-{i}")
+
+    r = await client.get("/api/v1/home/feed")
+    assert r.status_code == 200, r.text
+    sections = {s["key"]: [b["id"] for b in s["items"]] for s in r.json()["sections"]}
+
+    start = set(sections.get("start-here", []))
+    recent = set(sections.get("new-arrivals", []))
+    assert start and recent
+    assert not (start & recent), (
+        f"'Start with the classics' and 'New arrivals' share books: {start & recent}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_feed_shelves_are_not_empty_when_books_exist(client, db):
+    for i in range(6):
+        await _make_book(db, f"Dual {i}", tags=["Suppressed Classics", "Revolutionary"],
+                         source_id=f"du-{i}")
+    r = await client.get("/api/v1/home/feed")
+    assert r.status_code == 200, r.text
+    sections = r.json()["sections"]
+    for s in sections:
+        assert s["items"], f"section {s['key']} rendered empty"
+
+
+@pytest.mark.asyncio
 async def test_anonymous_feed_is_curated_rows(client, db):
     await _make_book(db, "Suppress Me", tags=["Suppressed Classics"], source_id="s1")
     await _make_book(db, "African Classic", tags=["African Literature"], source_id="s2")

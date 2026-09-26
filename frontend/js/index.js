@@ -3,30 +3,35 @@
   'use strict';
   function price(cents, ccy) { return (window.formatPrice ? formatPrice(cents, ccy) : ('£' + (cents / 100).toFixed(2))) }
   async function covers() {
+    const grid = document.getElementById('cover-grid');
+    if (!grid) return;
     try {
-      const r = await fetch('/api/v1/books?page_size=8&category=Classics'); if (!r.ok) throw 0;
-      const d = await r.json(); const items = d.items || [];
-      const grid = document.getElementById('cover-grid');
-      if (!grid) return;
+      const d = await api('/books?page_size=8&category=Classics');
+      const items = d.items || [];
+      if (!items.length) throw new Error('empty');
       grid.innerHTML = items.map(b => {
-        const cover = b.cover_path && /^https?:\/\//.test(b.cover_path) ? `<img src="${b.cover_path}" alt="${b.title || 'Book cover'}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-[#ece9e3] flex items-center justify-center text-[#8a8683] font-serif text-xl">${(b.title || '?').charAt(0)}</div>`;
-        return `<a href="/books/${b.id}" class="block aspect-[3/4] bg-white border rounded-xl overflow-hidden hover:border-[#0b0b0c] transition">${cover}</a>`;
+        const src = b.cover_path || b.cover_url;
+        const cover = src && /^https?:\/\//.test(src)
+          ? `<img src="${src}" alt="Cover of ${(b.title || '').replace(/[<>&"]/g, '')}" loading="lazy" class="w-full h-full object-cover">`
+          : `<div class="w-full h-full bg-[#ece9e3] flex items-center justify-center text-[#8a8683] font-serif text-xl">${(b.title || '?').charAt(0)}</div>`;
+        return `<a href="/books/${b.id}" class="block aspect-[3/4] bg-white border rounded-xl overflow-hidden hover:border-[#0b0b0c] transition" title="${(b.title || '').replace(/[<>&"]/g, '')}">${cover}</a>`;
       }).join('');
-    } catch { }
+    } catch (e) {
+      grid.innerHTML = '<p class="col-span-full py-6 text-center text-sm text-[#8a8683]">Covers are unavailable right now. <button id="covers-retry" class="underline">Try again</button></p>';
+      const retry = document.getElementById('covers-retry');
+      if (retry) retry.onclick = covers;
+    }
   }
   async function featured() {
     const el = document.getElementById('featured-bundles');
     const controls = document.getElementById('featured-controls');
     try {
-      const r = await fetch('/api/v1/bundles?featured=true&page_size=100'); if (!r.ok) throw 0;
-      const d = await r.json();
+      const d = await api('/bundles?featured=true&page_size=100');
       let items = d.items || [];
-      const r2 = await fetch('/api/v1/bundles?page_size=100');
-      if (r2.ok) {
-        const all = (await r2.json()).items || [];
-        const seen = new Set(items.map(b => b.slug));
-        items = items.concat(all.filter(b => !seen.has(b.slug)));
-      }
+      const d2 = await api('/bundles?page_size=100');
+      const all = d2.items || [];
+      const seen = new Set(items.map(b => b.slug));
+      items = items.concat(all.filter(b => !seen.has(b.slug)));
       if (!items.length) { el.innerHTML = '<div class="col-span-full text-center py-12 border rounded-2xl bg-white"><p class="font-medium">No featured bundles</p></div>'; return }
       const PAGE = 6;
       const pages = [];
@@ -34,8 +39,16 @@
       let page = 0, timer = null;
 
       function card(b) {
-        const n = Array.isArray(b.books) ? b.books.length : '?';
-        const cover = b.books && b.books[0] && b.books[0].cover_path ? `<img src="${b.books[0].cover_path}" alt="${b.books[0].title || 'Bundle cover'}" class="w-full h-24 object-cover rounded-xl border">` : `<div class="w-full h-24 bg-[#ece9e3] rounded-xl"></div>`;
+        const n = Array.isArray(b.books) ? b.books.length : (b.book_count != null ? b.book_count : '?');
+        // Use the bundle's OWN cover. Borrowing books[0].cover_path put an
+        // unrelated member book's cover on the bundle, which is what made the
+        // carousel look like the covers were shuffled onto the wrong bundles.
+        const own = b.cover_image_path;
+        const cover = own && /^https?:\/\//.test(own)
+          ? `<img src="${own}" alt="" loading="lazy" class="w-full h-24 object-cover rounded-xl border">`
+          : `<div class="w-full h-24 rounded-xl border border-[#ece9e3] bg-[#f6f4f0] flex items-center justify-center px-4">
+               <span class="font-serif text-sm text-[#8a8683] text-center line-clamp-2">${(b.name || '').replace(/[<>&]/g, '')}</span>
+             </div>`;
         return `<a href="/bundles/${b.slug}" class="group bg-white border rounded-2xl p-5 hover:border-[#0b0b0c] transition">
           ${cover}
           <h3 class="font-serif text-lg font-semibold leading-tight mt-4 group-hover:underline">${b.name}</h3>
@@ -68,7 +81,11 @@
         el.addEventListener('mouseenter', () => clearInterval(timer));
         el.addEventListener('mouseleave', restart);
       }
-    } catch (e) { el.innerHTML = '<div class="col-span-full text-center py-10 border rounded-2xl bg-white"><p class="text-sm text-[#57534e]">Could not load bundles.</p></div>' }
+    } catch (e) {
+      el.innerHTML = '<div class="col-span-full text-center py-10 border rounded-2xl bg-white"><p class="text-sm text-[#57534e]">Could not load bundles.</p><button id="bundles-retry" class="mt-3 text-sm underline">Try again</button></div>';
+      const retry = document.getElementById('bundles-retry');
+      if (retry) retry.onclick = featured;
+    }
   }
   document.addEventListener('DOMContentLoaded', () => { covers(); featured(); });
 })();

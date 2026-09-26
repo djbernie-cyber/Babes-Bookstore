@@ -43,12 +43,24 @@ def _approved_where():
     return (Book.status == BookStatus.APPROVED, Book.license_verified == True)
 
 
+def _dedupe(rows: list[dict], shown: set[int], limit: int) -> list[dict]:
+    """Prefer books no earlier shelf has used, but never render an empty row.
+
+    Every row used to be ordered by created_at desc, so "Start with the
+    classics" and "New arrivals" returned the *same* eight ids and the two
+    Marx shelves mirrored each other. Specialised shelves now claim their
+    books first; the generic ones fill the gaps.
+    """
+    fresh = [r for r in rows if r["id"] not in shown]
+    return (fresh or rows)[:limit]
+
+
 async def _tag_row(db: AsyncSession, tag: str, limit: int) -> list:
     stmt = (
         select(Book)
         .where(*_approved_where(), cast(Book.tags, String).ilike(f'%"{tag}"%'))
         .order_by(Book.created_at.desc())
-        .limit(limit)
+        .limit(limit * 4)
     )
     return [_book(b) for b in (await db.execute(stmt)).scalars()]
 
@@ -58,7 +70,7 @@ async def _category_row(db: AsyncSession, category: str, limit: int) -> list:
         select(Book)
         .where(*_approved_where(), Book.category == category)
         .order_by(Book.created_at.desc())
-        .limit(limit)
+        .limit(limit * 4)
     )
     return [_book(b) for b in (await db.execute(stmt)).scalars()]
 
@@ -68,7 +80,7 @@ async def _recent_row(db: AsyncSession, limit: int) -> list:
         select(Book)
         .where(*_approved_where())
         .order_by(Book.created_at.desc())
-        .limit(limit)
+        .limit(limit * 4)
     )
     return [_book(b) for b in (await db.execute(stmt)).scalars()]
 
@@ -138,36 +150,43 @@ async def home_feed(
 ):
     """The row-by-row home screen, personalised for the signed-in reader."""
     sections: list[dict] = []
+    shown: set[int] = set()
+
+    def claim(cands: list[dict]) -> list[dict]:
+        chosen = _dedupe(cands, shown, limit)
+        for r in chosen:
+            shown.add(r["id"])
+        return chosen
 
     signals = await _reader_signals(db, current_user) if current_user else []
 
     if current_user:
         cont = await _continue_reading(db, current_user, min(limit, 12))
         if cont:
-            sections.append({"key": "continue", "title": "Continue reading", "items": cont})
+            sections.append({"key": "continue", "title": "Continue reading", "items": claim(cont)})
 
     if current_user:
         for_you = await _for_you(db, current_user, limit, signals)
         if for_you:
-            sections.append({"key": "for-you", "title": "Picked for you", "items": for_you})
-    else:
-        classic = await _category_row(db, "Classics", limit)
-        if classic:
-            sections.append({"key": "start-here", "title": "Start with the classics", "items": classic})
+            sections.append({"key": "for-you", "title": "Picked for you", "items": claim(for_you)})
 
-    suppressed = await _tag_row(db, "Suppressed Classics", limit)
+    # Specialised shelves claim first so the catch-all rows below cannot
+    # swallow every book they were meant to showcase.
+    suppressed = claim(await _tag_row(db, "Suppressed Classics", limit))
+    african = claim(await _tag_row(db, "African Literature", limit))
+    revolutionary = claim(await _tag_row(db, "Revolutionary", limit))
+
+    classic = claim(await _category_row(db, "Classics", limit)) if not current_user else []
+    recent = claim(await _recent_row(db, limit))
+
+    if classic:
+        sections.append({"key": "start-here", "title": "Start with the classics", "items": classic})
     if suppressed:
         sections.append({"key": "suppressed", "title": "Banned & suppressed classics", "items": suppressed})
-
-    african = await _tag_row(db, "African Literature", limit)
     if african:
         sections.append({"key": "african", "title": "African literature", "items": african})
-
-    revolutionary = await _tag_row(db, "Revolutionary", limit)
     if revolutionary:
         sections.append({"key": "revolutionary", "title": "The revolutionary shelf", "items": revolutionary})
-
-    recent = await _recent_row(db, limit)
     if recent:
         sections.append({"key": "new-arrivals", "title": "New arrivals", "items": recent})
 

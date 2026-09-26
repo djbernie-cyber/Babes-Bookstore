@@ -11,9 +11,18 @@
 
   function cover(b) {
     if (b.cover_url) {
-      return '<img src="' + esc(b.cover_url) + '" alt="' + esc(b.title) + '" loading="lazy" class="w-full h-44 object-cover bg-[#1c1b1a]">';
+      return '<img src="' + esc(b.cover_url) + '" alt="Cover of ' + esc(b.title) + '" loading="lazy" class="w-full h-44 object-cover bg-[#1c1b1a]">';
     }
-    return '<div class="w-full h-44 bg-[#1c1b1a] list-none flex flex-col items-center justify-center p-3"><span class="font-serif text-5xl text-stone-200">' + esc(String(b.title || '?').charAt(0).toUpperCase()) + '</span><span class="text-[10px] tracking-wide uppercase font-medium text-stone-500 mt-2 text-center line-clamp-2">' + esc(b.title) + '</span></div>';
+    // The card body already prints the title underneath, so this placeholder
+    // must not repeat it -- showing the full title here made every uncovered
+    // book print its name twice. Monogram + spine only.
+    var initial = esc(String(b.title || '?').trim().charAt(0).toUpperCase());
+    var author = esc(String(b.author || '').trim());
+    return '<div class="w-full h-44 bg-[#1c1b1a] flex flex-col items-center justify-center gap-2 px-4">' +
+      '<span class="font-serif text-5xl text-stone-200 leading-none">' + initial + '</span>' +
+      '<span class="h-px w-8 bg-stone-700"></span>' +
+      (author ? '<span class="text-[10px] tracking-wide uppercase font-medium text-stone-500 text-center line-clamp-2">' + author + '</span>' : '') +
+      '</div>';
   }
 
   function card(b) {

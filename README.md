@@ -1,6 +1,36 @@
 # Babe's Bookstore
 
+**Built for a neutral internet — by William Majanja.**
+
 A curated marketplace for public domain and openly-licensed books.
+
+## Mission
+
+Illiteracy is the enemy. Not a metaphor, not a talking point — the single
+thing that keeps a person poor, voiceless and easy to govern is the inability
+to read.
+
+This library exists to end it. Every text here is free to read online and free
+to download, in the reader's own language, on whatever device they already own.
+No subscription, no DRM, no expiring licence, no paywall between a person and
+a book. Take the whole shelf if you want it; it stays yours.
+
+**We are building for a neutral internet.** The internet is at its best when it
+simply carries knowledge from the people who wrote it to the people who want it,
+with nothing in between: no gatekeeper deciding who is worth educating, no
+subscription wall scaling with income, no algorithm deciding which minds count.
+Censorship, paywalls and pay-per-view are not neutral. This project is a
+standing argument against them.
+
+The work is deliberately unglamorous: texts are licence-verified, cleaned,
+typeset and delivered as print-ready PDF and reflowable EPUB. A library that
+cannot be trusted to serve the book is not a library, it is a stall.
+
+## What we will not do
+
+- We will not serve an in-copyright text as though it were free.
+- We will not hide a broken link behind a "coming soon".
+- We will not charge twice for the same public-domain work.
 
 ## Quick Start
 
