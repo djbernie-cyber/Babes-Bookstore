@@ -13,10 +13,10 @@ async def _make_user(db, email="home@example.com", pw="pw", admin=False):
     return u
 
 
-async def _make_book(db, title, tags=None, category="Classics", source_id=None, verified=True, pending=False):
+async def _make_book(db, title, tags=None, category="Classics", source_id=None, verified=True, pending=False, author="Someone"):
     from app.models.book import Book, BookStatus
     status = BookStatus.PENDING if pending or not verified else BookStatus.APPROVED
-    b = Book(title=title, author="Someone",
+    b = Book(title=title, author=author,
              source="gutenberg", source_id=source_id or f"id-{title}",
              category=category, tags=tags or [],
              license_type="public_domain",
@@ -35,6 +35,28 @@ async def _login(client, email="home@example.com", pw="pw"):
 
 def _h(token):
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.mark.asyncio
+async def test_shelf_does_not_monopolise_on_one_author(client, db):
+    """Regression: a shelf ordered by created_at desc came back as eight
+    Frederick Douglass titles, and the Marx shelves were all Karl Marx."""
+    for i in range(6):
+        await _make_book(db, f"Douglass {i}", tags=["African Literature"],
+                         source_id=f"dg-{i}", author="Frederick Douglass")
+    for name in ("Achebe", "Soyinka", "Gordimer", "Coetzee"):
+        await _make_book(db, f"A Work by {name}", tags=["African Literature"],
+                         source_id=name.lower(), author=name)
+
+    r = await client.get("/api/v1/home/feed")
+    assert r.status_code == 200, r.text
+    african = next(s for s in r.json()["sections"] if s["key"] == "african")
+    authors = [b["author"] for b in african["items"]]
+    # There are 5 distinct authors in the fixture, so the shelf must open
+    # with all five before any author appears a second time. Ordering by
+    # created_at desc would put six Douglass titles first.
+    assert len(authors) >= 5
+    assert len(set(authors[:5])) == 5, f"shelf did not spread across authors: {authors}"
 
 
 @pytest.mark.asyncio

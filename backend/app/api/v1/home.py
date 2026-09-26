@@ -43,7 +43,37 @@ def _approved_where():
     return (Book.status == BookStatus.APPROVED, Book.license_verified == True)
 
 
-def _dedupe(rows: list[dict], shown: set[int], limit: int) -> list[dict]:
+def _interleave_by_author(rows: list[dict], limit: int) -> list[dict]:
+    """Round-robin rows so one author cannot monopolise a canon shelf.
+
+    Ordering a filtered shelf by created_at desc just surfaces whoever was
+    ingested last: the African shelf came back as eight Douglass titles, and
+    the two Marx shelves were each entirely Karl Marx. Taking one title per
+    author in turn gives an actual cross-section of the shelf.
+    """
+    buckets: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for r in rows:
+        key = (r.get("author") or "").strip().lower()
+        if key not in buckets:
+            buckets[key] = []
+            order.append(key)
+        buckets[key].append(r)
+    out: list[dict] = []
+    while len(out) < limit:
+        added = False
+        for key in order:
+            if buckets[key]:
+                out.append(buckets[key].pop(0))
+                added = True
+                if len(out) >= limit:
+                    break
+        if not added:
+            break
+    return out
+
+
+def _dedupe(rows: list[dict], shown: set[int], limit: int, spread: bool = False) -> list[dict]:
     """Prefer books no earlier shelf has used, but never render an empty row.
 
     Every row used to be ordered by created_at desc, so "Start with the
@@ -52,7 +82,10 @@ def _dedupe(rows: list[dict], shown: set[int], limit: int) -> list[dict]:
     books first; the generic ones fill the gaps.
     """
     fresh = [r for r in rows if r["id"] not in shown]
-    return (fresh or rows)[:limit]
+    chosen = fresh or rows
+    if spread:
+        chosen = _interleave_by_author(chosen, limit)
+    return chosen[:limit]
 
 
 async def _tag_row(db: AsyncSession, tag: str, limit: int, exclude_tags: tuple[str, ...] = ()) -> list:
@@ -157,8 +190,8 @@ async def home_feed(
     sections: list[dict] = []
     shown: set[int] = set()
 
-    def claim(cands: list[dict]) -> list[dict]:
-        chosen = _dedupe(cands, shown, limit)
+    def claim(cands: list[dict], spread: bool = False) -> list[dict]:
+        chosen = _dedupe(cands, shown, limit, spread=spread)
         for r in chosen:
             shown.add(r["id"])
         return chosen
@@ -184,9 +217,12 @@ async def home_feed(
     # stays findable; leading the shelf with them buried the actual African
     # and diaspora canon behind 1,900 titles of Victorian adventure fiction.
     # The colonial works keep their own tag and their own shelf.
-    suppressed = claim(await _tag_row(db, "Suppressed Classics", limit))
-    african = claim(await _tag_row(db, "African Literature", limit, exclude_tags=("Colonial Sauce",)))
-    revolutionary = claim(await _tag_row(db, "Revolutionary", limit))
+    suppressed = claim(await _tag_row(db, "Suppressed Classics", limit), spread=True)
+    african = claim(
+        await _tag_row(db, "African Literature", limit, exclude_tags=("Colonial Sauce",)),
+        spread=True,
+    )
+    revolutionary = claim(await _tag_row(db, "Revolutionary", limit), spread=True)
 
     classic = claim(await _category_row(db, "Classics", limit)) if not current_user else []
     recent = claim(await _recent_row(db, limit))
