@@ -67,18 +67,22 @@ def test_cleans_punctuation_scaffolding():
 
 
 @pytest.mark.parametrize("raw,expected", [
-    # a reversal pass turned an already-natural name inside out
+    # a reversal pass put a city in the surname slot
     ("London, Jack", "Jack London"),
-    ("Bourget, Paul", "Paul Bourget"),
-    ("Shakespeare, William", "William Shakespeare"),
 ])
 def test_unreverses_mangled_authors(raw, expected):
     assert clean_author(raw) == expected
 
 
 @pytest.mark.parametrize("raw", [
-    # "Surname, Given" is a legitimate catalogue convention, not a defect.
-    # These stay put rather than being mass-rewritten.
+    # "Surname, Given" is standard library practice, not a defect. These
+    # dominate the catalogue (Dickens 117, Shakespeare 191, Meredith 111) and
+    # are structurally identical to "London, Jack" -- only the place name
+    # distinguishes them, so they must survive untouched.
+    "Dickens, Charles",
+    "Shakespeare, William",
+    "Meredith, George",
+    "Scott, Walter",
     "Twain, Mark",
     # surnames that read as given names must not be flipped
     "Psalms, David",

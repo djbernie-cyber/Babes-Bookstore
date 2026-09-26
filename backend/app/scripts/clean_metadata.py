@@ -68,8 +68,19 @@ def clean_title(raw: str) -> str:
     return cut.rstrip(" ,;:-—") + "…"
 
 
+# A place name in the surname slot. Gutenberg's "London, Jack" is Jack
+# London reversed by a name-normalisation pass; "Dickens, Charles" is a
+# perfectly good library record. The two are structurally identical, so the
+# only sound discriminator is that one of them starts with a city.
+PLACE_TOKENS = {
+    "london", "paris", "york", "new york", "oxford", "cambridge", "edinburgh",
+    "dublin", "berlin", "vienna", "madrid", "rome", "liverpool", "manchester",
+    "glasgow", "aberdeen", "boston", "chicago", "toronto", "montreal",
+    "sydney", "melbourne", "cape town", "lagos", "accra", "nairobi",
+    "johannesburg", "harlem", "buenos aires",
+}
 # Two bare capitalised tokens, "London, Jack", where the second is a common
-# given name: a reversal pass turned an already-natural name inside out.
+# given name.
 TWO_TOKEN = re.compile(r"^([A-Z][\w'’-]+),\s+([A-Z][\w'’-]+)$")
 GIVEN_NAMES = {
     "jack", "john", "james", "robert", "henry", "george", "charles", "thomas",
@@ -84,7 +95,15 @@ NOT_SURNAMES = {"psalms", "proverbs", "ecclesiastes", "genesis", "exodus"}
 
 
 def clean_author(raw: str):
-    """Return the corrected author, or None to leave the record alone."""
+    """Return the corrected author, or None to leave the record alone.
+
+    Deliberately narrow. 9,106 approved rows are stored as "Surname, Given",
+    which is standard library practice and which readers of a catalogue
+    expect; rewriting all of them to natural order would churn ~8.9k author
+    strings and their pages for a formatting preference. Only records whose
+    surname slot holds a place name -- the fingerprint of the reversal bug --
+    are corrected.
+    """
     if not raw:
         return None
     a = raw.strip()
@@ -93,6 +112,8 @@ def clean_author(raw: str):
         return None
     first, second = m.group(1), m.group(2)
     if first.lower() in NOT_SURNAMES:
+        return None
+    if first.lower() not in PLACE_TOKENS:
         return None
     if second.lower() not in GIVEN_NAMES:
         return None
