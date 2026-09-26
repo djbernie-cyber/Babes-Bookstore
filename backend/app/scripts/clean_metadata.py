@@ -143,8 +143,11 @@ async def run(apply: bool) -> None:
                 a_fixed += 1
                 if len(samples["author"]) < 8:
                     samples["author"].append((b.id, b.author, new_author))
+            # Store primitives, never ORM objects: holding Book instances
+            # across sessions and committing a different one silently
+            # persists nothing while still reporting success.
             if new_title != b.title or new_author:
-                touched.append((b, new_title, new_author))
+                touched.append((b.id, new_title if new_title != b.title else None, new_author))
 
         print(f"titles cleaned          : {t_fixed:,}")
         print(f"authors un-reversed     : {a_fixed:,}")
@@ -162,19 +165,57 @@ async def run(apply: bool) -> None:
             return
 
         # Write in chunks so one huge transaction cannot time out the proxy,
-        # the failure mode the retag task already hit.
+        # the failure mode the retag task already hit. Each chunk re-fetches
+        # its rows in the writing session so the mutated objects are actually
+        # attached to it.
         CHUNK = 500
+        written = 0
         for i in range(0, len(touched), CHUNK):
+            chunk = touched[i:i + CHUNK]
+            ids = [t[0] for t in chunk]
             async with AsyncSessionLocal() as wdb:
-                for b, new_title, new_author in touched[i:i + CHUNK]:
-                    if new_title != b.title:
+                books = (await wdb.execute(
+                    select(Book).where(Book.id.in_(ids))
+                )).scalars().all()
+                by_id = {b.id: b for b in books}
+                for bid, new_title, new_author in chunk:
+                    b = by_id.get(bid)
+                    if b is None:
+                        continue
+                    if new_title is not None:
                         b.title = new_title
-                    if new_author:
+                    if new_author is not None:
                         b.author = new_author
                 await wdb.commit()
-            print(f"  wrote {min(i + CHUNK, len(touched)):,}/{len(touched):,}")
+            written += len(chunk)
+            print(f"  wrote {written:,}/{len(touched):,}")
 
-        print("\nAPPLIED.")
+        # Read the rows back in a fresh session. A commit that reports success
+        # without changing anything is the exact failure this script already
+        # suffered once, so verify rather than trust.
+        async with AsyncSessionLocal() as vdb:
+            check_ids = [t[0] for t in touched[:50]]
+            after = {b.id: b for b in (await vdb.execute(
+                select(Book).where(Book.id.in_(check_ids))
+            )).scalars().all()}
+            stuck = []
+            for bid, new_title, new_author in touched[:50]:
+                b = after.get(bid)
+                if b is None:
+                    stuck.append((bid, "row missing"))
+                    continue
+                if new_title is not None and b.title != new_title:
+                    stuck.append((bid, f"title still {b.title[:60]!r}"))
+                if new_author is not None and b.author != new_author:
+                    stuck.append((bid, f"author still {b.author!r}"))
+
+        if stuck:
+            print(f"\nVERIFY FAILED -- {len(stuck)} of 50 sampled rows did not persist:")
+            for bid, why in stuck[:10]:
+                print(f"  #{bid}: {why}")
+            sys.exit(1)
+        print(f"\nVERIFIED: {min(50, len(touched))} sampled rows read back clean.")
+        print("APPLIED.")
 
 
 if __name__ == "__main__":
