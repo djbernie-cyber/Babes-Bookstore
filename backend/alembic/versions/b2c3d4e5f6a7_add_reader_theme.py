@@ -1,7 +1,7 @@
 """add reader_theme to users
 
 Revision ID: b2c3d4e5f6a7
-Revises: f2e1d0c9b8a7
+Revises: c1d2e3f4a5b6
 Create Date: 2026-09-26
 
 The reader used to save its paper colour into the same account column as
@@ -14,7 +14,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "b2c3d4e5f6a7"
-down_revision = "f2e1d0c9b8a7"
+down_revision = "c1d2e3f4a5b6"
 branch_labels = None
 depends_on = None
 
