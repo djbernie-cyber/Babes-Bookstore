@@ -38,6 +38,23 @@ def _h(token):
 
 
 @pytest.mark.asyncio
+async def test_african_shelf_excludes_colonial_sauce(client, db):
+    """The retag pass tags COLONIAL_AUTHORS with African Literature so their
+    Africa-set works stay findable. Leading the shelf with them buried the
+    African canon behind Victorian adventure fiction."""
+    await _make_book(db, "Real African Novel", tags=["African Literature"], source_id="af1")
+    await _make_book(db, "Colonial Adventure",
+                     tags=["African Literature", "Colonial Sauce"], source_id="af2")
+
+    r = await client.get("/api/v1/home/feed")
+    assert r.status_code == 200, r.text
+    african = next(s for s in r.json()["sections"] if s["key"] == "african")
+    titles = [b["title"] for b in african["items"]]
+    assert "Real African Novel" in titles
+    assert "Colonial Adventure" not in titles
+
+
+@pytest.mark.asyncio
 async def test_feed_shelves_do_not_repeat_the_same_books(client, db):
     """Regression: every row ordered by created_at desc, so "Start with the
     classics" and "New arrivals" returned identical ids and the two Marx

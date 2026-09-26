@@ -55,14 +55,19 @@ def _dedupe(rows: list[dict], shown: set[int], limit: int) -> list[dict]:
     return (fresh or rows)[:limit]
 
 
-async def _tag_row(db: AsyncSession, tag: str, limit: int) -> list:
+async def _tag_row(db: AsyncSession, tag: str, limit: int, exclude_tags: tuple[str, ...] = ()) -> list:
     stmt = (
         select(Book)
         .where(*_approved_where(), cast(Book.tags, String).ilike(f'%"{tag}"%'))
         .order_by(Book.created_at.desc())
         .limit(limit * 4)
     )
-    return [_book(b) for b in (await db.execute(stmt)).scalars()]
+    rows = [_book(b) for b in (await db.execute(stmt)).scalars()]
+    if exclude_tags:
+        # Stored tags are JSON, so filter in Python rather than with ILIKE.
+        blocked = {t.lower() for t in exclude_tags}
+        rows = [r for r in rows if not (blocked & {t.lower() for t in (r.get("tags") or [])})]
+    return rows
 
 
 async def _category_row(db: AsyncSession, category: str, limit: int) -> list:
@@ -172,8 +177,15 @@ async def home_feed(
 
     # Specialised shelves claim first so the catch-all rows below cannot
     # swallow every book they were meant to showcase.
+    #
+    # The African shelf excludes "Colonial Sauce". The retag pass gives
+    # COLONIAL_AUTHORS (Henty, Doyle, Kipling, Haggard, Conrad, Marryat) the
+    # African Literature tag on purpose, so empire-framing Africa-adventure
+    # stays findable; leading the shelf with them buried the actual African
+    # and diaspora canon behind 1,900 titles of Victorian adventure fiction.
+    # The colonial works keep their own tag and their own shelf.
     suppressed = claim(await _tag_row(db, "Suppressed Classics", limit))
-    african = claim(await _tag_row(db, "African Literature", limit))
+    african = claim(await _tag_row(db, "African Literature", limit, exclude_tags=("Colonial Sauce",)))
     revolutionary = claim(await _tag_row(db, "Revolutionary", limit))
 
     classic = claim(await _category_row(db, "Classics", limit)) if not current_user else []
