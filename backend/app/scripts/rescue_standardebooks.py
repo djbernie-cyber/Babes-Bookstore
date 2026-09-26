@@ -34,7 +34,6 @@ from app.database import AsyncSessionLocal
 from app.models.book import Book, BookStatus
 from app.scripts.audit_bundles import (
     GUTENBERG_URL_RE,
-    SE_SLUG_RE,
     _se_epub_from_url,
     _url_alive,
 )
@@ -137,18 +136,17 @@ async def run(limit: int | None = None, dry_run: bool = False) -> None:
     async def probe(book: Book) -> dict:
         row = {"id": book.id, "title": book.title, "author": book.author, "how": "", "url": ""}
 
+        se_why = "no standard ebooks url"
         epub = _se_epub_from_url(book.source_url or "")
-        if not epub:
-            se = SE_SLUG_RE.search(book.source_url or "")
-            row["why"] = "no standard ebooks slug" if se else "no standard ebooks url"
-            return row
-        epub += "?source=download" if "?" not in epub else ""
+        if epub:
+            epub += "?source=download" if "?" not in epub else ""
+            if await alive(epub):
+                row.update(how="restored-se", url=epub)
+                return row
+            se_why = "standard ebooks epub not published"
 
-        if await alive(epub):
-            row.update(how="restored-se", url=epub)
-            return row
-        row["why"] = "standard ebooks epub not published"
-
+        # Fall through to Gutenberg even when the SE url is unusable: a
+        # re-sourced edition only needs the title and author to match.
         tnorm = _norm(book.title)
         for cand in index.get(tnorm, []):
             if not _author_ok(book.author, cand.author):
@@ -162,7 +160,7 @@ async def run(limit: int | None = None, dry_run: bool = False) -> None:
             row.update(how="rescued-gutenberg", url=url,
                        gid=_gid, from_title=cand.title, from_author=cand.author)
             return row
-        row["why"] = row["why"] + "; no verified gutenberg edition"
+        row["why"] = f"{se_why}; no verified gutenberg edition"
         return row
 
     results = await asyncio.gather(*(probe(b) for b in targets))
