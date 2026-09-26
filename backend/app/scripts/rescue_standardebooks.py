@@ -99,6 +99,64 @@ def _pg_file(cand: Book) -> tuple[str, str] | None:
     return None
 
 
+async def _apply(restored: list[dict], rescued: list[dict]) -> tuple[int, int]:
+    """Write the flips in a fresh session and then prove they landed.
+
+    The probe phase deliberately runs outside any session (it is slow and
+    network-bound), so the Book instances it started from are detached by
+    then and mutating them would commit nothing. Re-fetch the rows by id,
+    and re-read the statuses afterwards rather than trusting the commit.
+    """
+    ids = [r["id"] for r in restored + rescued]
+    if not ids:
+        return 0, 0
+
+    async with AsyncSessionLocal() as db:
+        books = (await db.execute(
+            select(Book).where(Book.id.in_(ids))
+        )).scalars().all()
+        by_id = {b.id: b for b in books}
+        stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+        for r in restored:
+            bk = by_id.get(r["id"])
+            if bk is None:
+                continue
+            bk.epub_path = r["url"]
+            bk.status = BookStatus.APPROVED
+
+        for r in rescued:
+            bk = by_id.get(r["id"])
+            if bk is None:
+                continue
+            # Keep the record's standard_ebooks identity and just point it at a
+            # verified Gutenberg file. Re-pointing source/source_id would
+            # collide with the UNIQUE(source, source_id) index as soon as two
+            # SE records rescue onto the same Gutenberg edition, aborting the
+            # whole sweep; the provenance lives in source_metadata instead.
+            bk.epub_path = r["url"]
+            bk.status = BookStatus.APPROVED
+            meta = dict(bk.source_metadata or {})
+            meta.update({
+                "rescued_from": "standard_ebooks",
+                "served_from": "gutenberg",
+                "gutenberg_gid": r["gid"] or None,
+                "rescued_from_title": r["from_title"],
+                "rescued_from_author": r["from_author"],
+                "rescued_at": stamp,
+            })
+            bk.source_metadata = meta
+
+        await db.commit()
+
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(
+            select(Book.status).where(Book.id.in_(ids))
+        )).scalars().all()
+        approved = sum(1 for st in rows if st == BookStatus.APPROVED)
+    return len(ids), approved
+
+
 async def run(limit: int | None = None, dry_run: bool = False) -> None:
     async with AsyncSessionLocal() as db:
         stmt = select(Book).where(
@@ -169,33 +227,6 @@ async def run(limit: int | None = None, dry_run: bool = False) -> None:
     rescued = [r for r in results if r["how"] == "rescued-gutenberg"]
     kept = [r for r in results if not r["how"]]
 
-    if not dry_run:
-        by_id = {b.id: b for b in targets}
-        stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        for r in restored:
-            bk = by_id[r["id"]]
-            bk.epub_path = r["url"]
-            bk.status = BookStatus.APPROVED
-        for r in rescued:
-            bk = by_id[r["id"]]
-            se_url = bk.source_url
-            bk.epub_path = r["url"]
-            bk.status = BookStatus.APPROVED
-            bk.source = "gutenberg"
-            bk.source_id = r["gid"] or None
-            if r["gid"]:
-                bk.source_url = f"https://www.gutenberg.org/ebooks/{r['gid']}"
-            meta = dict(bk.source_metadata or {})
-            meta.update({
-                "rescued_from": "standard_ebooks",
-                "standard_ebooks_url": se_url,
-                "rescued_from_title": r["from_title"],
-                "rescued_from_author": r["from_author"],
-                "rescued_at": stamp,
-            })
-            bk.source_metadata = meta
-        await db.commit()
-
     print(f"RESTORED FROM STANDARD EBOOKS ({len(restored)}):")
     for r in restored:
         print(f"  + #{r['id']} {r['title'][:64]!r}")
@@ -207,9 +238,18 @@ async def run(limit: int | None = None, dry_run: bool = False) -> None:
         print(f"  - #{r['id']} {r['title'][:64]!r} :: {r['why']}")
     if len(kept) > 200:
         print(f"  ... and {len(kept) - 200} more")
-    print(f"\n{'DRY RUN — ' if dry_run else ''}DONE: {len(restored)} restored, "
-          f"{len(rescued)} re-sourced, {len(kept)} kept rejected. "
-          f"{len(verified)} urls verified.")
+
+    if dry_run:
+        print(f"\nDRY RUN — {len(restored)} restored, {len(rescued)} re-sourced, "
+              f"{len(kept)} kept rejected. {len(verified)} urls verified.")
+        return
+
+    written, approved = await _apply(restored, rescued)
+    print(f"\nDONE: {len(restored)} restored, {len(rescued)} re-sourced, "
+          f"{len(kept)} kept rejected. {len(verified)} urls verified.")
+    print(f"WRITE CHECK: {written} rows targeted, {approved} now APPROVED in the database.")
+    if written != approved:
+        print("!! WRITE CHECK FAILED — some rows did not flip; re-run before trusting counts.")
 
 
 if __name__ == "__main__":
