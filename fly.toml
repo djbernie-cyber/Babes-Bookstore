@@ -35,7 +35,14 @@ primary_region = 'lhr'
   [[http_service.checks]]
     interval = '30s'
     timeout = '5s'
-    grace_period = '20s'
+    # The app group boots `alembic upgrade head && exec uvicorn`, so nothing
+    # is listening while migrations run. Measured on the live table: the
+    # search_text backfill alone is ~26s for 84,605 rows, which is why the
+    # old 20s grace period was shorter than the startup it was guarding --
+    # the check would fail against a process that was still migrating, and
+    # Fly would restart a machine that was doing exactly what it was asked.
+    # Sized for the slowest migration in the chain, not the common case.
+    grace_period = '180s'
     method = 'GET'
     path = '/health'
 

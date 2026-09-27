@@ -15,6 +15,21 @@ column current for every later write.
 10 punctuation normalisations from that table are deliberately absent here: tokenize()
 splits on [^\w], so a curly quote or en dash can never occur inside a search
 token, and folding one would need a doubled SQL quote literal for no gain.
+
+Deliberately NOT indexed. Every predicate in book_match_filter() is a
+leading-wildcard ILIKE ('%tok%'), which no btree index can serve, and this
+database's collation is en_US.utf8 rather than C, so the one prefix-form
+match could not use a default text index either -- it would need
+text_pattern_ops on a C collation. So a plain index here buys nothing.
+
+It would also cost the deploy: 9 of the 84,605 production rows fold to more
+than 2,704 bytes (longest 4,867), and btree refuses index entries above that
+limit, so CREATE/UPDATE would abort the migration outright and -- because
+the app group boots `alembic upgrade head && exec uvicorn` -- take the
+health check down with it. A trigram index is the right structure for this
+query and pg_trgm 1.6 is available, but that is a separate change with its
+own build cost, not something to bundle into the deploy that unblocks the
+column.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -27,7 +42,6 @@ depends_on = None
 
 def upgrade():
     op.add_column("books", sa.Column("search_text", sa.Text(), nullable=True))
-    op.create_index("ix_books_search_text", "books", ["search_text"])
 
     # Generated from search_filters._FOLD_PAIRS -- keep in step with it.
     expr = "lower(coalesce(title,'') || ' ' || coalesce(author,'') || ' ' || coalesce(description,'') || ' ' || coalesce(cast(tags as varchar),'') || ' ' || coalesce(isbn,''))"
@@ -124,5 +138,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_index("ix_books_search_text", table_name="books")
     op.drop_column("books", "search_text")
