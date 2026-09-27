@@ -278,6 +278,9 @@ footer.text-stone-400, nav.text-stone-400{ color:#a8a29e }
 .text-\[\#f5f5f4\]{ color:#f5f5f4 }
 .text-\[1\.3rem\]{ font-size:1.3rem; line-height:1.9rem }
 .text-base{ font-size:1rem; line-height:1.5rem }
+/* Bundle pick order is a 1..n column; proportional digits make 10 sit left of
+   9 and the whole list shimmer as it reorders. */
+.tabular-nums{ font-variant-numeric:tabular-nums }
 .text-red-200{ color:#fecaca }
 .text-red-300{ color:#fca5a5 }
 .text-red-400{ color:#f87171 }
@@ -298,6 +301,7 @@ footer.text-stone-400, nav.text-stone-400{ color:#a8a29e }
 @media (min-width:768px){ .md\:text-4xl{ font-size:2.25rem; line-height:2.5rem } }
 
 .max-h-\[90vh\]{ max-height:90vh }
+.max-h-\[224px\]{ max-height:224px }
 .max-w-\[260px\]{ max-width:260px }
 .max-w-lg{ max-width:32rem }
 .min-h-\[44px\]{ min-height:44px }
