@@ -11,6 +11,7 @@ from .deps import get_db, require_admin, get_current_user, get_optional_user
 from ...models.book import Book, BookStatus
 from ...schemas.book import BookResponse, BookListResponse, BookUpdate
 from ...models.user import User
+from ...services import visibility
 from ...services.search_filters import book_match_filter, tokenize
 
 router = APIRouter(prefix="/books", tags=["books"])
@@ -49,7 +50,7 @@ async def list_books(
     if status_filter is not None:
         stmt = stmt.where(Book.status == status_filter)
     elif approved_only:
-        stmt = stmt.where(Book.status == BookStatus.APPROVED, Book.license_verified == True)
+        stmt = stmt.where(visibility.discoverable())
 
     if category:
         stmt = stmt.where(Book.category == category)

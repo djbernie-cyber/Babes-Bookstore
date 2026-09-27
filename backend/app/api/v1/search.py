@@ -4,8 +4,9 @@ from sqlalchemy import select, func
 from typing import List
 
 from .deps import get_db
-from ...models.book import Book, BookStatus
+from ...models.book import Book
 from ...schemas.book import BookResponse, BookListResponse
+from ...services import visibility
 from ...services.search_filters import book_match_filter
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -19,10 +20,7 @@ async def search_books(
     page_size: int = Query(20, ge=1, le=100),
 ):
     match, score = book_match_filter(Book, q)
-    stmt = select(Book).where(
-        Book.status == BookStatus.APPROVED,
-        Book.license_verified == True,
-    )
+    stmt = select(Book).where(visibility.discoverable())
     if match is not None:
         stmt = stmt.where(match)
 

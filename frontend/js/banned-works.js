@@ -18,7 +18,7 @@ function bCard(b) {
       '<p class="text-sm text-stone-400 mt-1">' + bEsc(b.author || 'Unknown author') + '</p>' +
       '<div class="flex flex-wrap gap-1.5 mt-2">' + (b.category ? '<span class="text-[10px] px-2 py-1 rounded-full bg-stone-800 border border-stone-700 text-stone-300">' + bEsc(b.category) + '</span>' : '') + (b.publication_year ? '<span class="text-xs text-stone-500">' + bEsc(b.publication_year) + '</span>' : '') + '</div>' +
       '<div class="mt-auto pt-3 flex gap-2">' +
-        '<a href="/api/v1/books/' + b.id + '/download" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-stone-100 text-stone-900 hover:bg-white">Free download</a>' +
+        downloadCta(b, true) +
         '<a href="/books/' + b.id + '" class="text-xs font-medium px-3 py-2 rounded-full border border-stone-700 text-stone-300 hover:bg-stone-800">Preview</a>' +
       '</div>' +
     '</div>' +

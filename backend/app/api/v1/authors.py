@@ -5,7 +5,7 @@ from typing import Optional
 import re
 
 from .deps import get_db
-from ...models.book import Book, BookStatus
+from ...models.book import Book
 from ...schemas.book import BookResponse, BookListResponse
 from ...sources.african_ebooks import (
     AFRICAN_LITERATURE_TAG,
@@ -13,6 +13,7 @@ from ...sources.african_ebooks import (
     COLONIAL_SOURCE_TAG,
     CONDEMNED_REVOLUTIONARY_AUTHORS,
 )
+from ...services import visibility
 from ...services.search_filters import author_match_filter, tokenize
 
 router = APIRouter(prefix="/authors", tags=["authors"])
@@ -85,8 +86,7 @@ async def list_authors(
     stmt = (
         select(Book.author, func.count(Book.id).label("book_count"))
         .where(
-            Book.status == BookStatus.APPROVED,
-            Book.license_verified == True,
+            visibility.discoverable(),
             Book.author.isnot(None),
             Book.author != "",
             Book.author.notin_(_AGGREGATE_CREDITS),
@@ -148,8 +148,7 @@ async def list_african_authors(
     base = (
         select(Book.author, func.count(Book.id).label("book_count"))
         .where(
-            Book.status == BookStatus.APPROVED,
-            Book.license_verified == True,
+            visibility.discoverable(),
             Book.author.isnot(None),
             Book.author != "",
             Book.author.notin_(_AGGREGATE_CREDITS),
@@ -218,16 +217,14 @@ async def list_african_authors(
         "featured": featured,
         "total_african_books": (await db.execute(
             select(func.count(Book.id)).where(
-                Book.status == BookStatus.APPROVED,
-                Book.license_verified == True,
+                visibility.discoverable(),
                 tag_filter,
                 colonial_filter,
             )
         )).scalar() or 0,
         "total_continent_books": (await db.execute(
             select(func.count(Book.id)).where(
-                Book.status == BookStatus.APPROVED,
-                Book.license_verified == True,
+                visibility.discoverable(),
                 tag_filter,
                 colonial_filter,
                 continent_filter,
@@ -267,8 +264,7 @@ async def get_author_books(
     first_word = re.sub(r"[^a-z0-9]+", "", (author_slug.replace("-", " ").split()[0]).lower())
 
     candidates = select(Book.author).where(
-        Book.status == BookStatus.APPROVED,
-        Book.license_verified == True,
+        visibility.discoverable(),
         Book.author.isnot(None),
         Book.author != "",
     )
@@ -283,8 +279,7 @@ async def get_author_books(
         # author string (still void of punctuation/order pitfalls).
         words = [w for w in author_slug.replace("-", " ").split() if len(w) > 2]
         fuzzy = select(Book.author).where(
-            Book.status == BookStatus.APPROVED,
-            Book.license_verified == True,
+            visibility.discoverable(),
             Book.author.isnot(None),
         )
         for w in words:
@@ -295,8 +290,7 @@ async def get_author_books(
     if not matched_names:
         raise HTTPException(status_code=404, detail="Author not found")
 
-    stmt = select(Book).where(Book.status == BookStatus.APPROVED,
-                              Book.license_verified == True).where(Book.author.in_(matched_names))
+    stmt = select(Book).where(visibility.discoverable()).where(Book.author.in_(matched_names))
 
     total_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await db.execute(total_stmt)).scalar() or 0

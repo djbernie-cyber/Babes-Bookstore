@@ -18,11 +18,12 @@ from sqlalchemy import String, cast, or_, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .deps import get_db, get_optional_user
-from ...models.book import Book, BookStatus
+from ...models.book import Book
 from ...models.library import ReadingProgress, Shelf, ShelfItem
 from ...models.review import Review
 from ...models.seasonal_theme import SiteConfig
 from ...models.user import User
+from ...services import visibility
 
 router = APIRouter(prefix="/home", tags=["home"])
 
@@ -40,7 +41,7 @@ def _book(b: Book) -> dict:
 
 
 def _approved_where():
-    return (Book.status == BookStatus.APPROVED, Book.license_verified == True)
+    return visibility.discoverable(),
 
 
 def _interleave_by_author(rows: list[dict], limit: int) -> list[dict]:

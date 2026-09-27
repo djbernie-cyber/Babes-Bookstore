@@ -21,7 +21,7 @@ function card(b) {
       <p class="text-sm text-[#57534e] mt-1">${b.author || 'Unknown author'}</p>
       <div class="flex flex-wrap gap-1.5 mt-2">${b.category ? `<span class="text-[11px] px-2 py-1 rounded-full bg-white border text-[#57534e]">${b.category}</span>` : ''}${b.publication_year ? `<span class="text-xs text-[#8a8683]">${b.publication_year}</span>` : ''}</div>
       <div class="mt-3 flex gap-2">
-        <a href="/api/v1/books/${b.id}/download" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-[#0b0b0c] text-white hover:bg-black">Free download</a>
+        ${downloadCta(b)}
         <a href="/books/${b.id}" class="text-xs font-medium px-3 py-2 rounded-full border bg-white hover:bg-[#fcfaf7]">Preview</a>
       </div>
     </div>

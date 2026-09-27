@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from .deps import get_db
-from ...models.book import Book, BookStatus
+from ...models.book import Book
+from ...services import visibility
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -13,7 +14,7 @@ async def list_categories(db: AsyncSession = Depends(get_db)):
     """Public list of all categories with approved book counts."""
     rows = (await db.execute(
         select(Book.category, func.count(Book.id).label("count"))
-        .where(Book.status == BookStatus.APPROVED, Book.license_verified == True)
+        .where(visibility.discoverable())
         .where(Book.category.isnot(None))
         .group_by(Book.category)
         .order_by(func.count(Book.id).desc())

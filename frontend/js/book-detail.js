@@ -42,7 +42,7 @@ async function load() {
     if (b.cover_path && /^https?:\/\//.test(b.cover_path)) cover.innerHTML = `<img src="${b.cover_path}" alt="${b.title || 'Book cover'}" class="w-full h-full object-cover">`;
     else cover.innerHTML = `<div class="w-full min-h-[380px] bg-gradient-to-br ${g(b.id)} flex items-center justify-center"><span class="text-white text-7xl font-serif font-bold opacity-80">${(b.title || '?').charAt(0)}</span></div>`;
     document.getElementById('title').textContent = b.title; document.getElementById('author').textContent = b.author ? `by ${b.author}` : '';
-    let m = ""; if (b.license_type) m += badge(b.license_type, 'bg-emerald-50 text-emerald-800 border-emerald-200'); if (b.category) m += badge(b.category, 'bg-white text-stone-700 border-stone-200'); if (b.publication_year) m += `<span class="text-sm text-stone-500">${b.publication_year}</span>`; if (b.language) m += `<span class="text-sm text-stone-400">${b.language}</span>`;
+    let m = ""; if (b.license_type) m += b.license_verified ? badge(b.license_type, 'bg-emerald-50 text-emerald-800 border-emerald-200') : badge(b.license_type + ' · unconfirmed', 'bg-amber-50 text-amber-800 border-amber-200'); if (b.category) m += badge(b.category, 'bg-white text-stone-700 border-stone-200'); if (b.publication_year) m += `<span class="text-sm text-stone-500">${b.publication_year}</span>`; if (b.language) m += `<span class="text-sm text-stone-400">${b.language}</span>`;
     document.getElementById('meta').innerHTML = m;
     document.getElementById('desc').innerHTML = b.description ? `<p class="whitespace-pre-wrap">${esc(b.description)}</p>` : '<p class="italic text-stone-400">No description.</p>';
     const suppressed = (b.tags || []).some(t => /suppress|banned/i.test(t));
@@ -57,9 +57,32 @@ async function load() {
         [download, readBtn, readCard].forEach(el => { if (el) el.classList.remove('hidden') });
       });
     }
-    let s = ""; if (b.source_url) s += `<p>Sourced from <a href="${b.source_url}" target="_blank" rel="noopener" class="underline">${b.source_url}</a></p>`; if (b.source) s += `<p class="text-stone-400 mt-1">${b.source}${b.source_id ? ' · #' + b.source_id : ''}</p>`; document.getElementById('source').innerHTML = s || '<span class="italic">Source not listed.</span>';
+    let s = ""; if (b.source_url) s += `<p>Sourced from <a href="${b.source_url}" target="_blank" rel="noopener" class="underline">${b.source_url}</a></p>`; if (b.source) s += `<p class="text-stone-400 mt-1">${b.source}${b.source_id ? ' · #' + b.source_id : ''}</p>`;     document.getElementById('source').innerHTML = s || '<span class="italic">Source not listed.</span>';
+    const download = document.getElementById('download'), readBtn = document.getElementById('read-online'), readCard = document.getElementById('read-card-btn');
+    /* An unconfirmed licence gets an honest, non-clickable explanation
+       instead of a button that would fail. The title stays on the page and
+       in every listing — only the file is withheld. */
+    if (b.license_verified === false) {
+      const note = document.getElementById('licence-note');
+      if (note) {
+        note.textContent = 'Listed for reference only. We are still confirming the licence for this edition, so the file is not available to download or read yet. Nothing is wrong with the book — it just has not cleared our checks.';
+        note.classList.remove('hidden');
+      }
+      [download, readBtn, readCard].forEach(el => {
+        if (!el) return;
+        /* An <a> with no href has no navigation behaviour, which is the
+           actual guarantee -- pointer-events would only be cosmetic and is
+           not in the purged stylesheet. */
+        el.removeAttribute('href');
+        el.classList.add('opacity-60', 'cursor-not-allowed');
+        el.setAttribute('aria-disabled', 'true');
+      });
+      if (download) download.textContent = 'Download pending review';
+      if (readBtn) readBtn.textContent = 'Reader coming soon';
+      if (readCard) readCard.textContent = 'Reader coming soon';
+      return;
+    }
     document.getElementById('download').href = `/api/v1/books/${b.id}/download`;
-    const readBtn = document.getElementById('read-online'), readCard = document.getElementById('read-card-btn');
     if (readBtn) readBtn.href = `/read/${b.id}`;
     if (readCard) readCard.href = `/read/${b.id}`;
   } catch (e) { loading.classList.add('hidden'); err.classList.remove('hidden') }

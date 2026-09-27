@@ -6,6 +6,27 @@
 (function () {
   'use strict';
 
+  /* The per-book download call to use in a listing card.
+   *
+   * Listing pages and the detail page must agree: the catalogue now shows
+   * approved titles whose licence is still unconfirmed, and the download
+   * endpoint refuses those. Rendering an unconditional <a href=...download>
+   * therefore produces a card with a button that 403s the moment anyone
+   * touches it, on every page that lists books. This lives here because
+   * app.js is the one script loaded before every page's own code.
+   *
+   * An unconfirmed title gets the book page instead of a dead download --
+   * the reader still gets somewhere to go, and can see the explanation. */
+  window.downloadCta = function (b, dark) {
+    if (b && b.license_verified === false) {
+      return '<a href="/books/' + b.id + '" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-amber-50 text-amber-800 border border-amber-200">Licence pending</a>';
+    }
+    if (dark) {
+      return '<a href="/api/v1/books/' + b.id + '/download" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-stone-100 text-stone-900 hover:bg-white">Free download</a>';
+    }
+    return '<a href="/api/v1/books/' + b.id + '/download" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-[#0b0b0c] text-white hover:bg-black">Free download</a>';
+  };
+
   function resolveArgs(el) {
     var argsAttr = el.getAttribute('data-args');
     if (argsAttr) {
