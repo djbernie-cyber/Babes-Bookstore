@@ -11,14 +11,14 @@
 
   function cover(b) {
     if (b.cover_url) {
-      return '<img src="' + esc(b.cover_url) + '" alt="Cover of ' + esc(b.title) + '" loading="lazy" class="w-full h-44 object-cover bg-[#1c1b1a]">';
+      return '<img src="' + esc(b.cover_url) + '" alt="Cover of ' + esc(b.title) + '" loading="lazy" class="shelf-cover w-full object-cover bg-[#1c1b1a]">';
     }
     // The card body already prints the title underneath, so this placeholder
     // must not repeat it -- showing the full title here made every uncovered
     // book print its name twice. Monogram + spine only.
     var initial = esc(String(b.title || '?').trim().charAt(0).toUpperCase());
     var author = esc(String(b.author || '').trim());
-    return '<div class="w-full h-44 bg-[#1c1b1a] flex flex-col items-center justify-center gap-2 px-4">' +
+    return '<div class="shelf-cover w-full bg-[#1c1b1a] flex flex-col items-center justify-center gap-2 px-4">' +
       '<span class="font-serif text-5xl text-stone-200 leading-none">' + initial + '</span>' +
       '<span class="h-px w-8 bg-stone-700"></span>' +
       (author ? '<span class="text-[10px] tracking-wide uppercase font-medium text-stone-500 text-center line-clamp-2">' + author + '</span>' : '') +
@@ -28,7 +28,7 @@
   function card(b) {
     var resume = b.percent != null;
     var pct = resume ? Math.max(0, Math.min(100, Math.round((b.percent || 0) * 100))) : 0;
-    return '<a href="/books/' + b.id + '" class="group flex-shrink-0 w-[158px] sm:w-[184px] overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#121212] text-[#fcfaf7] hover:border-stone-500 transition">' +
+    return '<a href="/books/' + b.id + '" class="shelf-card group overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#121212] text-[#fcfaf7] hover:border-stone-500 transition">' +
       cover(b) +
       '<div class="p-3">' +
         '<p class="font-serif font-semibold leading-tight line-clamp-2 text-sm group-hover:underline">' + esc(b.title) + '</p>' +

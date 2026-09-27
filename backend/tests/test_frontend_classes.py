@@ -157,9 +157,44 @@ def test_referenced_classes_are_defined(source: Path) -> None:
     )
 
 
-def test_the_utility_shim_is_actually_reachable() -> None:
-    """The shim must be a real stylesheet, not a commented-out block."""
+def _rule_body(css: str, selector: str) -> str:
+    """Return the declarations of the first `selector { ... }` block, or ""."""
+    m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", css)
+    return m.group(1) if m else ""
+
+
+def test_shelf_card_geometry_is_owned_by_css_not_by_purged_utilities() -> None:
+    """The carousel must not depend on Tailwind classes the JIT build dropped.
+
+    static/tailwind.css is a purged build, and it can only contain classes it
+    found in markup it scanned. The home feed assembles its cards in JS, so
+    w-[158px], sm:w-[184px], flex-shrink-0 and h-44 were all purged away and
+    the cards arrived with no width in a display:flex row -- each one stretched
+    to fill the track, which is what turned a shelf into a full-width column.
+    Assert the geometry is declared in the component layer, and that the JS has
+    not gone back to relying on the utilities.
+    """
     site = (FRONTEND / "static" / "site.css").read_text()
-    assert "Tailwind utility shim" in site
-    for token in (".sr-only", ".min-h-\\[44px\\]", ".w-\\[158px\\]"):
-        assert token + "{" in site.replace(" ", ""), f"{token} shim rule missing"
+
+    # Scope to the rule itself. A whole-file substring search is vacuous here:
+    # .coming-soon-badge and .coming-soon-link also declare flex:0, so the
+    # geometry can be deleted and the check still passes.
+    card = _rule_body(site, ".shelf-card").replace(" ", "").replace("\n", "")
+    assert card, ".shelf-card geometry missing from site.css"
+    assert "flex:0" in card, ".shelf-card must not grow or shrink in the track"
+    assert "width:" in card, ".shelf-card needs an explicit width"
+
+    cover = _rule_body(site, ".shelf-cover").replace(" ", "").replace("\n", "")
+    assert "height:" in cover, ".shelf-cover needs an explicit height"
+
+    # The card widens on larger screens, and that override must stay real CSS.
+    wide = re.search(r"@media\s*\(min-width:640px\)\s*\{(.*?)\n\}", site, re.S)
+    assert wide, "missing the 640px shelf-card breakpoint"
+    assert "flex-basis:184px" in wide.group(1).replace(" ", "")
+
+    feed = (FRONTEND / "js" / "home-feed.js").read_text()
+    for purged in ("w-[158px]", "sm:w-[184px]", "flex-shrink-0", "h-44"):
+        assert purged not in feed, (
+            f"home-feed.js uses {purged}, which static/tailwind.css purged. "
+            "Size the card with .shelf-card / .shelf-cover instead."
+        )

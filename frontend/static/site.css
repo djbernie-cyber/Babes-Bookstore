@@ -118,6 +118,26 @@ footer a{ color:#a8a29e } footer a:hover{ color:#fff }
 .shelf-track::-webkit-scrollbar{ display:none }
 .shelf-track > *{ scroll-snap-align:start; scroll-snap-stop:always }
 
+/* Card geometry lives here, not in a Tailwind utility.
+   w-[158px], sm:w-[184px], flex-shrink-0 and h-44 are not in the committed
+   tailwind.css -- the JIT build purged them, because nothing in the HTML or
+   templates contained them: this markup is assembled in JS. So the cards
+   arrived with no width and no flex-shrink in a display:flex row and each one
+   stretched to fill the track, which is what turned a shelf into a full-width
+   column. Sizing the carousel here instead of hand-reimplementing four
+   utilities means the next Tailwind purge cannot take the layout with it. */
+.shelf-card{
+  flex:0 0 158px;
+  width:158px;
+  display:block;
+}
+@media (min-width:640px){
+  .shelf-card{ flex-basis:184px; width:184px }
+}
+/* shared by the cover image and the placeholder card used when a book has no
+   cover, so a missing cover cannot change the row's height */
+.shelf-cover{ height:11rem; width:100% }
+
 /* Hide the fades when there is nothing to scroll to, so a short row does not
    look like it is fading out for no reason. */
 .shelf.is-end-start .shelf-track{
@@ -264,16 +284,15 @@ footer.text-stone-400, nav.text-stone-400{ color:#a8a29e }
 .text-rose-800{ color:#9f1239 }
 .accent-stone-200{ accent-color:#e7e5e4 }
 
-.flex-shrink-0{ flex-shrink:0 }
 .h-1{ height:.25rem }
 .h-9{ height:2.25rem }
 .h-40{ height:10rem }
-.h-44{ height:11rem }
 .h-px{ height:1px }
 .w-9{ width:2.25rem }
 .w-20{ width:5rem }
-.w-\[158px\]{ width:158px }
-@media (min-width:640px){ .sm\:w-\[184px\]{ width:184px } }
+/* flex-shrink-0 / h-44 / w-[158px] / sm:w-[184px] were here. They existed
+   only for the home carousel, which now sizes its own cards via .shelf-card,
+   so hand-writing them was a stub that could hide a real Tailwind build. */
 @media (min-width:640px){ .sm\:text-xl{ font-size:1.25rem; line-height:1.75rem }
 .sm\:text-2xl{ font-size:1.5rem; line-height:2rem } }
 @media (min-width:768px){ .md\:text-4xl{ font-size:2.25rem; line-height:2.5rem } }

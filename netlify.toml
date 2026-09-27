@@ -13,3 +13,25 @@
 
 [build.processing]
   skip_processing = true
+
+# Netlify was serving /static/site.css as `immutable, max-age=31536000` under
+# an unhashed filename. Any browser that had loaded the storefront once kept
+# that stylesheet for a year, so CSS fixes deployed successfully and never
+# arrived -- the home carousel's card sizing was fixed in a stylesheet no
+# returning visitor ever re-fetched. There is no build step here to fingerprint
+# these names, so they must revalidate. If a real bundler is added later,
+# fingerprinted assets can go back to immutable.
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
