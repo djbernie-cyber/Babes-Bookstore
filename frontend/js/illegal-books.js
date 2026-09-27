@@ -103,9 +103,19 @@
     results.addEventListener('click', function (e) {
       var btn = e.target.closest ? e.target.closest('[data-action="flag"]') : null;
       if (btn) { e.preventDefault(); toggleFlag(btn.closest('[data-book-id]')); }
+    });
+
+    /* "Show more" is rendered into #more-wrap, which is a SIBLING of #results,
+       not a descendant. A listener on #results therefore never saw the click,
+       and on any page with more than PAGE_UNITS records the button did
+       nothing at all. Bind it where the button actually lives. #more-wrap
+       persists across loads (updateMore only rewrites its innerHTML), so this
+       is bound once alongside the others. */
+    $('more-wrap').addEventListener('click', function (e) {
       var more = e.target.closest ? e.target.closest('[data-action="more"]') : null;
       if (more) { e.preventDefault(); showMore(); }
     });
+
     results.addEventListener('submit', function (e) {
       if (e.target.classList && e.target.classList.contains('flag-form')) {
         submitFlag(e, e.target.closest('[data-book-id]'));
@@ -156,14 +166,17 @@
       var items = data.items || [];
       records = items.length;
       buildUnits(items);
-      unitsShown = 0;
-      results.innerHTML = sliceMarkup(0, PAGE_UNITS);
+      /* unitsShown must describe what is actually on the page. Leaving it at 0
+         made the first render claim "Showing 0 of N" and, once Show more
+         worked at all, re-insert units[0:30] -- a duplicate of page one. */
+      unitsShown = Math.min(PAGE_UNITS, units.length);
+      results.innerHTML = sliceMarkup(0, unitsShown);
 
       if (!items.length) {
         empty.classList.remove('hidden');
         meta.textContent = 'No records match.';
       } else {
-        meta.textContent = 'Showing ' + Math.min(PAGE_UNITS, countItems(0, unitsShown)) + ' of ' + records + ' record' + (records === 1 ? '' : 's') + '.';
+        meta.textContent = 'Showing ' + countItems(0, unitsShown) + ' of ' + records + ' record' + (records === 1 ? '' : 's') + '.';
         updateMore();
       }
       guardCovers(results);
@@ -234,7 +247,10 @@
 
   function showMore() {
     var results = $('results');
-    var next = unitsShown + PAGE_UNITS;
+    /* Clamp to what exists, so the final click cannot claim a page past the
+       end of the list. */
+    var next = Math.min(unitsShown + PAGE_UNITS, units.length);
+    if (next <= unitsShown) { updateMore(); return; }
     results.insertAdjacentHTML('beforeend', sliceMarkup(unitsShown, next));
     unitsShown = next;
     $('results-meta').textContent = 'Showing ' + countItems(0, unitsShown) + ' of ' + records
