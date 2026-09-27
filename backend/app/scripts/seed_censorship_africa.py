@@ -58,10 +58,11 @@ RECORDS = [
      "government's objection was to how the past was depicted, not to sales.",
      "Author detained; the book remained the target of official objection."),
 
-    ("Kill Me Quick, Kambithi", "Mukoma wa Ngugi", "1973", "KE", "Kenya", S.BANNED, "1973",
-     "Banned by the administration of Jomo Kenyatta, which objected to the play's treatment of "
-     "land alienation and its portrait of Kikuyu dispossession. The ban helped make it the "
-     "most performed and most cited Kikuyu play in the world.",
+    ("Kill Me Quick, Kambithi", "Ngugi wa Thiong'o", "1973", "KE", "Kenya", S.BANNED, "1973",
+     "One of Ngugi's landmark Kikuyu plays, banned by the administration of Jomo "
+     "Kenyatta, which objected to its treatment of land alienation and its portrait "
+     "of Kikuyu dispossession. The ban helped make it the most performed and most "
+     "cited Kikuyu play in the world.",
      "Suppression drove the work to global prominence."),
 
     ("Kima Force", "Maina wa Kinyatti", "1974", "KE", "Kenya", S.BANNED, "1970s–1980s",
@@ -72,7 +73,7 @@ RECORDS = [
      "Kamiriithu was raided and closed in 1982; Kinyatti was jailed."),
 
     # ── Nigeria ─────────────────────────────────────────────────────────
-    ("The Man Died / collected works", "Wole Soyinka", "1972", "NG", "Nigeria", S.RESTRICTED, "1994–1996",
+    ("The Man Died", "Wole Soyinka", "1972", "NG", "Nigeria", S.RESTRICTED, "1994–1996",
      "Soyinka was arrested without charge in 1994 and held for roughly twenty-two months under "
      "military rule, then tried for treason. In 1996 a presidential decree barred the public "
      "performance of his plays. No individual edition was formally banned; the suppression "
@@ -91,11 +92,17 @@ RECORDS = [
      "already been legislating against — supplied the pretext.",
      "Banned during the military period; never formally unbanned."),
 
-    ("Things Fall Apart / No Longer at Ease", "Chinua Achebe", "1958 / 1965", "ZA", "South Africa", S.BANNED, "1960s–1990s",
-     "Both novels were banned in apartheid South Africa, and Achebe was forced into exile. The "
-     "bans targeted a Nigerian writer because his work was read as testimony about colonial "
-     "violence rather than as fiction.",
-     "Achebe left Nigeria for exile; the novels remained prohibited under the Publications Act."),
+    ("Things Fall Apart", "Chinua Achebe", "1958", "ZA", "South Africa", S.BANNED, "1960s–1990s",
+     "Banned in apartheid South Africa, and Achebe was forced into exile. The "
+     "ban targeted a Nigerian writer because his work was read as testimony "
+     "about colonial violence rather than as fiction.",
+     "Achebe left Nigeria for exile; the novel remained prohibited under the Publications Act."),
+
+    ("No Longer at Ease", "Chinua Achebe", "1965", "ZA", "South Africa", S.BANNED, "1960s–1990s",
+     "The sequel was banned in apartheid South Africa on the same grounds as "
+     "Things Fall Apart, and Achebe's testimony before the 1976 Van Wyk Louw "
+     "Trial rested largely on the harm both novels had done.",
+     "Prohibited under the Publications Act alongside its predecessor."),
 
     ("Heavensgate", "Christopher Okigbo", "1962", "NG", "Nigeria", S.BANNED, "1960s",
      "Banned in Nigeria, and Okigbo went into exile. The suppression of his poetry is a "
@@ -125,17 +132,23 @@ RECORDS = [
      "Banned in Nigeria; the author was living in London by then."),
 
     # ── Ghana ───────────────────────────────────────────────────────────
-    ("The Beautyful Ones Are Not Yet Born", "Ayi Kwei Armah", "1968", "GH", "Ghana", S.BANNED, "1970s–1980s",
+    ("The Beautiful Ones Are Not Yet Born", "Ayi Kwei Armah", "1968", "GH", "Ghana", S.BANNED, "1970s–1980s",
      "Banned in Ghana, and also prohibited in Nigeria, making it the most widely suppressed "
      "novel of the African modernist canon. Its indictment of post-independence complacency "
      "offended governments on both sides of the divide.",
      "Suppressed in more than one West African state."),
 
-    ("Two Thousand Seasons / Fragments", "Ayi Kwei Armah", "1969 / 1968", "GH", "Ghana", S.BANNED, "1960s–1970s",
-     "Armah's later novels were banned in Ghana, and he was imprisoned. The treatment of his "
-     "work is a standing example of how post-independence governments on the left suppressed "
-     "authors who were themselves anti-colonial.",
-     "Author imprisoned; novels banned."),
+    ("Two Thousand Seasons", "Ayi Kwei Armah", "1969", "GH", "Ghana", S.BANNED, "1970s",
+     "Banned in Ghana, and Armah was imprisoned. The treatment of his work is "
+     "a standing example of how post-independence governments on the left "
+     "suppressed authors who were themselves anti-colonial.",
+     "Author imprisoned; novel banned."),
+
+    ("Fragments", "Ayi Kwei Armah", "1968", "GH", "Ghana", S.BANNED, "1970s",
+     "Banned in Ghana alongside Two Thousand Seasons, contributing to the "
+     "decades of official silence that kept Armah out of Ghanaese publication "
+     "after he left.",
+     "Author imprisoned; novel banned."),
 
     ("Rediscovery", "Kofi Awoonor", "1964", "GH", "Ghana", S.BANNED, "1964",
      "The publisher withdrew the book under government pressure shortly after publication, and "
@@ -144,13 +157,13 @@ RECORDS = [
      "Withdrawn by the publisher; author jailed."),
 
     # ── Southern Africa ─────────────────────────────────────────────────
-    ("I Write What I Want", "Steve Biko", "1978", "ZA", "South Africa", S.BANNED, "1978",
+    ("I Write What I Like", "Steve Biko", "1978", "ZA", "South Africa", S.BANNED, "1978",
      "Banned under the Publications Act. Biko's work articulated Black Consciousness, and the "
      "state's response was detention, banning and eventually his killing in police custody in "
      "1977. His collected writing remained prohibited.",
      "Biko died in police custody, 12 September 1977."),
 
-    ("The Test of the Nation", "Various — Black Consciousness movement", "1976", "ZA", "South Africa", S.BANNED, "1976",
+    ("The Test of the Nation: The Essential Writings of Steve Biko", "Steve Biko", "1976", "ZA", "South Africa", S.BANNED, "1976",
      "The defining anthology of the Black Consciousness movement, banned almost immediately. It "
      "was the most prosecuted work of its decade and the best known.",
      "Prosecutions against organisations and individuals followed the ban."),
@@ -210,7 +223,7 @@ async def main():
                 verified=True,
                 verified_by="seed",
             ))
-            existing.add((title, cc))
+            existing.add((title.lower().strip(), cc))
             created += 1
             if book:
                 hosted += 1
