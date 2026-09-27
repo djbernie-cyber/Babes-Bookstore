@@ -182,7 +182,7 @@ async def _for_you(db: AsyncSession, user: User, limit: int, exclude: list[int])
 
 @router.get("/feed")
 async def home_feed(
-    limit: int = Query(8, ge=1, le=24),
+    limit: int = Query(12, ge=1, le=24),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):

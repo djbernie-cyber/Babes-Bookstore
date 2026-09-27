@@ -91,3 +91,108 @@ footer a{ color:#a8a29e } footer a:hover{ color:#fff }
 .prose:not(.not-prose) pre code{ background:transparent; padding:0 }
 .prose .not-prose{ font-size:1rem }
 @media (max-width:640px){ .prose{ font-size:1rem; line-height:1.7 } }
+
+/* ── shelf carousel ────────────────────────────────────────────────────────
+   Rows of book cards scroll horizontally. The scrollbar is hidden (it was
+   styled by a .scrollbar-thin class that never existed, so rows showed the
+   browser default) and replaced by snap points, edge fades, hover arrows and
+   a progress bar. */
+.shelf{ position:relative }
+
+.shelf-track{
+  display:flex;
+  gap:1rem;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  scroll-behavior:smooth;
+  /* room for the focus ring and the card shadow without clipping */
+  padding:.25rem .25rem 1rem;
+  margin:-.25rem -.25rem 0;
+  scrollbar-width:none;          /* Firefox */
+  -ms-overflow-style:none;       /* old Edge */
+  overscroll-behavior-x:contain; /* don't chain-scroll the page sideways */
+  /* fade the cards out at both ends instead of guillotining them */
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 1.75rem,#000 calc(100% - 1.75rem),transparent 100%);
+          mask-image:linear-gradient(to right,transparent 0,#000 1.75rem,#000 calc(100% - 1.75rem),transparent 100%);
+}
+.shelf-track::-webkit-scrollbar{ display:none }
+.shelf-track > *{ scroll-snap-align:start; scroll-snap-stop:always }
+
+/* Hide the fades when there is nothing to scroll to, so a short row does not
+   look like it is fading out for no reason. */
+.shelf.is-end-start .shelf-track{
+  -webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 1.75rem),transparent 100%);
+          mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 1.75rem),transparent 100%);
+}
+.shelf.is-end-end .shelf-track{
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 1.75rem,#000 100%);
+          mask-image:linear-gradient(to right,transparent 0,#000 1.75rem,#000 100%);
+}
+.shelf.is-end-start.is-end-end .shelf-track{
+  -webkit-mask-image:none; mask-image:none;
+}
+
+/* Arrows: pointer devices only. On touch the row is swiped directly and two
+   2rem targets in the content area are just clutter. */
+.shelf-arrow{
+  position:absolute;
+  top:calc(50% - 5.5rem);
+  transform:translateY(-50%);
+  z-index:5;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  width:2.25rem;
+  height:2.25rem;
+  border-radius:9999px;
+  background:rgba(12,12,12,.82);
+  border:1px solid #44403c;
+  color:#fcfaf7;
+  font-size:1.05rem;
+  line-height:1;
+  cursor:pointer;
+  backdrop-filter:blur(4px);
+  transition:opacity .18s ease,background .18s ease,border-color .18s ease;
+}
+.shelf-arrow-prev{ left:-.7rem }
+.shelf-arrow-next{ right:-.7rem }
+.shelf-arrow:hover{ background:#1c1b1a; border-color:#a8a29e }
+.shelf-arrow:disabled{ opacity:0; pointer-events:none }
+.shelf-arrow:focus-visible{ outline:2px solid #fafaf9; outline-offset:2px; opacity:1 }
+
+@media (hover:hover) and (pointer:fine){
+  .shelf-arrows .shelf-arrow{ display:flex }
+  /* only reveal while the row is hovered or something inside it has focus */
+  .shelf-arrows .shelf-arrow:not(:disabled){ opacity:0 }
+  .shelf:hover .shelf-arrow:not(:disabled),
+  .shelf:focus-within .shelf-arrow:not(:disabled){ opacity:1 }
+  .shelf:hover .shelf-arrow-prev:disabled,
+  .shelf:focus-within .shelf-arrow-prev:disabled,
+  .shelf:hover .shelf-arrow-next:disabled,
+  .shelf:focus-within .shelf-arrow-next:disabled){ opacity:0 }
+}
+
+/* Progress: a hairline that shows how much of the row is off-screen. */
+.shelf-progress{
+  height:2px;
+  border-radius:9999px;
+  background:#292524;
+  overflow:hidden;
+}
+.shelf-progress span{
+  display:block;
+  height:100%;
+  width:25%;
+  border-radius:9999px;
+  background:#a8a29e;
+  transform-origin:left center;
+  transition:transform .18s ease,width .18s ease;
+}
+
+.shelf-track:focus-visible{ outline:2px solid #57534e; outline-offset:2px; border-radius:.5rem }
+
+@media (prefers-reduced-motion:reduce){
+  .shelf-track{ scroll-behavior:auto }
+  .shelf-progress span{ transition:none }
+  .shelf-arrow{ transition:none }
+}

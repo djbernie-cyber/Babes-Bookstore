@@ -81,12 +81,14 @@ async def test_feed_shelves_do_not_repeat_the_same_books(client, db):
     """Regression: every row ordered by created_at desc, so "Start with the
     classics" and "New arrivals" returned identical ids and the two Marx
     shelves mirrored each other."""
-    for i in range(12):
+    # The default shelf size is 12, so the fixture needs enough distinct books
+    # that two shelves can each be filled without running out.
+    for i in range(30):
         await _make_book(
             db, f"Overlap {i}", tags=["Revolutionary"],
             source_id=f"ov-{i}",
         )
-    for i in range(12):
+    for i in range(30):
         await _make_book(db, f"Plain {i}", source_id=f"pl-{i}")
 
     r = await client.get("/api/v1/home/feed")

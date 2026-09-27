@@ -28,7 +28,7 @@
   function card(b) {
     var resume = b.percent != null;
     var pct = resume ? Math.max(0, Math.min(100, Math.round((b.percent || 0) * 100))) : 0;
-    return '<a href="/books/' + b.id + '" class="group flex-shrink-0 w-[168px] sm:w-[188px] overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#121212] text-[#fcfaf7] hover:border-stone-500 transition">' +
+    return '<a href="/books/' + b.id + '" class="group flex-shrink-0 w-[158px] sm:w-[184px] overflow-hidden rounded-2xl border border-[#1f1f1f] bg-[#121212] text-[#fcfaf7] hover:border-stone-500 transition">' +
       cover(b) +
       '<div class="p-3">' +
         '<p class="font-serif font-semibold leading-tight line-clamp-2 text-sm group-hover:underline">' + esc(b.title) + '</p>' +
@@ -53,13 +53,90 @@
     if (s.key === 'season') {
       return '<div class="mb-8">' + seasonSection(s) + '</div>';
     }
-    return '<section class="mb-9">' +
+    var label = esc(s.title);
+    return '<section class="shelf mb-9" data-shelf>' +
       '<div class="flex items-end justify-between gap-4 mb-3">' +
-        '<h2 class="font-serif text-lg sm:text-xl font-semibold tracking-[-0.01em]">' + esc(s.title) + '</h2>' +
-        (s.items.length ? '<span class="text-[11px] text-stone-500">' + s.items.length + (s.items.length === 1 ? ' title' : ' titles') + '</span>' : '') +
+        '<h2 class="font-serif text-lg sm:text-xl font-semibold tracking-[-0.01em]">' + label + '</h2>' +
+        '<div class="flex items-center gap-3">' +
+          '<span class="text-[11px] text-stone-500">' + s.items.length + (s.items.length === 1 ? ' title' : ' titles') + '</span>' +
+          '<div class="shelf-arrows flex items-center gap-1.5">' +
+            '<button type="button" class="shelf-arrow shelf-arrow-prev" data-dir="-1" aria-label="Scroll ' + label + ' left" aria-controls="">‹</button>' +
+            '<button type="button" class="shelf-arrow shelf-arrow-next" data-dir="1" aria-label="Scroll ' + label + ' right" aria-controls="">›</button>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">' + s.items.map(card).join('') + '</div>' +
+      '<div class="shelf-track" tabindex="0" role="group" aria-label="' + label + ', horizontally scrollable">' +
+        s.items.map(card).join('') +
+      '</div>' +
+      '<div class="shelf-progress mt-1" aria-hidden="true"><span></span></div>' +
     '</section>';
+  }
+
+  /* Arrows, edge fades and the progress hairline. Each row reports whether it
+     actually overflows, so a shelf that fits on screen shows no arrows rather
+     than two dead controls. */
+  function wireShelves(mount) {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    mount.querySelectorAll('[data-shelf]').forEach(function (shelf) {
+      var track = shelf.querySelector('.shelf-track');
+      var prev = shelf.querySelector('.shelf-arrow-prev');
+      var next = shelf.querySelector('.shelf-arrow-next');
+      var bar = shelf.querySelector('.shelf-progress span');
+      if (!track) return;
+      if (prev) prev.setAttribute('aria-controls', track.id || (track.id = 'shelf-' + Math.random().toString(36).slice(2, 9)));
+      if (next) next.setAttribute('aria-controls', track.id);
+
+      function overflow() {
+        return track.scrollWidth - track.clientWidth > 4;
+      }
+
+      function sync() {
+        var max = track.scrollWidth - track.clientWidth;
+        var x = track.scrollLeft;
+        var scrollable = max > 4;
+        shelf.classList.toggle('is-end-start', x <= 1);
+        shelf.classList.toggle('is-end-end', x >= max - 1);
+        if (prev) prev.disabled = x <= 1;
+        if (next) next.disabled = x >= max - 1;
+        if (!scrollable) {
+          shelf.classList.add('is-end-start', 'is-end-end');
+          if (bar) bar.style.width = '100%';
+        } else if (bar) {
+          var visible = track.clientWidth / track.scrollWidth;
+          bar.style.width = Math.max(12, visible * 100) + '%';
+          bar.style.transform = 'translateX(' + (x / max) * (100 / Math.max(visible, 0.12) - 100) + '%)';
+        }
+      }
+
+      function page(dir) {
+        // Advance by a whole "page" of cards so the snap points stay meaningful.
+        var card = track.querySelector(':scope > *');
+        var step = card ? card.getBoundingClientRect().width + 16 : track.clientWidth * 0.8;
+        var per = Math.max(1, Math.floor(track.clientWidth / step) - 1);
+        track.scrollBy({ left: dir * step * per, behavior: reduced ? 'auto' : 'smooth' });
+      }
+
+      if (prev) prev.addEventListener('click', function () { page(-1); });
+      if (next) next.addEventListener('click', function () { page(1); });
+
+      track.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') { page(1); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft') { page(-1); e.preventDefault(); }
+        else if (e.key === 'Home') { track.scrollTo({ left: 0, behavior: reduced ? 'auto' : 'smooth' }); e.preventDefault(); }
+        else if (e.key === 'End') { track.scrollTo({ left: track.scrollWidth, behavior: reduced ? 'auto' : 'smooth' }); e.preventDefault(); }
+      });
+
+      var raf = null;
+      track.addEventListener('scroll', function () {
+        if (raf) return;
+        raf = requestAnimationFrame(function () { raf = null; sync(); });
+      }, { passive: true });
+
+      window.addEventListener('resize', sync);
+      if (window.ResizeObserver) new ResizeObserver(sync).observe(track);
+      sync();
+    });
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -75,6 +152,7 @@
       html += sections.map(row).join('');
       mount.innerHTML = html;
       mount.classList.remove('hidden');
+      wireShelves(mount);
     }).catch(function () {
       mount.classList.add('hidden');
     });
