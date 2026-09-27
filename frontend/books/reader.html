@@ -17,6 +17,21 @@
     .toolbar button:hover{ background:var(--btn-hover) }
     .toolbar button.active{ background:var(--ink); color:var(--paper); border-color:var(--ink) }
     .toolbar select{ font-family:"Inter",system-ui,sans-serif; font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--ink) }
+
+    /* Text-size control. The wrapper had no rule at all, so the four steps
+       rendered as four separate pills with a gap between them instead of one
+       segmented control. Joined edges, one shared border, and the selected
+       step filled so the current size is readable at a glance. */
+    .fs-btn{ display:inline-flex; align-items:stretch; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--panel) }
+    .fs-btn button{
+      border:0; border-radius:0; background:transparent; cursor:pointer;
+      padding:6px 10px; min-width:38px; color:var(--muted);
+      font-variant-numeric:tabular-nums;
+    }
+    .fs-btn button + button{ border-left:1px solid var(--line) }
+    .fs-btn button:hover{ background:var(--btn-hover) }
+    .fs-btn button.active{ background:var(--ink); color:var(--paper) }
+    .fs-btn button:focus-visible{ outline:2px solid var(--ink); outline-offset:-2px }
     .title{ margin:0; font-size:15px; font-weight:600 }
     .reader-wrap{ max-width:760px; margin:0 auto; padding:40px 22px 80px }
     .chap-title{ font-size:28px; font-weight:700; margin:0 0 24px; line-height:1.2 }

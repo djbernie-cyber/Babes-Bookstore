@@ -31,6 +31,7 @@ var CATEGORY_DESCS = {
 //: Categories backed by a book *tag* (the ``category`` column is a subject
 //: shelf; the political shelves live in tags).
 var TAG_CATS = {
+  'african-literature': 'African Literature',
   'revolutionary': 'Revolutionary',
   'socialist-theory': 'Socialist Theory',
   'military-library': 'Military Library'

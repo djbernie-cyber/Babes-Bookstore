@@ -9,23 +9,64 @@
    Attribute selectors ([class~="bg-[#...]"]) are used because the storefront
    styles with Tailwind arbitrary-value classes. */
 
-/* ── Light ─────────────────────────────────────────────────────────── */
+/* ── Light ─────────────────────────────────────────────────────────────
+   The base palette is already a light warm paper, so most pages need
+   nothing here.
+
+   Token overrides come first. site.css styles its own components (bundle
+   cards, pills, tabs) with var(--panel)/var(--ink)/var(--line) rather than
+   Tailwind utilities, and those variables were never redefined per theme --
+   so every component rendered paper-white with near-black text even in dark
+   mode, and no amount of `[class~="bg-white"]` remapping could reach it.
+   Redefining the tokens themes the whole component layer at once. */
+[data-theme="light"]{
+  --paper:#ffffff; --paper2:#fafaf8; --panel:#ffffff;
+  --ink:#161616; --ink2:#1f1f1f; --muted:#57534e; --line:#e7e5e4; --line2:#d6d3d1;
+}
+
+   Deliberately NOT remapping text-stone-100/200/300 to dark: those classes
+   are also used on genuinely dark panels (bg-stone-900 info boxes, the
+   dark nav/footer) that stay dark in light mode, and remapping them
+   unscoped drops that text to 1.7:1. An earlier attempt at exactly that
+   did. The correct fix is for a page to not put near-white text on a light
+   surface, which tests/test_frontend_contrast.py now enforces. */
 [data-theme="light"] body{ background:#ffffff; color:#161616 }
 [data-theme="light"] [class~="bg-[#fcfaf7]"]{ background:#ffffff }
 [data-theme="light"] [class~="bg-[#f6f1e7]"]{ background:#fafaf8 }
-[data-theme="light"] .bundle-card .cover{ background:#fbfbfa }
 [data-theme="light"] #african-toggle{ background:#ffffff }
+[data-theme="light"] [class~="border-stone-700"]{ border-color:#d6d3d1 }
+[data-theme="light"] [class~="border-stone-800"]{ border-color:#e7e5e4 }
+/* The "restricted" red is used as small uppercase label text, where
+   Tailwind's red-300/400 fall under 3:1 on white. */
+[data-theme="light"] [class~="text-red-300"]{ color:#b91c1c }
+[data-theme="light"] [class~="text-red-400"]{ color:#b91c1c }
 
 /* ── Dark ────────────────────────────────────────────────────────────
    Real palette (not the CSS invert trick — that inverted covers/artwork,
    broke scrollbars and emoji, and leaked onto admin pages). Attribute
    selectors target exactly the Tailwind classes the storefront uses. */
-[data-theme="dark"]{ background:#0b0b0c }
+[data-theme="dark"]{ background:#0b0b0c; }
+[data-theme="dark"]{
+  /* See the light block above: the component layer reads these, not the
+     Tailwind utilities the attribute selectors below handle. */
+  --paper:#0f0f12; --paper2:#17171a; --panel:#1c1c1f;
+  --ink:#e7e5e4; --ink2:#d6d3d1; --muted:#a1a1aa; --line:#2a2a2e; --line2:#3f3f46;
+}
 [data-theme="dark"] body{ background:#0b0b0c; color:#e7e5e4 }
 
 [data-theme="dark"] [class~="bg-white"]{ background:#18181b }
 [data-theme="dark"] [class~="bg-stone-50"]{ background:#0b0b0c }
 [data-theme="dark"] [class~="bg-stone-100"]{ background:#18181b }
+[data-theme="dark"] [class~="bg-stone-300"]{ background:#202024 }
+/* Status pills. The dark block below lightens their label text, so the pale
+   surfaces have to come with it or the label vanishes into its own pill. */
+[data-theme="dark"] [class~="bg-red-50"]{ background:#3b1212 }
+[data-theme="dark"] [class~="bg-red-100"]{ background:#451a1a }
+[data-theme="dark"] [class~="bg-amber-50"]{ background:#422006 }
+[data-theme="dark"] [class~="bg-amber-100"]{ background:#451a03 }
+[data-theme="dark"] [class~="bg-emerald-50"]{ background:#022c22 }
+[data-theme="dark"] [class~="bg-sky-50"]{ background:#0c2a3e }
+[data-theme="dark"] [class~="bg-white/90"]{ background:rgba(24,24,27,.9) }
 [data-theme="dark"] [class~="bg-[#fcfaf7]"]{ background:#1c1c1f }
 [data-theme="dark"] [class~="bg-[#f6f1e7]"]{ background:#1c1c1f }
 [data-theme="dark"] [class~="bg-[#e7e2d9]"]{ background:#3f3f46 }
@@ -35,13 +76,46 @@
 [data-theme="dark"] [class~="text-stone-700"]{ color:#d4d4d8 }
 [data-theme="dark"] [class~="text-stone-600"]{ color:#a1a1aa }
 [data-theme="dark"] [class~="text-stone-500"]{ color:#8b8b93 }
-[data-theme="dark"] [class~="text-stone-400"]{ color:#71717a }
+/* #71717a measured 3.67:1 on the dark card (#18181b) and 4.07:1 on the dark
+   page, so secondary text was under AA wherever a card was involved. */
+[data-theme="dark"] [class~="text-stone-400"]{ color:#8b8b93 }
 [data-theme="dark"] [class~="text-stone-300"]{ color:#b4b0ab }
 [data-theme="dark"] [class~="text-[#1f1f1f]"]{ color:#e7e5e4 }
 [data-theme="dark"] [class~="text-[#57534e]"]{ color:#a1a1aa }
 [data-theme="dark"] [class~="text-[#8a8683]"]{ color:#8b8b93 }
 [data-theme="dark"] [class~="text-amber-700"]{ color:#d4a14a }
 [data-theme="dark"] [class~="text-amber-800"]{ color:#e0b468 }
+/* The two censorship catalogues signal "restricted" with red. Tailwind's
+   red-300/400/600 sit under 3:1 on the dark surfaces they are used on. */
+[data-theme="dark"] [class~="text-red-300"]{ color:#fca5a5 }
+[data-theme="dark"] [class~="text-red-400"]{ color:#fca5a5 }
+[data-theme="dark"] [class~="text-red-500"]{ color:#f87171 }
+[data-theme="dark"] [class~="text-red-600"]{ color:#fca5a5 }
+[data-theme="dark"] [class~="text-red-700"]{ color:#fca5a5 }
+
+/* THE BIG ONE. The storefront's primary action is `bg-white text-[#0b0b0c]`
+   (white pill, near-black label). Dark mode remapped the surface to #18181b
+   but had no rule for the label, so every primary button in the site rendered
+   near-black on near-black at 1.11:1 -- the "Account" button, every reader CTA,
+   the filter button, the gate's accept button. Remap the label with it.
+   Written as one rule per class rather than a comma list so the contrast
+   audit can parse it. text-[#1f1f1f] and text-[#57534e] are deliberately
+   absent: they already have correct remaps above, and an equal-specificity
+   second rule would silently override them. */
+[data-theme="dark"] [class~="text-[#0b0b0c]"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-[#121212]"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-[#1a1a1f]"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-[#1c1c1f]"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-[#292524]"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-[#44403c]"]{ color:#f4f4f5 }
+[data-theme="dark"] [class~="text-emerald-800"]{ color:#6ee7b7 }
+[data-theme="dark"] [class~="text-emerald-700"]{ color:#34d399 }
+[data-theme="dark"] [class~="text-red-800"]{ color:#fca5a5 }
+[data-theme="dark"] [class~="text-emerald-600"]{ color:#34d399 }
+[data-theme="dark"] [class~="text-sky-800"]{ color:#7dd3fc }
+/* M-Pesa badge. #1a7a0f is 5.48:1 on white, but dark mode turns that white
+   surface into #18181b and drops it to 3.24:1. */
+[data-theme="dark"] [class~="text-[#1a7a0f]"]{ color:#4ade80 }
 
 [data-theme="dark"] [class~="border"]{ border-color:#27272a }
 [data-theme="dark"] [class~="border-stone-100"]{ border-color:#27272a }
@@ -77,7 +151,7 @@
 .babes-theme-switcher button:focus-visible{ outline:2px solid #e0b468; outline-offset:2px }
 
 @media (max-width:520px){
-  .babes-theme-switcher{ right:12px; bottom:12px }
+  .babes-theme-switcher{ right:12px; bottom:calc(12px + env(safe-area-inset-bottom,0px)) }
   .babes-theme-label{ display:none }
   .babes-theme-switcher button{ min-width:38px; padding:0 10px }
   .babes-theme-switcher button span{ display:none }
@@ -85,3 +159,59 @@
 @media (prefers-reduced-motion: reduce){
   .babes-theme-switcher button{ transition:none }
 }
+
+/* ── Mobile ergonomics ──────────────────────────────────────────────────
+   Reported from Android as "optimisation problems": invisible text on the
+   reference catalogues, and pages that fight the finger. The fixes are
+   platform behaviours rather than layout bugs, so they belong in CSS. */
+
+/* Android Chrome and iOS Safari zoom the viewport when a field is focused
+   and its computed font-size is under 16px, which then leaves the page
+   scrolled sideways and un-zoomeable. text-sm (14px) on every filter input
+   triggered it. Clamp on small screens only so desktop type is untouched. */
+@media (max-width:768px){
+  input, select, textarea, .babes-theme-switcher button{
+    font-size:max(16px, 1em);
+  }
+  /* Selects also render their own dropdown at the inherited size on some
+     Android WebViews, so set the option text too. */
+  select option{ font-size:max(16px, 1em) }
+}
+
+/* 44px is the smallest reliably hittable target. Anything tappable that was
+   sized by its text (nav links, inline buttons, summaries) gets a floor
+   without changing the visual design. */
+@media (max-width:768px){
+  nav a, footer a, summary, .babes-theme-switcher button{
+    min-height:44px;
+  }
+  nav a, footer a{ display:inline-flex; align-items:center }
+  summary{ display:flex; align-items:center }
+  /* The nav's own flex row would otherwise stretch every link to 44px. */
+  nav .flex.items-center{ min-height:0 }
+  nav .flex.items-center > a{ min-height:0 }
+}
+
+/* Android font boosting inflates long-form text in landscape and in
+   WebViews, which shreds multi-column layouts. Tailwind's preflight sets the
+   -webkit- form; this adds the standard property for Firefox and future
+   engines, and opts out of boosting explicitly. */
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+/* Gesture-nav bars and notches. Padding the shell keeps the last row of
+   content and the fixed theme switcher clear of the system bar. */
+body{
+  padding-left:env(safe-area-inset-left,0px);
+  padding-right:env(safe-area-inset-right,0px);
+}
+@media (max-width:768px){
+  body{ padding-bottom:env(safe-area-inset-bottom,0px) }
+  /* The switcher is fixed; give it breathing room above the gesture bar. */
+  .babes-theme-switcher{ bottom:calc(12px + env(safe-area-inset-bottom,0px)) }
+}
+
+/* Coarse pointers get the real hover/focus affordances as defaults, since
+   there is no hover state to discover them on a phone. */

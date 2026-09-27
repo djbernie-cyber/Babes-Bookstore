@@ -43,8 +43,20 @@
     // forever, so an outage looks like a page that is still thinking rather
     // than a page that is broken.
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    if (controller) init.signal = controller.signal;
-    var timer = setTimeout(function () { if (controller) controller.abort(); }, opts.timeout || 15000);
+    if (controller) {
+      init.signal = controller.signal;
+      // Honour a caller-supplied signal too, so a superseded filter can cancel
+      // its own request instead of only being ignored on arrival. Chained
+      // rather than assigned: overwriting the caller's signal here silently
+      // discarded it, which is what made out-of-order responses look random.
+      if (opts.signal) {
+        if (opts.signal.aborted) controller.abort();
+        else opts.signal.addEventListener('abort', function () { controller.abort(); });
+      }
+    }
+    var timedOut = false;
+    var timer = setTimeout(function () { timedOut = true; if (controller) controller.abort(); },
+                           opts.timeout || 15000);
 
     return fetch('/api/v1' + path, init).then(function (r) {
       return r.text().then(function (raw) {
@@ -59,12 +71,17 @@
       });
     }).catch(function (err) {
       if (err && err.status) throw err;            // already a real API error
+      // An abort the caller asked for is not a failure and must not be
+      // reported as one -- callers drop .cancelled requests silently.
+      var cancelled = !!(opts.signal && opts.signal.aborted) && !timedOut;
       var e2 = new Error(
-        err && err.name === 'AbortError'
-          ? 'The server took too long to respond. Please try again.'
-          : 'Could not reach the server. Please check your connection and try again.'
+        cancelled ? 'Request superseded.'
+          : err && err.name === 'AbortError'
+            ? 'The server took too long to respond. Please try again.'
+            : 'Could not reach the server. Please check your connection and try again.'
       );
       e2.status = 0;
+      e2.cancelled = cancelled;
       throw e2;
     }).finally(function () { clearTimeout(timer); });
   };
