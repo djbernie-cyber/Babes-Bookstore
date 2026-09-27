@@ -94,3 +94,80 @@ async def test_author_name_ranks_above_title_only(client, db):
     r = await client.get("/api/v1/books", params={"search": "sol pla"})
     items = r.json()["items"]
     assert items[0]["title"] == "Mhudi"
+
+ACCENTED = [
+    dict(title="Studies in Modern Music", author="Antonín Dvořák", description="Second series."),
+    dict(title="Devil on the Cross", author="Ngũgĩ wa Thiong'o", description="A Gikuyu novel."),
+    dict(title="One Hundred Years of Solitude", author="Gabriel García Márquez", description=""),
+    dict(title="Pedro Páramo", author="Juan Rulfo", description=""),
+]
+
+
+async def _seed_accented(db):
+    for i, b in enumerate(ACCENTED):
+        db.add(Book(
+            title=b["title"], author=b["author"], description=b.get("description", ""),
+            status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+            source_id=f"acc-{i}", license_type="public_domain",
+            tags=[], category="Classics",
+        ))
+    await db.commit()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("query,expect", [
+    ("dvorak", "Dvořák"),
+    ("antonin dvorak", "Dvořák"),
+    ("ngugi", "Thiong"),
+    ("garcia marquez", "Márquez"),
+    ("rulfo", "Rulfo"),
+])
+async def test_ascii_spelling_finds_accented_row(client, db, query, expect):
+    """The bug this guards: 'dvorak' returned 0 while 'Dvořák' returned 2.
+
+    Search has to fold diacritics on both sides. Almost nobody types the
+    caron, so an ASCII-only query has to reach the accented row.
+    """
+    await _seed_accented(db)
+    r = await client.get("/api/v1/search", params={"q": query})
+    assert r.status_code == 200
+    items = r.json()["items"]
+    assert items, f"{query!r} matched nothing"
+    assert any(expect in (b["author"] or "") for b in items), [b["author"] for b in items]
+
+
+@pytest.mark.asyncio
+async def test_accented_spelling_still_finds_its_own_row(client, db):
+    await _seed_accented(db)
+    r = await client.get("/api/v1/search", params={"q": "Dvořák"})
+    assert r.status_code == 200
+    assert any("Dvořák" in (b["author"] or "") for b in r.json()["items"])
+
+
+@pytest.mark.asyncio
+async def test_search_text_is_maintained_on_write(client, db):
+    """A stale column would be worse than none: it looks authoritative."""
+    await _seed_accented(db)
+    b = (await db.execute(
+        select(Book).where(Book.title == "Pedro Páramo")
+    )).scalars().one()
+    assert "juan rulfo" in (b.search_text or "")
+    b.title = "Pedro Páramo (second edition)"
+    await db.commit()
+    await db.refresh(b)
+    assert "juan rulfo" in (b.search_text or "")
+
+
+@pytest.mark.asyncio
+async def test_isbn_is_searchable(client, db):
+    """isbn is in the folded haystack, so a typed ISBN reaches the row."""
+    db.add(Book(
+        title="Some Book", author="An Author", description="",
+        status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+        source_id="isbn-1", license_type="public_domain", tags=[],
+        category="Classics", isbn="9780140449136",
+    ))
+    await db.commit()
+    r = await client.get("/api/v1/search", params={"q": "9780140449136"})
+    assert r.status_code == 200
+    assert any(b["title"] == "Some Book" for b in r.json()["items"])

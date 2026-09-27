@@ -10,9 +10,11 @@ from sqlalchemy import (
     Index,
 )
 from sqlalchemy.sql import func
+from sqlalchemy import event
 from datetime import datetime
 import enum
 from ..database import Base
+from ..services.search_filters import book_search_text
 
 
 class BookStatus(str, enum.Enum):
@@ -57,6 +59,14 @@ class Book(Base):
     page_count = Column(Integer, nullable=True)
     publication_year = Column(Integer, nullable=True)
 
+    #: Lower-cased, diacritic-stripped haystack of title + author +
+    #: description + tags + isbn, maintained by the mapper events below.
+    #: Queries match folded tokens against this, so a reader who types
+    #: "dvorak" or "ngugi" finds "Dvořák" and "Ngũgĩ". ILIKE cannot fold
+    #: accents on the stored side, and Postgres' unaccent extension is not
+    #: available on the SQLite the tests run against.
+    search_text = Column(Text, nullable=True)
+
     status = Column(
         SQLEnum(BookStatus, name="book_status"),
         default=BookStatus.PENDING,
@@ -80,3 +90,20 @@ class Book(Base):
 
     def __repr__(self):
         return f"<Book {self.id}: {self.title[:50]}>"
+
+
+def _refresh_search_text(mapper, connection, target):
+    """Keep ``search_text`` in step with the fields it is built from.
+
+    Done here rather than at each call site because books are written by a
+    dozen ingest and admin paths; a column that only some of them maintain
+    silently rots, and a stale row is worse than no row because it looks
+    authoritative.
+    """
+    target.search_text = book_search_text(
+        target.title, target.author, target.description, target.tags, target.isbn
+    )
+
+
+event.listen(Book, "before_insert", _refresh_search_text)
+event.listen(Book, "before_update", _refresh_search_text)
