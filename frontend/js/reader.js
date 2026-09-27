@@ -13,6 +13,15 @@
   var BID = bookId();
   var ID = encodeURIComponent(BID);
   var SCROLL_KEY = 'reader-size', THEME_KEY = 'reader-theme', MODE_KEY = 'reader-mode';
+  /* Set only when the reader actually picks a mode. An earlier build stored
+     MODE_KEY without this, so a single stray tap put a visitor in scroll mode
+     and localStorage outvoted the default on every later visit, with nothing
+     on screen to explain why. A stored mode is now honoured only once the
+     reader is known to have chosen it. */
+  var MODE_SET_KEY = 'reader-mode-chosen';
+  var FONT_KEY = 'reader-font', LH_KEY = 'reader-leading',
+      JUSTIFY_KEY = 'reader-justify', MEASURE_KEY = 'reader-measure';
+
   var CHUNK = 160;
   var SIZES = ['s', 'm', 'l', 'xl'];
   var PAPERS = { sepia: 1, light: 1, dark: 1 };
@@ -24,7 +33,7 @@
   function setPrefs() {
     var size = localStorage.getItem(SCROLL_KEY) || 'm';
     var theme = localStorage.getItem(THEME_KEY) || 'sepia';
-    var mode = localStorage.getItem(MODE_KEY) || 'pages';
+    var mode = localStorage.getItem(MODE_SET_KEY) ? (localStorage.getItem(MODE_KEY) || 'pages') : 'pages';
     if (SIZES.indexOf(size) < 0) size = 'm';
     if (!PAPERS[theme]) theme = 'sepia';
     document.documentElement.setAttribute('data-size', size);
@@ -32,6 +41,7 @@
     // the storefront's theme: the two used to fight over one saved preference,
     // so reading in Dark silently recoloured the whole site and vice versa.
     document.documentElement.setAttribute('data-theme', theme);
+    applyTypography();
     document.querySelectorAll('.fs-btn button').forEach(function (b) {
       var on = b.dataset.size === size;
       b.classList.toggle('active', on);
@@ -207,6 +217,8 @@
     el('p-prev').disabled = pageState.c === 0 && pageState.j === 0;
     el('p-next').disabled = pageState.c === chapters.length - 1 && pageState.j === pages.length - 1;
     updateProgressBar();
+    /* keep the current match marked after paging */
+    if (find.q && find.q.trim().length >= 2) highlightOnPage();
   }
 
   function turn(delta) {
@@ -274,6 +286,199 @@
     flatIndex = flatStarts[chapterIndex];
     renderChunk(); renderChunk(); renderChunk();
     requestAnimationFrame(function () { window.scrollTo(0, 0); });
+  }
+
+  /* ── typography prefs ───────────────────────────────────────────── */
+  var FONTS = ['serif', 'sans', 'mono'];
+  var LEADINGS = ['tight', 'snug', 'relaxed'];
+  var MEASURES = ['narrow', 'normal', 'wide'];
+  var JUSTIFY = ['off', 'on'];
+
+  function applyTypography() {
+    var root = document.documentElement;
+    [['font', FONT_KEY, FONTS, 'serif'],
+     ['leading', LH_KEY, LEADINGS, 'snug'],
+     ['measure', MEASURE_KEY, MEASURES, 'normal'],
+     ['justify', JUSTIFY_KEY, JUSTIFY, 'off']].forEach(function (spec) {
+      var attr = spec[0], key = spec[1], allowed = spec[2], fallback = spec[3];
+      var v = localStorage.getItem(key);
+      if (allowed.indexOf(v) < 0) v = fallback;
+      root.setAttribute('data-' + attr, v);
+      document.querySelectorAll('#type-pop [data-' + attr + ']').forEach(function (b) {
+        var on = b.getAttribute('data-' + attr) === v;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-checked', String(on));
+      });
+    });
+  }
+
+  function saveTypography() {
+    /* Any typographic change invalidates the measured page boxes: a wider
+       measure or looser leading moves every break in the book. */
+    pageCache = {};
+    applyTypography();
+    saveProgress();
+    if (contentVisible) {
+      if (mode === 'pages') renderPage();
+      else renderChunk();
+    }
+  }
+
+  /* ── find in book ───────────────────────────────────────────────── */
+  /* Search the block model rather than the DOM. The DOM holds one page (or
+     one rendered chunk in scroll mode), so a match in a later chapter would
+     be invisible to it. */
+  var find = { q: '', hits: [], at: -1 };
+
+  function blockText(b) {
+    if (b.text != null) return b.text;
+    if (typeof b.html === 'string') {
+      var d = document.createElement('div');
+      d.innerHTML = b.html;
+      return d.textContent || '';
+    }
+    return '';
+  }
+
+  function runFind(q) {
+    find.q = q;
+    find.hits = [];
+    find.at = -1;
+    var needle = q.trim().toLowerCase();
+    if (needle.length >= 2) {
+      for (var c = 0; c < chapters.length; c++) {
+        var blocks = chapters[c].blocks;
+        for (var i = 0; i < blocks.length; i++) {
+          var hay = blockText(blocks[i]).toLowerCase();
+          var from = 0, at;
+          while ((at = hay.indexOf(needle, from)) !== -1) {
+            find.hits.push({ c: c, i: i });
+            from = at + needle.length;
+            if (find.hits.length >= 2000) break;
+          }
+          if (find.hits.length >= 2000) break;
+        }
+        if (find.hits.length >= 2000) break;
+      }
+    }
+    find.at = find.hits.length ? 0 : -1;
+    paintFindCount();
+    if (find.at >= 0) gotoHit(0);
+  }
+
+  function paintFindCount() {
+    var n = el('find-count');
+    if (!n) return;
+    if (!find.q || find.q.trim().length < 2) { n.textContent = find.q ? 'Type 2+ letters' : ''; return; }
+    n.textContent = find.hits.length
+      ? (find.at + 1) + ' of ' + find.hits.length
+      : 'No matches';
+  }
+
+  /* Page index that contains block `i` of chapter `c`, in the mode we are in.
+     In scroll mode the block is simply appended. */
+  function locate(c, i) {
+    if (mode === 'pages') {
+      var pages = buildPages(c);
+      for (var j = 0; j < pages.length; j++) {
+        if (pages[j].indexOf(i) !== -1) return j;
+      }
+      return 0;
+    }
+    return -1;
+  }
+
+  function gotoHit(k) {
+    if (!find.hits.length) return;
+    find.at = ((k % find.hits.length) + find.hits.length) % find.hits.length;
+    var hit = find.hits[find.at];
+    if (mode === 'pages') {
+      pageState.c = hit.c;
+      pageState.j = locate(hit.c, hit.i);
+      renderPage();
+    } else {
+      jumpScrollTo(hit.c);
+    }
+    paintFindCount();
+    highlightOnPage();
+    saveProgress();
+  }
+
+  /* Mark matches inside the text currently on screen only. */
+  function highlightOnPage() {
+    var host = mode === 'pages' ? el('page-body') : el('text-body');
+    if (!host) return;
+    host.querySelectorAll('mark.find-hit').forEach(function (m) {
+      var p = m.parentNode;
+      while (m.firstChild) p.insertBefore(m.firstChild, m);
+      p.removeChild(m);
+      p.normalize();
+    });
+    var needle = find.q.trim();
+    if (needle.length < 2) return;
+    var lc = needle.toLowerCase();
+    var scope = host.querySelectorAll('p, h1, h2, h3, li');
+    for (var n = 0; n < scope.length; n++) {
+      var node = scope[n];
+      var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
+      var texts = [], t;
+      while ((t = walker.nextNode())) {
+        if (t.nodeValue.toLowerCase().indexOf(lc) !== -1) texts.push(t);
+      }
+      texts.forEach(function (text) {
+        var frag = document.createDocumentFragment();
+        var rest = text.nodeValue, low = rest.toLowerCase(), at;
+        while ((at = low.indexOf(lc)) !== -1) {
+          if (at > 0) frag.appendChild(document.createTextNode(rest.slice(0, at)));
+          var mk = document.createElement('mark');
+          mk.className = 'find-hit';
+          mk.textContent = rest.substr(at, needle.length);
+          frag.appendChild(mk);
+          rest = rest.slice(at + needle.length);
+          low = rest.toLowerCase();
+        }
+        if (rest) frag.appendChild(document.createTextNode(rest));
+        text.parentNode.replaceChild(frag, text);
+      });
+    }
+    var marks = host.querySelectorAll('mark.find-hit');
+    if (!marks.length) return;
+    /* The current hit is whichever mark lies inside the visible page; with
+       paging there is normally exactly one page of them. */
+    var target = find.hits[find.at];
+    var idx = 0, found = null;
+    if (mode === 'pages' && target && target.c === pageState.c) {
+      var pages = buildPages(pageState.c);
+      var seen = 0;
+      for (var p = 0; p <= pageState.j && p < pages.length; p++) seen += pages[p].length;
+      for (var b = 0; b < pages[pageState.j].length; b++) {
+        if (pages[pageState.j][b] === target.i) { found = marks[Math.min(idx, marks.length - 1)]; break; }
+        idx++;
+      }
+    }
+    (found || marks[0]).classList.add('is-current');
+  }
+
+  function openFind() {
+    var bar = el('find-bar');
+    if (!bar) return;
+    bar.hidden = false;
+    var input = el('find-input');
+    if (input) { input.focus(); input.select(); }
+  }
+  function closeFind() {
+    var bar = el('find-bar');
+    if (bar) bar.hidden = true;
+    find = { q: '', hits: [], at: -1 };
+    var host = mode === 'pages' ? el('page-body') : el('text-body');
+    if (host) {
+      host.querySelectorAll('mark.find-hit').forEach(function (m) {
+        var p = m.parentNode;
+        while (m.firstChild) p.insertBefore(m.firstChild, m);
+        p.removeChild(m); p.normalize();
+      });
+    }
+    paintFindCount();
   }
 
   /* ── mode ───────────────────────────────────────────────────────── */
@@ -540,7 +745,10 @@
     });
   }
   document.querySelectorAll('.mode-btn').forEach(function (b) {
-    b.addEventListener('click', function () { setMode(b.dataset.mode, true); });
+    b.addEventListener('click', function () {
+      localStorage.setItem(MODE_SET_KEY, '1');
+      setMode(b.dataset.mode, true);
+    });
   });
   document.querySelector('[data-action="back"]').addEventListener('click', function (e) {
     e.preventDefault();
@@ -549,6 +757,67 @@
   el('btt').addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
   el('p-prev').addEventListener('click', function () { turn(-1); });
   el('p-next').addEventListener('click', function () { turn(1); });
+
+  /* typography popover */
+  var typeBtn = el('type-btn'), typePop = el('type-pop');
+  function toggleTypePop(force) {
+    if (!typePop) return;
+    var open = force != null ? force : typePop.hidden;
+    typePop.hidden = !open;
+    if (typeBtn) typeBtn.setAttribute('aria-expanded', String(open));
+  }
+  if (typeBtn) typeBtn.addEventListener('click', function (e) { e.stopPropagation(); toggleTypePop(); });
+  if (typePop) {
+    typePop.addEventListener('click', function (e) { e.stopPropagation(); });
+    [['font', FONT_KEY], ['leading', LH_KEY], ['measure', MEASURE_KEY], ['justify', JUSTIFY_KEY]]
+      .forEach(function (pair) {
+        typePop.querySelectorAll('[data-' + pair[0] + ']').forEach(function (b) {
+          b.addEventListener('click', function () {
+            localStorage.setItem(pair[1], b.getAttribute('data-' + pair[0]));
+            saveTypography();
+          });
+        });
+      });
+    var reset = el('type-reset');
+    if (reset) reset.addEventListener('click', function () {
+      [FONT_KEY, LH_KEY, MEASURE_KEY, JUSTIFY_KEY].forEach(function (k) { localStorage.removeItem(k); });
+      saveTypography();
+    });
+    var go = el('goto-go'), gotoInput = el('goto-page');
+    function doGoto() {
+      if (!gotoInput) return;
+      var n = parseInt(gotoInput.value, 10);
+      if (!(n > 0) || !chapters.length) return;
+      if (mode !== 'pages') setMode('pages', true);
+      pageState.j = Math.max(0, n - 1);
+      renderPage();
+    }
+    if (go) go.addEventListener('click', doGoto);
+    if (gotoInput) gotoInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doGoto(); });
+  }
+  document.addEventListener('click', function (e) {
+    if (typePop && !typePop.hidden && !typePop.contains(e.target) && e.target !== typeBtn) toggleTypePop(false);
+  });
+
+  /* find in book */
+  var findBtn = el('find-btn'), findInput = el('find-input');
+  if (findBtn) findBtn.addEventListener('click', function () { openFind(); });
+  var findClose = el('find-close');
+  if (findClose) findClose.addEventListener('click', closeFind);
+  if (findInput) {
+    var findTimer = null;
+    findInput.addEventListener('input', function () {
+      clearTimeout(findTimer);
+      findTimer = setTimeout(function () { runFind(findInput.value); }, 180);
+    });
+    findInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); runFind(findInput.value); gotoHit(find.at + (e.shiftKey ? -1 : 1)); }
+      if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
+    });
+  }
+  var findNext = el('find-next'), findPrev = el('find-prev');
+  if (findNext) findNext.addEventListener('click', function () { gotoHit(find.at + 1); });
+  if (findPrev) findPrev.addEventListener('click', function () { gotoHit(find.at - 1); });
 
   /* ── touch paging ───────────────────────────────────────────────── */
   /* Page turning was keyboard-only plus two fixed buttons, which left a
@@ -585,6 +854,19 @@
     }, { passive: true });
   })();
   document.addEventListener('keydown', function (e) {
+    /* Cmd/Ctrl+F belongs to the book, not the browser: the page holds one
+       chapter at a time, so the browser's find can only ever see the current
+       page and reports "no matches" for a word that is plainly in the text. */
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      openFind();
+      return;
+    }
+    if (e.key === 'Escape') {
+      var bar = el('find-bar');
+      if (bar && !bar.hidden) { closeFind(); return; }
+      if (typePop && !typePop.hidden) { toggleTypePop(false); return; }
+    }
     if (mode !== 'pages') return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown' || e.key === 'Enter') { e.preventDefault(); turn(1); }
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); turn(-1); }

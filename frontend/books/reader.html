@@ -5,9 +5,9 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Reader — Babe's Bookstore</title>
   <style>
-    :root{ --paper:#f7f2e9; --ink:#1c1917; --muted:#83807b; --line:#e5ded3; --panel:#fffdf8; --toolbar:rgba(247,242,233,.92); --btn-hover:#efe9dc; --serif:"EB Garamond","Georgia",serif }
-    html[data-theme="light"]{ --paper:#ffffff; --ink:#161616; --muted:#78716c; --line:#e7e5e4; --panel:#ffffff; --toolbar:rgba(255,255,255,.94); --btn-hover:#f5f5f4 }
-    html[data-theme="dark"]{ --paper:#0f0f12; --ink:#e7e5e4; --muted:#8b8b93; --line:#27272a; --panel:#1c1c1f; --toolbar:rgba(15,15,18,.94); --btn-hover:#27272a }
+    :root{ --paper:#f7f2e9; --ink:#1c1917; --muted:#83807b; --line:#e5ded3; --panel:#fffdf8; --toolbar:rgba(247,242,233,.92); --btn-hover:#efe9dc; --serif:"EB Garamond","Georgia",serif; --find-bg:#fbe7a0; --find-fg:#1c1917; --find-cur-bg:#f59e0b; --find-cur-fg:#1c1917 }
+    html[data-theme="light"]{ --paper:#ffffff; --ink:#161616; --muted:#78716c; --line:#e7e5e4; --panel:#ffffff; --toolbar:rgba(255,255,255,.94); --btn-hover:#f5f5f4; --find-bg:#fde68a; --find-fg:#161616; --find-cur-bg:#f59e0b; --find-cur-fg:#161616 }
+    html[data-theme="dark"]{ --paper:#0f0f12; --ink:#e7e5e4; --muted:#8b8b93; --line:#27272a; --panel:#1c1c1f; --toolbar:rgba(15,15,18,.94); --btn-hover:#27272a; --find-bg:#4a3f14; --find-fg:#f5f0e6; --find-cur-bg:#fbbf24; --find-cur-fg:#1c1917 }
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent }
     body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--serif); -webkit-font-smoothing:antialiased; transition:background .18s ease,color .18s ease }
     .toolbar{ position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--toolbar); backdrop-filter:blur(8px); border-bottom:1px solid var(--line) }
@@ -33,12 +33,98 @@
     .fs-btn button.active{ background:var(--ink); color:var(--paper) }
     .fs-btn button:focus-visible{ outline:2px solid var(--ink); outline-offset:-2px }
     .title{ margin:0; font-size:15px; font-weight:600 }
+
+    /* find bar + typography popover */
+    .find-bar{
+      position:sticky; top:0; z-index:35; display:flex; align-items:center; gap:8px;
+      padding:10px 14px; background:var(--toolbar); backdrop-filter:blur(8px);
+      border-bottom:1px solid var(--line); font-family:"Inter",system-ui,sans-serif;
+    }
+    .find-bar[hidden]{ display:none }
+    .find-bar input[type=search]{
+      flex:1; min-width:0; font:inherit; font-size:14px; padding:8px 12px;
+      border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    }
+    .find-bar input[type=search]:focus-visible{ outline:2px solid var(--ink); outline-offset:1px }
+    .find-bar button{
+      font:inherit; font-size:13px; min-width:40px; min-height:40px; padding:0 10px;
+      border-radius:999px; border:1px solid var(--line); background:var(--panel);
+      color:var(--ink); cursor:pointer;
+    }
+    .find-bar button:disabled{ opacity:.4; cursor:default }
+    .find-count{ font-size:12px; color:var(--muted); min-width:5.5em; text-align:right; white-space:nowrap }
+
+    .type-pop{
+      position:absolute; right:12px; top:56px; z-index:36; width:min(320px,calc(100vw - 24px));
+      background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px;
+      box-shadow:0 12px 32px rgba(0,0,0,.16); font-family:"Inter",system-ui,sans-serif;
+    }
+    .type-pop[hidden]{ display:none }
+    .type-pop fieldset{ border:0; margin:0 0 12px; padding:0 }
+    .type-pop legend{
+      font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+      color:var(--muted); margin-bottom:6px; padding:0;
+    }
+    .seg{ display:flex; border:1px solid var(--line); border-radius:999px; overflow:hidden }
+    .seg button{
+      flex:1; font:inherit; font-size:12px; padding:8px 4px; border:0; cursor:pointer;
+      background:var(--panel); color:var(--ink); min-height:38px;
+    }
+    .seg button + button{ border-left:1px solid var(--line) }
+    .seg button:hover{ background:var(--btn-hover) }
+    .seg button.active{ background:var(--ink); color:var(--paper) }
+    .seg button:focus-visible{ outline:2px solid var(--ink); outline-offset:-2px }
+    .goto{ display:flex; gap:8px }
+    .goto input{
+      flex:1; min-width:0; font:inherit; font-size:14px; padding:8px 12px;
+      border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+    }
+    .goto button{
+      font:inherit; font-size:13px; font-weight:600; padding:8px 16px; border-radius:999px;
+      border:1px solid var(--line); background:var(--ink); color:var(--paper); cursor:pointer; min-height:40px;
+    }
+    .type-reset{
+      width:100%; font:inherit; font-size:12px; padding:9px; border-radius:999px;
+      border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; min-height:40px;
+    }
     .reader-wrap{ max-width:760px; margin:0 auto; padding:40px 22px 80px }
     .chap-title{ font-size:28px; font-weight:700; margin:0 0 24px; line-height:1.2 }
     .book-title{ text-align:center; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin-bottom:28px }
     .text-body{ font-size:22px; line-height:1.75; white-space:pre-wrap; hyphens:auto }
     .text-body p{ margin:0 0 1.1em }
     .text-body img{ max-width:100%; height:auto }
+
+    /* Typography. Type, leading, measure and justification are the four dials
+       that decide whether long-form text is comfortable or tiring, and they
+       are the ones a reader app is judged on. Each is a real attribute on <html>
+       rather than a utility class, because the committed tailwind.css is a
+       purged build and cannot be relied on to carry arbitrary values. */
+    html[data-font="serif"] .text-body{ font-family:"EB Garamond",Georgia,"Times New Roman",serif }
+    html[data-font="sans"]  .text-body{ font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif }
+    html[data-font="mono"]  .text-body{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace }
+
+    html[data-leading="tight"]  .text-body{ line-height:1.45 }
+    html[data-leading="snug"]   .text-body{ line-height:1.6 }
+    html[data-leading="relaxed"] .text-body{ line-height:1.95 }
+
+    html[data-justify="on"] .text-body{ text-align:justify; hyphens:auto; -webkit-hyphens:auto }
+    html[data-justify="off"] .text-body{ text-align:left; hyphens:none; -webkit-hyphens:none }
+
+    /* Measure: the length of a line. Too long and the eye loses the start of
+       the next line; too short and the rhythm breaks. 34em is the usual
+       readable range for serif body text. */
+    html[data-measure="narrow"] #page,
+    html[data-measure="narrow"] .reader-wrap{ max-width:34em }
+    html[data-measure="normal"] #page,
+    html[data-measure="normal"] .reader-wrap{ max-width:42em }
+    html[data-measure="wide"] #page,
+    html[data-measure="wide"] .reader-wrap{ max-width:52em }
+    #page,.reader-wrap{ margin-left:auto; margin-right:auto; transition:max-width .18s ease }
+
+    /* Find-in-book. Matches are marked only in the page on screen; wrapping
+       every occurrence in the DOM would be ruinous on a long chapter. */
+    .find-hit{ background:var(--find-bg); color:var(--find-fg); border-radius:3px; padding:0 1px }
+    .find-hit.is-current{ background:var(--find-cur-bg); color:var(--find-cur-fg); box-shadow:0 0 0 2px var(--find-cur-bg) }
     @media (max-width:600px){
       .reader-wrap{ padding:26px 18px 70px }
       .toolbar{ flex-wrap:wrap; gap:8px }
@@ -131,7 +217,61 @@
       <button type="button" class="mode-btn" data-mode="pages" aria-pressed="true">Pages</button>
       <button type="button" class="mode-btn" data-mode="scroll" aria-pressed="false">Scroll</button>
     </span>
+    <button id="type-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Typography and find in book">Aa</button>
+    <button id="find-btn" type="button" aria-label="Find in book" aria-expanded="false">⌕</button>
     <button id="export-btn" type="button" aria-label="Download or send to your device">⇩ Read elsewhere</button>
+  </div>
+
+  <div id="find-bar" class="find-bar" hidden role="search" aria-label="Find in book">
+    <label class="sr-only" for="find-input">Find in book</label>
+    <input id="find-input" type="search" placeholder="Find in book…" autocomplete="off" spellcheck="false">
+    <span id="find-count" class="find-count" role="status" aria-live="polite"></span>
+    <button type="button" id="find-prev" aria-label="Previous match">↑</button>
+    <button type="button" id="find-next" aria-label="Next match">↓</button>
+    <button type="button" id="find-close" aria-label="Close find">✕</button>
+  </div>
+
+  <div id="type-pop" class="type-pop" hidden role="dialog" aria-label="Typography">
+    <fieldset>
+      <legend>Typeface</legend>
+      <div class="seg" role="radiogroup" aria-label="Typeface">
+        <button type="button" data-font="serif" role="radio" aria-checked="true" class="active" style="font-family:'EB Garamond',Georgia,serif">Serif</button>
+        <button type="button" data-font="sans" role="radio" aria-checked="false" style="font-family:Inter,system-ui,sans-serif">Sans</button>
+        <button type="button" data-font="mono" role="radio" aria-checked="false" style="font-family:ui-monospace,Menlo,monospace">Mono</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Line spacing</legend>
+      <div class="seg" role="radiogroup" aria-label="Line spacing">
+        <button type="button" data-leading="tight" role="radio" aria-checked="false">Tight</button>
+        <button type="button" data-leading="snug" role="radio" aria-checked="true" class="active">Snug</button>
+        <button type="button" data-leading="relaxed" role="radio" aria-checked="false">Relaxed</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Line length</legend>
+      <div class="seg" role="radiogroup" aria-label="Line length">
+        <button type="button" data-measure="narrow" role="radio" aria-checked="false">Narrow</button>
+        <button type="button" data-measure="normal" role="radio" aria-checked="true" class="active">Normal</button>
+        <button type="button" data-measure="wide" role="radio" aria-checked="false">Wide</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Alignment</legend>
+      <div class="seg" role="radiogroup" aria-label="Alignment">
+        <button type="button" data-justify="off" role="radio" aria-checked="true" class="active">Ragged</button>
+        <button type="button" data-justify="on" role="radio" aria-checked="false">Justified</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Go to page</legend>
+      <div class="goto">
+        <label class="sr-only" for="goto-page">Page number within chapter</label>
+        <input id="goto-page" type="number" min="1" inputmode="numeric" placeholder="e.g. 4">
+        <button type="button" id="goto-go">Go</button>
+      </div>
+    </fieldset>
+    <button type="button" id="type-reset" class="type-reset">Reset typography</button>
   </div>
 
   <div id="progressbar"><i></i></div>
