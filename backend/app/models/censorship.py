@@ -21,7 +21,16 @@ class CensorshipRecord(Base):
     __tablename__ = "censorship_records"
 
     id = Column(Integer, primary_key=True, index=True)
-    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True)
+    #: The work's suppression record is a historical fact; carrying an edition
+    #: is a separate licensing decision. Book is NULL for works still in
+    #: copyright (most of the modern African / postcolonial canon) so the
+    #: archive can document a ban without claiming to host the book.
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=True, index=True)
+    #: Fallback identity for records with no carried edition. At least one of
+    #: book_id / work_title is always present (enforced by check constraint).
+    work_title = Column(String(240), nullable=True, index=True)
+    work_author = Column(String(180), nullable=True)
+    work_year = Column(String(24), nullable=True)
     #: ISO 3166-1 alpha-2 country code (e.g. "US", "ZA", "GB", "X" for transnational).
     country_code = Column(String(2), nullable=False, index=True)
     country_name = Column(String(80), nullable=True)

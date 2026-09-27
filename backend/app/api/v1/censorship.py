@@ -10,7 +10,7 @@ licence-verified books that are actually on the shelves.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, and_
 
 from .deps import get_db, get_current_user, require_superadmin
 from ...models.book import Book, BookStatus
@@ -26,6 +26,9 @@ def _record_dict(r: CensorshipRecord) -> dict:
     return {
         "id": r.id,
         "book_id": r.book_id,
+        "work_title": r.work_title,
+        "work_author": r.work_author,
+        "work_year": r.work_year,
         "country_code": r.country_code,
         "country_name": r.country_name or r.country_code,
         "status": r.status,
@@ -61,28 +64,40 @@ async def banned_records(
     status: str = "",
     db: AsyncSession = Depends(get_db),
 ):
-    """Books with censorship records, joined to their 'why banned' stories.
+    """Works with censorship records, joined to their 'why banned' stories.
 
     Filters: country (alpha-2), text query (title/author), record status.
-    Only verified records for approved books are listed.
+    Only verified records are listed. A record may exist for a work we do not
+    carry (still in copyright), in which case `book` is null and the work is
+    identified by work_title/work_author — the archive documents suppression,
+    it does not gate reading.
     """
     stmt = (select(CensorshipRecord, Book)
-            .join(Book, Book.id == CensorshipRecord.book_id)
-            .where(Book.status == BookStatus.APPROVED, Book.license_verified.is_(True),
-                   CensorshipRecord.verified.is_(True)))
+            .outerjoin(Book, Book.id == CensorshipRecord.book_id)
+            .where(CensorshipRecord.verified.is_(True),
+                   or_(Book.id.is_(None),
+                       and_(Book.status == BookStatus.APPROVED,
+                            Book.license_verified.is_(True)))))
     if country:
         stmt = stmt.where(CensorshipRecord.country_code == country.upper())
     if status:
         stmt = stmt.where(CensorshipRecord.status == status)
     if q:
-        like = f"%{q}%"
-        stmt = stmt.where(or_(func.lower(Book.title).like(like.lower()),
-                              func.lower(Book.author).like(like.lower())))
-    rows = (await db.execute(stmt.order_by(CensorshipRecord.country_code, Book.title))).all()
+        like = f"%{q.lower()}%"
+        stmt = stmt.where(or_(
+            func.lower(Book.title).like(like),
+            func.lower(Book.author).like(like),
+            func.lower(CensorshipRecord.work_title).like(like),
+            func.lower(CensorshipRecord.work_author).like(like),
+        ))
+    rows = (await db.execute(
+        stmt.order_by(CensorshipRecord.country_code,
+                      func.coalesce(Book.title, CensorshipRecord.work_title))
+    )).all()
 
     items = [{
         **_record_dict(r),
-        "book": _book_dict(b),
+        "book": _book_dict(b) if b is not None else None,
     } for r, b in rows]
     return {"total": len(items), "items": items}
 
