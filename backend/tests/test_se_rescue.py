@@ -83,16 +83,16 @@ async def test_run_actually_persists_the_flips(db, session_factory, monkeypatch,
     # One title we keep on Standard Ebooks, one we re-source, one we reject.
     se_live = Book(title="The Time Machine", author="H. G. Wells", source="standard_ebooks",
                    source_id="h-g-wells/the-time-machine", status=BookStatus.REJECTED,
-                   license_type="public_domain", license_verified=True,
+                   license_type="public_domain", asset_verified=True,
                    source_url="https://standardebooks.org/ebooks/h-g-wells/the-time-machine")
     dead = Book(title="Curtain", author="Agatha Christie", source="standard_ebooks",
                 source_id="a-g-christie/curtain", status=BookStatus.REJECTED,
-                license_type="public_domain", license_verified=True,
+                license_type="public_domain", asset_verified=True,
                 source_url="https://standardebooks.org/ebooks/a-g-christie/curtain")
     # A Gutenberg edition of the "dead" title already in the catalogue.
     pool = Book(title="Curtain", author="Agatha Christie", source="gutenberg",
                 source_id="1234", status=BookStatus.APPROVED, license_type="public_domain",
-                license_verified=True,
+                asset_verified=True,
                 source_url="https://www.gutenberg.org/ebooks/1234")
     db.add_all([se_live, dead, pool])
     await db.commit()
@@ -137,11 +137,11 @@ async def test_run_re_sources_and_keeps_provenance(db, session_factory, monkeypa
 
     target = Book(title="The Moon Pool", author="Agatha Christie", source="standard_ebooks",
                   source_id="a-g-christie/the-moon-pool", status=BookStatus.REJECTED,
-                  license_type="public_domain", license_verified=True,
+                  license_type="public_domain", asset_verified=True,
                   source_url="https://standardebooks.org/ebooks/a-g-christie/the-moon-pool")
     wrong = Book(title="The Moon Pool", author="Agatha Christie", source="gutenberg",
                  source_id="99", status=BookStatus.APPROVED, license_type="public_domain",
-                 license_verified=True,
+                 asset_verified=True,
                  source_url="https://www.gutenberg.org/ebooks/99")
     db.add_all([target, wrong])
     await db.commit()

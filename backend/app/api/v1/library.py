@@ -425,7 +425,7 @@ async def library_summary(
 
     catalogue_total = (await db.execute(
         select(func.count()).select_from(Book).where(
-            Book.status == BookStatus.APPROVED, Book.license_verified.is_(True)
+            Book.status == BookStatus.APPROVED, Book.asset_verified.is_(True)
         )
     )).scalar() or 0
 

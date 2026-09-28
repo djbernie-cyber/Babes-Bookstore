@@ -45,7 +45,15 @@ class Book(Base):
 
     license_type = Column(String(50), nullable=False, index=True)
     license_url = Column(Text, nullable=True)
-    license_verified = Column(Boolean, default=False)
+
+    #: Whether this edition has been checked and cleared for the catalogue.
+    #: Renamed from ``asset_verified``: that name asserted a copyright
+    #: conclusion the catalogue could not support, and four in-copyright plays
+    #: (Miller 1949, Williams 1947, Wilder 1942, Saroyan 1939) were approved
+    #: under it. This flag is set by classification against the publisher's own
+    #: public-domain statement, so a title cannot reach the catalogue just
+    #: because someone pressed Approve.
+    asset_verified = Column(Boolean, default=False)
 
     #: Why this book was withdrawn from the catalogue, if it was. Set by the
     #: licence audit and by manual rejection. Nullable: a book that has never
@@ -84,10 +92,10 @@ class Book(Base):
     __table_args__ = (
         Index("ix_books_source_source_id", "source", "source_id", unique=True),
         # Storefront hot path: approved+verified lists sorted newest-first.
-        Index("ix_books_status_license_created", "status", "license_verified", "created_at"),
+        Index("ix_books_status_asset_created", "status", "asset_verified", "created_at"),
         # Browse-by filters used on the catalog pages.
-        Index("ix_books_category_status", "category", "status", "license_verified"),
-        Index("ix_books_source_status", "source", "status", "license_verified"),
+        Index("ix_books_category_status", "category", "status", "asset_verified"),
+        Index("ix_books_source_status", "source", "status", "asset_verified"),
     )
     # Note: `title` is indexed via Column(index=True) above. The Postgres
     # trigram (GIN) indexes for fuzzy title/author search are created in the

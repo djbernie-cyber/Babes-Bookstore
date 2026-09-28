@@ -35,7 +35,7 @@ def discoverable():
 
 def sellable():
     """Books whose file may be delivered: approved and licence-confirmed."""
-    return and_(Book.status == BookStatus.APPROVED, Book.license_verified.is_(True))
+    return and_(Book.status == BookStatus.APPROVED, Book.asset_verified.is_(True))
 
 
 def is_sellable(book) -> bool:
@@ -43,7 +43,7 @@ def is_sellable(book) -> bool:
     return bool(
         book is not None
         and book.status == BookStatus.APPROVED
-        and book.license_verified
+        and book.asset_verified
     )
 
 
@@ -57,7 +57,7 @@ def delivery_block_reason(book) -> str | None:
         return "Book not found"
     if book.status != BookStatus.APPROVED:
         return "This book has not been approved for the catalogue yet"
-    if not book.license_verified:
+    if not book.asset_verified:
         return (
             "Listed for reference only — its licence status is still being "
             "confirmed, so the file is not available yet"

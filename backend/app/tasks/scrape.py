@@ -177,7 +177,7 @@ async def _ingest_chunk(
                     "language": metadata.language or "en",
                     "publication_year": metadata.publication_year,
                     "status": status,
-                    "license_verified": approved,
+                    "asset_verified": approved,
                     "isbn": metadata.isbn,
                     "page_count": metadata.page_count,
                     "cover_path": metadata.cover_url or gutenberg_cache_cover(

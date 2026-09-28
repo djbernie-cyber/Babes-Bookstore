@@ -14,13 +14,13 @@ async def test_author_list_slug_resolves_on_detail(client, db):
     db.add_all([
         Book(title="One", author="Lytton, Edward Bulwer Lytton, Baron",
              source="gutenberg", source_id="1", license_type="public_domain",
-             status=BookStatus.APPROVED, license_verified=True),
+             status=BookStatus.APPROVED, asset_verified=True),
         Book(title="Two", author="Equiano, Olaudah",
              source="gutenberg", source_id="2", license_type="public_domain",
-             status=BookStatus.APPROVED, license_verified=True),
+             status=BookStatus.APPROVED, asset_verified=True),
         Book(title="Three", author="Plaatje, Sol. T. (Solomon Tshekisho)",
              source="gutenberg", source_id="3", license_type="public_domain",
-             status=BookStatus.APPROVED, license_verified=True),
+             status=BookStatus.APPROVED, asset_verified=True),
     ])
     await db.commit()
 
@@ -41,7 +41,7 @@ async def test_author_list_uses_display_name(client, db):
     from app.models.book import Book, BookStatus
     db.add(Book(title="X", author="Douglass, Frederick (Frederick Bailey)",
                 source="gutenberg", source_id="4", license_type="public_domain",
-                status=BookStatus.APPROVED, license_verified=True))
+                status=BookStatus.APPROVED, asset_verified=True))
     await db.commit()
     r = await client.get("/api/v1/authors?q=douglass")
     items = r.json()["items"]

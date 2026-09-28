@@ -81,7 +81,7 @@ async def test_approve_marks_verified_and_public(client, db):
     r = await client.post(f"/api/v1/books/{book.id}/approve", headers=auth)
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "approved"
-    assert r.json()["license_verified"] is True
+    assert r.json()["asset_verified"] is True
 
     # Now visible anonymously.
     public = await client.get("/api/v1/books")
@@ -127,7 +127,7 @@ async def _seed_book(db, **kw):
 
 @pytest.mark.asyncio
 async def test_approve_refuses_known_in_copyright_title(client, db):
-    """Approving used to set status=APPROVED and license_verified=True in one
+    """Approving used to set status=APPROVED and asset_verified=True in one
     step, so a click both published a book and certified its own licence."""
     from app.models.book import BookStatus
     await _make_admin(db)
@@ -139,7 +139,7 @@ async def test_approve_refuses_known_in_copyright_title(client, db):
     assert "in-copyright" in r.json()["detail"]
     await db.refresh(book)
     assert book.status == BookStatus.PENDING
-    assert book.license_verified is False
+    assert book.asset_verified is False
 
 
 @pytest.mark.asyncio
@@ -157,7 +157,7 @@ async def test_approve_refuses_work_published_since_1940(client, db):
     assert "1949" in r.json()["detail"]
     await db.refresh(book)
     assert book.status == BookStatus.PENDING
-    assert book.license_verified is False
+    assert book.asset_verified is False
 
 
 @pytest.mark.asyncio

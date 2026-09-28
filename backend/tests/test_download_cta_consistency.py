@@ -39,15 +39,15 @@ def test_helper_is_defined_once_in_app_js(app_js):
 
 
 def test_helper_branches_on_the_flag(app_js):
-    assert "b.license_verified === false" in app_js, \
+    assert "b.asset_verified === false" in app_js, \
         "helper renders a download link for unconfirmed titles"
-    pending = app_js.split("b.license_verified === false", 1)[1][:400]
-    assert "Licence pending" in pending, "no alternative offer for an unconfirmed title"
+    pending = app_js.split("b.asset_verified === false", 1)[1][:400]
+    assert "Asset check pending" in pending, "no alternative offer for an unverified title"
     assert "/books/" in pending, "unconfirmed title should lead somewhere, not nowhere"
 
 
 def test_helper_keeps_the_real_download_for_confirmed_books(app_js):
-    tail = app_js.split("b.license_verified === false", 1)[1]
+    tail = app_js.split("b.asset_verified === false", 1)[1]
     assert "/api/v1/books/" in tail and "/download" in tail, \
         "confirmed books lost their download link"
 

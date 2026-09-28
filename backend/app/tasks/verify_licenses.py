@@ -31,7 +31,7 @@ async def _verify_all_async() -> dict:
             book.verified_at = datetime.utcnow()
 
             if result.status == LicenseStatus.APPROVED:
-                book.license_verified = True
+                book.asset_verified = True
                 approved += 1
             elif result.status == LicenseStatus.REJECTED:
                 book.status = BookStatus.REJECTED
@@ -60,7 +60,7 @@ async def _verify_single_async(book_id: int) -> dict:
         book.verified_at = datetime.utcnow()
 
         if result.status == LicenseStatus.APPROVED:
-            book.license_verified = True
+            book.asset_verified = True
             book.status = BookStatus.PENDING
         elif result.status == LicenseStatus.REJECTED:
             book.status = BookStatus.REJECTED

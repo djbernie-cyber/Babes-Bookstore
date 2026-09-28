@@ -32,7 +32,7 @@ async def bundle(db):
     for n, title in enumerate(["Alpha", "Beta", "Gamma"]):
         b = Book(
             title=title, author=f"Author {n}", status=BookStatus.APPROVED,
-            license_verified=True, source="gutenberg", source_id=f"pick-{n}",
+            asset_verified=True, source="gutenberg", source_id=f"pick-{n}",
             license_type="public_domain", tags=[], category="Classics",
         )
         db.add(b)

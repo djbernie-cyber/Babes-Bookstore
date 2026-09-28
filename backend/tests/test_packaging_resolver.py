@@ -21,7 +21,7 @@ async def test_gutenberg_url_bucket_downloads(client, db, monkeypatch):
         tags=["Suppressed Classics"],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
         source_url="https://www.gutenberg.org/ebooks/63132",
     )
     db.add(book)
@@ -50,7 +50,7 @@ async def test_gutenberg_url_bucket_reader_text(client, db, monkeypatch):
         tags=["Suppressed Classics"],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
         source_url="https://www.gutenberg.org/ebooks/63132",
     )
     db.add(book)
@@ -79,7 +79,7 @@ async def test_epub_only_book_downloads(client, db, monkeypatch):
         tags=[],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
         epub_path="https://standardebooks.org/ebooks/slug/downloads/slug.epub",
     )
     db.add(book)
@@ -109,7 +109,7 @@ async def test_standardebooks_slug_derives_epub_runtime(client, db, monkeypatch)
         tags=[],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
         source_url="https://standardebooks.org/ebooks/g-k-chesterton/the-man-who-was-thursday",
     )
     db.add(book)
@@ -168,7 +168,7 @@ async def test_epub_stub_error_page_not_accepted(client, db, monkeypatch):
         tags=[],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
         epub_path="https://standardebooks.org/ebooks/x/y/downloads/x_y.epub",
     )
     db.add(book)

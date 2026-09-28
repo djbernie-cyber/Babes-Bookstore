@@ -61,7 +61,7 @@ async def randomise_curated_bundles(db: AsyncSession) -> Dict:
             await db.execute(
                 select(Book.id, Book.author, Book.tags, Book.category).where(
                     Book.status == BookStatus.APPROVED,
-                    Book.license_verified == True,
+                    Book.asset_verified == True,
                 )
             )
         ).all()

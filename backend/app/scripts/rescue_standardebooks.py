@@ -169,7 +169,7 @@ async def run(limit: int | None = None, dry_run: bool = False) -> None:
 
         pool = (await db.execute(select(Book).where(
             Book.status == BookStatus.APPROVED,
-            Book.license_verified.is_(True),
+            Book.asset_verified.is_(True),
             Book.source.in_(PG_SOURCES),
         ))).scalars().all()
 

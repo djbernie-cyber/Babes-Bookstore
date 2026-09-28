@@ -163,7 +163,7 @@ async def main():
         books = (await db.execute(
             select(Book).where(
                 Book.status == BookStatus.APPROVED,
-                Book.license_verified.is_(True),
+                Book.asset_verified.is_(True),
             )
         )).scalars().all()
         print(f"scanned {len(books)} approved, licence-verified books\n")

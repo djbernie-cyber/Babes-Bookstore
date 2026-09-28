@@ -100,7 +100,7 @@ async def book_text(book_id: int, db: AsyncSession = Depends(get_db)):
     book = await db.get(Book, book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
-    if book.status != BookStatus.APPROVED or not book.license_verified:
+    if book.status != BookStatus.APPROVED or not book.asset_verified:
         raise HTTPException(status_code=403, detail="Book not yet verified for reading")
 
     from ...services.packaging import packaging
@@ -126,7 +126,7 @@ async def download_book(book_id: int, db: AsyncSession = Depends(get_db)):
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     # Only approved public-domain / openly-licensed books are downloadable
-    if book.status != BookStatus.APPROVED or not book.license_verified:
+    if book.status != BookStatus.APPROVED or not book.asset_verified:
         raise HTTPException(status_code=403, detail="Book not yet verified for download")
 
     # Use the same resolver as bundle packaging so we stay consistent
@@ -216,7 +216,7 @@ async def approve_book(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    # Approving used to set license_verified=True unconditionally, so a single
+    # Approving used to set asset_verified=True unconditionally, so a single
     # click put a book on sale and certified its own licence at the same time.
     # That is how Death of a Salesman (1949), A Streetcar Named Desire (1947),
     # The Skin of Our Teeth (1942) and The Time of Your Life (1939) went live
@@ -241,8 +241,23 @@ async def approve_book(
             ),
         )
 
+    # Classification records its verdict in rejected_reason while the book stays
+    # PENDING: either the publisher's page says the work is still in copyright,
+    # or the page could not be read and the row was flagged for a human. Either
+    # way, pressing Approve must not quietly promote it -- that is the click
+    # that put four in-copyright plays on sale. Clearing the note first is a
+    # deliberate override, and it leaves the reason in the audit log.
+    if book.status == BookStatus.PENDING and book.rejected_reason:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Refused: this edition was flagged for review and is not "
+                f"asset-verified. Reason: {book.rejected_reason}"
+            ),
+        )
+
     book.status = BookStatus.APPROVED
-    book.license_verified = True
+    book.asset_verified = True
     # Clear the withdrawal note: a book put back into the catalogue must not
     # keep advertising why it used to be off it.
     book.rejected_reason = None
@@ -261,7 +276,7 @@ async def reject_book(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     book.status = BookStatus.REJECTED
-    book.license_verified = False
+    book.asset_verified = False
     # An explicit withdrawal with no recorded reason is exactly the state that
     # left 2,099 rows unreviewable, so give it a default that can be edited.
     book.rejected_reason = book.rejected_reason or "rejected by an administrator"

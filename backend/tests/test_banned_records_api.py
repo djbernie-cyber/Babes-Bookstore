@@ -21,7 +21,7 @@ ENDPOINT = "/api/v1/banned/records"
 
 def _book(db, title, author, status=BookStatus.APPROVED, verified=True, n=0):
     b = Book(
-        title=title, author=author, status=status, license_verified=verified,
+        title=title, author=author, status=status, asset_verified=verified,
         source="gutenberg", source_id=f"ban-{n}", license_type="public_domain",
         tags=[], category="Classics",
     )

@@ -33,7 +33,7 @@ async def main():
         if existing:
             print(f"already present id={existing.id}; ensuring approved+cover")
             existing.status = BookStatus.APPROVED
-            existing.license_verified = True
+            existing.asset_verified = True
             existing.verified_by = VerificationMethod.MANUAL.value
             existing.cover_path = existing.cover_path or COVER
             existing.tags = list(dict.fromkeys((existing.tags or []) + ["Classics", "Bestsellers", "Self-Help"]))
@@ -50,7 +50,7 @@ async def main():
                 source_url="https://openlibrary.org/works/OL8165007W",
                 license_type="public_domain",
                 license_url="https://openlibrary.org/works/OL8165007W",
-                license_verified=True,
+                asset_verified=True,
                 verified_by=VerificationMethod.MANUAL.value,
                 category="Self-Help",
                 tags=["Classics", "Bestsellers", "Self-Help"],

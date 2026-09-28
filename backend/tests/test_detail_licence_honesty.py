@@ -33,13 +33,13 @@ def js():
     return JS_PATH.read_text(encoding="utf-8")
 
 
-def test_detail_page_has_a_licence_note_slot(html):
-    assert 'id="licence-note"' in html, "no element to explain an unavailable file"
-    assert 'id="licence-note"' in html and "hidden" in html.split('id="licence-note"')[1][:120]
+def test_detail_page_has_an_asset_note_slot(html):
+    assert 'id="asset-note"' in html, "no element to explain an unavailable file"
+    assert 'id="asset-note"' in html and "hidden" in html.split('id="asset-note"')[1][:120]
 
 
 def test_unverified_branch_exists_and_is_keyed_on_the_flag(js):
-    assert "license_verified === false" in js, \
+    assert "asset_verified === false" in js, \
         "the unconfirmed case is not detected at all"
 
 
@@ -50,7 +50,7 @@ def _unverified_branch(js):
     ``return;`` -- the forEach guard is itself a ``return;`` and would
     truncate the branch before the interesting part.
     """
-    tail = js.split("license_verified === false", 1)[1]
+    tail = js.split("asset_verified === false", 1)[1]
     return tail.split("document.getElementById('download').href", 1)[0]
 
 
@@ -65,14 +65,14 @@ def test_unverified_books_lose_their_download_href(js):
 
 def test_unverified_books_get_an_explanation(js):
     body = _unverified_branch(js)
-    assert "licence-note" in body
-    assert "confirming the licence" in body, \
+    assert "asset-note" in body
+    assert "still verifying this edition" in body, \
         "reader is told the file is gone but not why"
 
 
 def test_cleared_books_still_get_real_links(js):
     """The relaxation must not cost the common case its download."""
-    tail = js.split("license_verified === false", 1)[1]
+    tail = js.split("asset_verified === false", 1)[1]
     assert "/download" in tail, "a verified book no longer gets a download link"
     assert "/read/" in tail, "a verified book no longer gets a reader link"
 
@@ -82,6 +82,7 @@ def test_green_cleared_badge_is_withheld_from_unverified_titles(js):
     m = re.search(r"let m = \"\"; if \(b\.license_type\)(.*?); if \(b\.category\)", js, re.S)
     assert m, "meta badge line not found"
     line = m.group(1)
-    assert "b.license_verified ? badge" in line, \
-        "licence badge ignores the confirmed/unconfirmed state"
-    assert "unconfirmed" in line, "no wording distinguishes an unconfirmed licence"
+    assert "b.asset_verified ? badge" in line, \
+        "asset badge ignores the verified/unverified state"
+    assert "asset check pending" in line, \
+        "no wording distinguishes an edition that has not cleared its check"

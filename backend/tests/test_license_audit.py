@@ -33,7 +33,7 @@ async def add_book(db, **kw):
         source_id="author/some-slug",
         source_url="https://example.org/some-slug",
         license_type="public_domain",
-        license_verified=True,
+        asset_verified=True,
         status=BookStatus.APPROVED,
     )
     defaults.update(kw)
@@ -95,7 +95,7 @@ class TestAuditBehaviour:
         assert report["rejected"] == 0
         await db.refresh(book)
         assert book.status == BookStatus.PENDING
-        assert book.license_verified is False
+        assert book.asset_verified is False
         assert "HTTP 404" in book.rejected_reason
 
     @pytest.mark.asyncio
@@ -119,7 +119,7 @@ class TestAuditBehaviour:
         assert report["pending"] == 0
         await db.refresh(book)
         assert book.status == BookStatus.REJECTED
-        assert book.license_verified is False
+        assert book.asset_verified is False
         assert book.rejected_reason == "known non-public-domain modern work"
 
     @pytest.mark.asyncio
@@ -132,7 +132,7 @@ class TestAuditBehaviour:
         assert report["ok"] == 1
         await db.refresh(book)
         assert book.status == BookStatus.APPROVED
-        assert book.license_verified is True
+        assert book.asset_verified is True
         assert book.rejected_reason is None
 
     @pytest.mark.asyncio

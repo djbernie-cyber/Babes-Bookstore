@@ -15,7 +15,7 @@ async def _make_book(db, title="Sula", author="Toni Morrison", source_id="x1"):
     from app.models.book import Book, BookStatus
     b = Book(title=title, author=author, source="gutenberg", source_id=source_id,
              license_type="public_domain", status=BookStatus.APPROVED,
-             license_verified=True)
+             asset_verified=True)
     db.add(b)
     await db.commit()
     return b

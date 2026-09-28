@@ -41,7 +41,7 @@ class BookUpdate(BaseModel):
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     status: Optional[BookStatusEnum] = None
-    license_verified: Optional[bool] = None
+    asset_verified: Optional[bool] = None
     rejected_reason: Optional[str] = None
     source_url: Optional[str] = None
     epub_path: Optional[str] = None
@@ -50,7 +50,7 @@ class BookUpdate(BaseModel):
 
 class BookResponse(BookBase):
     id: int
-    license_verified: bool
+    asset_verified: bool
     cover_path: Optional[str] = None
     pdf_path: Optional[str] = None
     epub_path: Optional[str] = None

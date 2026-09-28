@@ -17,7 +17,7 @@ async def _seed(db):
     for i, b in enumerate(BOOKS):
         db.add(Book(
             title=b["title"], author=b["author"], description=b["description"],
-            status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+            status=BookStatus.APPROVED, asset_verified=True, source="gutenberg",
             source_id=str(i), license_type="public_domain",
             tags=[], category="Classics",
         ))
@@ -87,7 +87,7 @@ async def test_author_name_ranks_above_title_only(client, db):
     # the author match ("Sol T. Plaatje") must rank first for name intent.
     db.add(Book(
         title="Solar Plane Letters", author="Somebody", description="",
-        status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+        status=BookStatus.APPROVED, asset_verified=True, source="gutenberg",
         source_id="900", license_type="public_domain", tags=[], category="Classics",
     ))
     await db.commit()
@@ -107,7 +107,7 @@ async def _seed_accented(db):
     for i, b in enumerate(ACCENTED):
         db.add(Book(
             title=b["title"], author=b["author"], description=b.get("description", ""),
-            status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+            status=BookStatus.APPROVED, asset_verified=True, source="gutenberg",
             source_id=f"acc-{i}", license_type="public_domain",
             tags=[], category="Classics",
         ))
@@ -163,7 +163,7 @@ async def test_isbn_is_searchable(client, db):
     """isbn is in the folded haystack, so a typed ISBN reaches the row."""
     db.add(Book(
         title="Some Book", author="An Author", description="",
-        status=BookStatus.APPROVED, license_verified=True, source="gutenberg",
+        status=BookStatus.APPROVED, asset_verified=True, source="gutenberg",
         source_id="isbn-1", license_type="public_domain", tags=[],
         category="Classics", isbn="9780140449136",
     ))

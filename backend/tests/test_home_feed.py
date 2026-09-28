@@ -21,7 +21,7 @@ async def _make_book(db, title, tags=None, category="Classics", source_id=None, 
              category=category, tags=tags or [],
              license_type="public_domain",
              status=status,
-             license_verified=verified)
+             asset_verified=verified)
     db.add(b)
     await db.commit()
     return b

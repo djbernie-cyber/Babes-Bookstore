@@ -502,7 +502,7 @@ async def bulk_book_action(
         book = await db.get(Book, bid)
         if not book:
             continue
-        if req.action == "approve" and not book.license_verified:
+        if req.action == "approve" and not book.asset_verified:
             # Licensing is the whole point of this library: a book whose
             # licence was never verified does not go on the shelf.
             skipped += 1
@@ -557,7 +557,7 @@ async def restore_rejected_books(
                          "source_id": book.source_id})
             continue
         book.status = BookStatus.PENDING
-        book.license_verified = False
+        book.asset_verified = False
         restored += 1
 
     await db.commit()
@@ -589,7 +589,7 @@ async def approve_all_pending_books(
     """
     result = await db.execute(
         update(Book)
-        .where(Book.status == BookStatus.PENDING, Book.license_verified == True)
+        .where(Book.status == BookStatus.PENDING, Book.asset_verified == True)
         .values(status=BookStatus.APPROVED)
     )
     count = result.rowcount or 0

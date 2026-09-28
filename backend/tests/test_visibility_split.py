@@ -29,7 +29,7 @@ AUTHORS = "/api/v1/authors"
 async def _add(db, title, author, *, status=BookStatus.APPROVED, verified=True,
                category="Classics", n=0):
     b = Book(
-        title=title, author=author, status=status, license_verified=verified,
+        title=title, author=author, status=status, asset_verified=verified,
         source="test", source_id=f"vis-{n}-{title}", license_type="public_domain",
         tags=[], category=category, description="A book.",
     )
@@ -84,8 +84,8 @@ async def test_catalogue_tells_the_client_the_licence_is_unconfirmed(client, db)
     """The UI cannot be honest about a file it cannot offer without this flag."""
     await _add(db, "Flagged Book", "Some Author", verified=False)
     item = (await client.get(CATALOGUE)).json()["items"][0]
-    assert "license_verified" in item
-    assert item["license_verified"] is False
+    assert "asset_verified" in item
+    assert item["asset_verified"] is False
 
 
 # ── The half that does not move: delivery stays gated ──────────────────────

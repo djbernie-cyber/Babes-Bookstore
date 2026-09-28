@@ -74,7 +74,7 @@ async def test_text_fetch_renders_epub_only_book(client, db, monkeypatch):
         tags=["Sample"],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
         epub_path="https://example.test/epub-only-sampler.epub",
     )
     db.add(book)
@@ -102,7 +102,7 @@ async def test_text_still_422_when_no_epub_and_no_txt(client, db, monkeypatch):
         tags=[],
         license_type="public_domain",
         status=BookStatus.APPROVED,
-        license_verified=True,
+        asset_verified=True,
     )
     db.add(book)
     await db.commit()
@@ -120,7 +120,7 @@ async def test_withdrawn_book_reports_gone_not_missing(client, db):
     book = Book(
         title="Withdrawn Work", author="A. Author", source="standard_ebooks",
         source_id="a-author/withdrawn-work", status=BookStatus.REJECTED,
-        license_type="public_domain", license_verified=True,
+        license_type="public_domain", asset_verified=True,
     )
     db.add(book)
     await db.commit()

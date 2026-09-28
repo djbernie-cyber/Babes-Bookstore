@@ -3,7 +3,7 @@ at their declared source.
 
 Fabricated source ids (e.g. a ``standard_ebooks`` slug for a book Standard
 Ebooks does not publish — *Things Fall Apart*, *Nervous Conditions*, *Crispin*)
-let modern, still-in-copyright novels be marked ``license_verified``. That is a
+let modern, still-in-copyright novels be marked ``asset_verified``. That is a
 direct legal exposure. Any approved book whose declared source URL does not
 resolve is a red flag: it either isn't the book it claims to be, or isn't a
 real edition of it.
@@ -100,14 +100,14 @@ async def audit_approved_books(
 
     Returns a report with ``checked``/``rejected``/``pending``/``ok``. Changes
     are committed: a book that cannot be confirmed moves to PENDING with
-    ``license_verified=False``, and only a known non-public-domain work is
+    ``asset_verified=False``, and only a known non-public-domain work is
     rejected. Both record ``rejected_reason``.
     """
     stmt = (
         select(Book)
         .where(
             Book.status == BookStatus.APPROVED,
-            Book.license_verified == True,  # noqa: E712
+            Book.asset_verified == True,  # noqa: E712
         )
         .where(
             (Book.source.in_(["standard_ebooks", "internet_archive"]))
@@ -157,7 +157,7 @@ async def audit_approved_books(
         report["checked"] += 1
         if verdict == REJECTED:
             book.status = BookStatus.REJECTED
-            book.license_verified = False
+            book.asset_verified = False
             book.rejected_reason = reason
             report["rejected"] += 1
             report["rejected_titles"].append(
@@ -170,7 +170,7 @@ async def audit_approved_books(
             # Unconfirmed, not discredited. Keep the record, lose the sale, and
             # put it in front of a person with the reason attached.
             book.status = BookStatus.PENDING
-            book.license_verified = False
+            book.asset_verified = False
             book.rejected_reason = f"source unconfirmed: {reason}"
             report["pending"] += 1
             report["pending_titles"].append(

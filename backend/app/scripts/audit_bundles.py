@@ -114,7 +114,7 @@ async def _url_alive(url: str, ext: str = "epub") -> bool:
 
 
 def _resolve(book: Book) -> tuple[bool, str]:
-    if book.status != BookStatus.APPROVED or not book.license_verified:
+    if book.status != BookStatus.APPROVED or not book.asset_verified:
         return False, "not download-eligible (status/licence gate)"
     if book.epub_path or book.pdf_path:
         return True, "epub/pdf path set"

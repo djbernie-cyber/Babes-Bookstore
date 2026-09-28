@@ -15,13 +15,13 @@ async def test_randomise_curated_bundles_repicks_book_membership(db):
         db.add(Book(
             title=f"Theme Book {i}", author="Theme Author",
             source="gutenberg", source_id=str(i),
-            license_type="public_domain", status=BookStatus.APPROVED, license_verified=True,
+            license_type="public_domain", status=BookStatus.APPROVED, asset_verified=True,
             tags=["Suppressed Classics"],
         ))
     # An unrelated approved book (should be usable via full-pool fallback only).
     db.add(Book(
         title="Off-Theme", author="Other Author", source="gutenberg",
-        source_id="999", license_type="public_domain", status=BookStatus.APPROVED, license_verified=True,
+        source_id="999", license_type="public_domain", status=BookStatus.APPROVED, asset_verified=True,
         tags=["Travel"],
     ))
     await db.flush()
@@ -100,7 +100,7 @@ async def test_randomise_preserves_book_count_in_expected_range(db):
         db.add(Book(
             title=f"B{i}", author=f"Author {i}", source="gutenberg",
             source_id=str(i), license_type="public_domain",
-            status=BookStatus.APPROVED, license_verified=True, tags=["Matched"],
+            status=BookStatus.APPROVED, asset_verified=True, tags=["Matched"],
         ))
     await db.flush()
 
@@ -148,7 +148,7 @@ async def test_randomise_author_pool_prevents_shrinkage(db):
             title=f"American {i}", author=list(authors)[i % len(authors)],
             source="gutenberg", source_id=str(100 + i),
             license_type="public_domain", status=BookStatus.APPROVED,
-            license_verified=True, tags=["no-theme-match"],
+            asset_verified=True, tags=["no-theme-match"],
         ))
     await db.flush()
 

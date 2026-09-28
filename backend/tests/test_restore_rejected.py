@@ -33,7 +33,7 @@ async def add_rejected(db, n, **kw):
             source_id=kw.get("source_id", f"author/book-{i}"),
             source_url=f"https://example.org/{i}",
             license_type="public_domain",
-            license_verified=False,
+            asset_verified=False,
             status=BookStatus.REJECTED,
             rejected_reason=kw.get("rejected_reason", "source unconfirmed: HTTP 404"),
         )
@@ -113,7 +113,7 @@ class TestRestoreRejected:
         approved = Book(
             title="Fine book", author="A", source="gutenberg", source_id="1342",
             source_url="https://example.org/1342", license_type="public_domain",
-            license_verified=True, status=BookStatus.APPROVED,
+            asset_verified=True, status=BookStatus.APPROVED,
         )
         db.add(approved)
         await db.commit()
@@ -123,7 +123,7 @@ class TestRestoreRejected:
         assert result["restored"] == 0
         await db.refresh(approved)
         assert approved.status == BookStatus.APPROVED
-        assert approved.license_verified is True
+        assert approved.asset_verified is True
 
     @pytest.mark.asyncio
     async def test_is_idempotent(self, db, admin, monkeypatch):

@@ -122,7 +122,7 @@ async def banned_records(
             .where(CensorshipRecord.verified.is_(True),
                    or_(Book.id.is_(None),
                        and_(Book.status == BookStatus.APPROVED,
-                            Book.license_verified.is_(True)))))
+                            Book.asset_verified.is_(True)))))
     if country:
         stmt = stmt.where(CensorshipRecord.country_code == country.upper())
     if status:
