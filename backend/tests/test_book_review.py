@@ -110,3 +110,63 @@ async def test_admin_stats_include_pending_count(client, db):
     r = await client.get("/api/v1/admin/stats", headers=auth)
     assert r.status_code == 200
     assert r.json()["books"]["pending"] == 1
+
+
+
+async def _seed_book(db, **kw):
+    from app.models.book import Book, BookStatus
+    fields = dict(title="A Work", author="An Author", source="standard_ebooks",
+                  source_id="author/a-work", license_type="public_domain",
+                  status=BookStatus.PENDING)
+    fields.update(kw)
+    book = Book(**fields)
+    db.add(book)
+    await db.commit()
+    return book
+
+
+@pytest.mark.asyncio
+async def test_approve_refuses_known_in_copyright_title(client, db):
+    """Approving used to set status=APPROVED and license_verified=True in one
+    step, so a click both published a book and certified its own licence."""
+    from app.models.book import BookStatus
+    await _make_admin(db)
+    book = await _seed_book(db, title="Things Fall Apart",
+                            source_id="chinua-achebe/things-fall-apart")
+    auth = await _login(client)
+    r = await client.post(f"/api/v1/books/{book.id}/approve", headers=auth)
+    assert r.status_code == 409
+    assert "in-copyright" in r.json()["detail"]
+    await db.refresh(book)
+    assert book.status == BookStatus.PENDING
+    assert book.license_verified is False
+
+
+@pytest.mark.asyncio
+async def test_approve_refuses_work_published_since_1940(client, db):
+    """Death of a Salesman (1949) and A Streetcar Named Desire (1947) were
+    approved through this endpoint and went on sale."""
+    from app.models.book import BookStatus
+    await _make_admin(db)
+    book = await _seed_book(db, title="Death Of A Salesman",
+                            source_id="arthur-miller/death-of-a-salesman",
+                            publication_year=1949)
+    auth = await _login(client)
+    r = await client.post(f"/api/v1/books/{book.id}/approve", headers=auth)
+    assert r.status_code == 409
+    assert "1949" in r.json()["detail"]
+    await db.refresh(book)
+    assert book.status == BookStatus.PENDING
+    assert book.license_verified is False
+
+
+@pytest.mark.asyncio
+async def test_approve_still_allows_a_genuine_public_domain_work(client, db):
+    """The guard must not make approval impossible."""
+    await _make_admin(db)
+    book = await _seed_book(db, title="Mrs Dalloway", source_id="woolf/mrs-dalloway",
+                            publication_year=1925)
+    auth = await _login(client)
+    r = await client.post(f"/api/v1/books/{book.id}/approve", headers=auth)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "approved"

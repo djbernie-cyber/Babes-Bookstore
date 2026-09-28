@@ -13,6 +13,7 @@ from ...schemas.book import BookResponse, BookListResponse, BookUpdate
 from ...models.user import User
 from ...services import visibility
 from ...services.search_filters import book_match_filter, tokenize
+from ...services.license_audit import KNOWN_NOT_PUBLIC_DOMAIN_IDS
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -214,6 +215,32 @@ async def approve_book(
     book = await db.get(Book, book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
+
+    # Approving used to set license_verified=True unconditionally, so a single
+    # click put a book on sale and certified its own licence at the same time.
+    # That is how Death of a Salesman (1949), A Streetcar Named Desire (1947),
+    # The Skin of Our Teeth (1942) and The Time of Your Life (1939) went live
+    # while this endpoint looked like a review tool. Approval is a publication
+    # decision, so it cannot be allowed to self-certify: refuse outright when
+    # there is positive evidence the work is still in copyright.
+    if book.source_id in KNOWN_NOT_PUBLIC_DOMAIN_IDS:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Refused: this title is on the known in-copyright list and must "
+                "not be sold. Withdraw it rather than approving."
+            ),
+        )
+
+    if book.publication_year and book.publication_year >= 1940:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Refused: published {book.publication_year}, so it is still in "
+                f"copyright. '{book.title}' cannot be sold as public domain."
+            ),
+        )
+
     book.status = BookStatus.APPROVED
     book.license_verified = True
     # Clear the withdrawal note: a book put back into the catalogue must not

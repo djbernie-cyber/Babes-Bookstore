@@ -156,3 +156,164 @@ def _coro(value):
     async def _inner():
         return value
     return _inner()
+
+
+
+    @staticmethod
+    def _cls():
+        from app.sources.internet_archive import InternetArchiveSource
+        return InternetArchiveSource
+
+    """`mediatype:texts` is necessary but nowhere near sufficient.
+
+    A PlayStation 2 BIOS dump and a Minecraft skin are both text files on the
+    Internet Archive, and both can carry a public-domain licence field. Five
+    such uploads reached the review queue labelled `public_domain`: the
+    mediatype and licenceurl filters the adapter already had let them through.
+    """
+
+    @staticmethod
+    def _md(**kw):
+        base = {"title": "A Book", "mediatype": "texts"}
+        base.update(kw)
+        return base
+
+    async def test_bios_dump_is_not_a_book(self):
+        md = TestNotABookFilter._md(title="Play Station 2 Bios", collection=["community", "opensource_media"])
+        assert self._cls()._is_book_item(md, ["community", "opensource_media"]) is False
+
+    async def test_flash_exploit_is_not_a_book(self):
+        for ident in ("script.video.F4mProxy", "plugin.video.f4mTester"):
+            md = TestNotABookFilter._md(title=ident, identifier=ident)
+            assert self._cls()._is_book_item(md, ["community"]) is False, ident
+
+    async def test_minecraft_skin_is_not_a_book(self):
+        md = TestNotABookFilter._md(title="skin-mr-bean", identifier="link-skin-mr-bean")
+        assert self._cls()._is_book_item(md, ["opensource", "community"]) is False
+
+    async def test_community_only_upload_is_rejected_even_with_no_bad_title(self):
+        """scospoof has a harmless-looking title; the collection is the tell."""
+        md = TestNotABookFilter._md(title="scospoof", collection=["opensource_media", "community"])
+        assert self._cls()._is_book_item(md, ["opensource_media", "community"]) is False
+
+    async def test_curated_collection_is_kept(self):
+        md = TestNotABookFilter._md(title="Frankenstein", collection=["library", "gutenberg"])
+        assert self._cls()._is_book_item(md, ["library", "gutenberg"]) is True
+
+    async def test_mixed_collection_with_a_curated_one_is_kept(self):
+        """Being in a community collection too is not disqualifying on its own."""
+        md = TestNotABookFilter._md(title="Frankenstein", collection=["library", "community"])
+        assert self._cls()._is_book_item(md, ["library", "community"]) is True
+
+    async def test_a_real_book_with_no_collection_data_is_not_discarded(self):
+        """Absent metadata is not evidence of junk; do not throw the title away."""
+        md = TestNotABookFilter._md(title="Middlemarch")
+        assert self._cls()._is_book_item(md, []) is True
+
+    async def test_sheet_music_is_not_caught_by_the_title_patterns(self):
+        """Cantorion sheet music is a real defect but not one this filter can
+        judge from a title, so it must not be silently dropped as junk."""
+        md = TestNotABookFilter._md(title="Cantorion sheet music collection 4")
+        assert self._cls()._is_book_item(md, []) is True
+
+
+class TestCommunityUploadIsReviewOnly:
+    """The Art of War and a BIOS dump share a collection, so a community-only
+    upload is demoted to `unknown` rather than dropped: returning None from
+    get_metadata would delist an already-approved title."""
+
+    @staticmethod
+    def _cls():
+        from app.sources.internet_archive import InternetArchiveSource
+        return InternetArchiveSource
+
+    async def test_art_of_war_in_community_collections_is_not_dropped(self):
+        """The false positive that forced this design: a real PD book."""
+        md = {"title": "The Art Of War By Sun Tzu", "identifier": "TheArtOfWarBySunTzu"}
+        assert self._cls()._is_definitely_not_a_book(md) is False
+        assert self._cls()._is_community_upload(md, ["opensource", "community"]) is True
+
+    async def test_curated_collection_is_not_a_community_upload(self):
+        md = {"title": "Frankenstein"}
+        assert self._cls()._is_community_upload(md, ["library", "gutenberg"]) is False
+
+    async def test_absent_collections_is_not_treated_as_an_upload(self):
+        assert self._cls()._is_community_upload({"title": "Middlemarch"}, []) is False
+class TestNotABookFilter:
+    """`mediatype:texts` is necessary but nowhere near sufficient.
+
+    A PlayStation 2 BIOS dump and a Minecraft skin are both text files on the
+    Internet Archive, and both can carry a public-domain licence field. Seven
+    such uploads reached the review queue labelled `public_domain`: the
+    mediatype and licenceurl checks the adapter already had let them through.
+    """
+
+    @staticmethod
+    def _cls():
+        from app.sources.internet_archive import InternetArchiveSource
+        return InternetArchiveSource
+
+    @staticmethod
+    def _md(**kw):
+        base = {"title": "A Book", "mediatype": "texts"}
+        base.update(kw)
+        return base
+
+    # --- hard drops: identifiers that cannot be a book -------------------
+
+    async def test_bios_dump_is_dropped(self):
+        md = self._md(title="Play Station 2 Bios", identifier="PlayStation2Bios")
+        assert self._cls()._is_definitely_not_a_book(md) is True
+
+    async def test_flash_exploits_are_dropped(self):
+        for ident in ("script.video.F4mProxy", "plugin.video.f4mTester"):
+            md = self._md(title=ident, identifier=ident)
+            assert self._cls()._is_definitely_not_a_book(md) is True, ident
+
+    async def test_minecraft_skin_is_dropped(self):
+        md = self._md(title="skin-mr-bean", identifier="link-skin-mr-bean")
+        assert self._cls()._is_definitely_not_a_book(md) is True
+
+    # --- not hard drops: demoted to `unknown` instead --------------------
+
+    async def test_harmless_titled_community_upload_is_flagged_not_dropped(self):
+        """scospoof has no tell in its name; the collection is the only signal,
+        which is not enough to discard a title, so it must reach review."""
+        md = self._md(title="scospoof")
+        assert self._cls()._is_definitely_not_a_book(md) is False
+        assert self._cls()._is_community_upload(md, ["opensource_media", "community"]) is True
+
+    # --- genuine books must survive --------------------------------------
+
+    async def test_curated_collection_is_left_alone(self):
+        md = self._md(title="Frankenstein")
+        assert self._cls()._is_definitely_not_a_book(md) is False
+        assert self._cls()._is_community_upload(md, ["library", "gutenberg"]) is False
+
+    async def test_mixed_collection_with_a_curated_one_is_left_alone(self):
+        md = self._md(title="Frankenstein")
+        assert self._cls()._is_community_upload(md, ["library", "community"]) is False
+
+    async def test_missing_collection_data_is_not_read_as_junk(self):
+        """Absent metadata is not evidence of anything; do not discard."""
+        md = self._md(title="Middlemarch")
+        assert self._cls()._is_community_upload(md, []) is False
+
+    async def test_sheet_music_is_not_judged_by_title_alone(self):
+        """Cantorion sheet music is a real defect in the approved pile, but not
+        one this filter can judge, so it must not be silently dropped."""
+        md = self._md(title="Cantorion sheet music collection 4")
+        assert self._cls()._is_definitely_not_a_book(md) is False
+
+
+class TestCommunityUploadIsReviewOnly:
+    @staticmethod
+    def _cls():
+        from app.sources.internet_archive import InternetArchiveSource
+        return InternetArchiveSource
+
+    async def test_art_of_war_shares_a_collection_with_the_junk(self):
+        """The false positive that forced this design: a real PD book."""
+        md = {"title": "The Art Of War By Sun Tzu", "identifier": "TheArtOfWarBySunTzu"}
+        assert self._cls()._is_definitely_not_a_book(md) is False
+        assert self._cls()._is_community_upload(md, ["opensource", "community"]) is True

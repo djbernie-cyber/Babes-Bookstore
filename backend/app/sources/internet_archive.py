@@ -1,8 +1,12 @@
 from typing import List, Optional
 import asyncio
+import logging
+import re
 from urllib.parse import quote
 
 from .base import BaseSource, BookMetadata, LICENSE_VERIFY_PER_ITEM
+
+logger = logging.getLogger(__name__)
 
 
 class InternetArchiveSource(BaseSource):
@@ -60,8 +64,24 @@ class InternetArchiveSource(BaseSource):
             data = response.json()
 
             metadata = data.get("metadata", {})
+            collections = metadata.get("collection") or []
+            if self._is_definitely_not_a_book(metadata):
+                logger.info(
+                    "Internet Archive: dropping %s (%s) — not a book",
+                    source_id, metadata.get("title"),
+                )
+                return None
+
             license_url = metadata.get("licenseurl", "")
             license_type = self._extract_license_type(license_url)
+
+            # An upload-only collection is not proof of infringement, but it
+            # is proof nobody curated this. Demote to `unknown` so the licence
+            # gate holds and a person has to look, rather than letting the
+            # item's own licenceurl field vouch for itself.
+            community_upload = self._is_community_upload(metadata, collections)
+            if community_upload:
+                license_type = "unknown"
 
             # ``files`` is a sibling of ``metadata`` in the /metadata/ response,
             # not a key inside it. Reading it off the inner dict -- as this did
@@ -84,7 +104,11 @@ class InternetArchiveSource(BaseSource):
                 # derived EPUB and a page-image PDF, so a reader can choose
                 # either without us pairing two different editions.
                 epub_url=self._find_epub_url(files, source_id),
-                source_metadata={"mediatype": metadata.get("mediatype", "")},
+                source_metadata={
+                    "mediatype": metadata.get("mediatype", ""),
+                    "community_upload": community_upload,
+                    "collections": collections[:5] if isinstance(collections, list) else [],
+                },
             )
         except Exception:
             return None
@@ -140,6 +164,55 @@ class InternetArchiveSource(BaseSource):
                 )
             )
         return books
+
+    #: Collections holding arbitrary user uploads. Everything an anonymous user
+    #: has ever attached to a file, which is not a curated shelf of books:
+    #: console BIOS dumps, Flash ActionScript exploits, Minecraft skins. All of
+    #: these are ``mediatype:texts`` and several carry a public-domain licence
+    #: field, so mediatype and licenceurl alone cannot separate them from a
+    #: real book.
+    COMMUNITY_COLLECTIONS: frozenset = frozenset({
+        "community", "opensource", "opensource_media", "opensourcecode",
+        "opensource_music", "opensource_software", "opensource_images",
+        "softwarelibrary", "softwarelibrary_msdos_games",
+    })
+
+    #: Title/identifier fragments that are never a book. Kept deliberately
+    #: narrow: a false positive here discards a real title, so each entry is
+    #: something that cannot plausibly be the name of a book.
+    NON_BOOK_PATTERNS: tuple = (
+        r"^script\.video\.", r"^plugin\.video\.", r"^link-skin-", r"-skin-",
+        r"\bbios\b", r"\bfirmware\b", r"\bflash\s+exploit\b",
+    )
+
+    @classmethod
+    def _is_definitely_not_a_book(cls, metadata: dict) -> bool:
+        """True only for identifiers that cannot be a book at all.
+
+        Hard-dropping is reserved for these. Everything else -- including a
+        community-only upload, which is suspicious but not decisive -- takes
+        the softer route below, because a false positive here does not merely
+        fail to import: returning ``None`` from ``get_metadata`` makes an
+        already-approved book unverifiable and delists it. The Art of War
+        (``TheArtOfWarBySunTzu``) lives in ``['opensource', 'community']``
+        alongside the junk, so collection membership cannot be a hard filter.
+        """
+        haystack = " ".join(
+            str(metadata.get(k) or "") for k in ("title", "identifier", "subject")
+        ).lower()
+        return any(re.search(p, haystack) for p in cls.NON_BOOK_PATTERNS)
+
+    @classmethod
+    def _is_community_upload(cls, metadata: dict, collections) -> bool:
+        """True for items that sit *only* in arbitrary-user-upload collections.
+
+        This is a review signal, not a rejection: the collection is the only
+        thing separating ``scospoof`` from the Art of War, and it is not
+        enough evidence to discard a title. Such items are forced to
+        ``unknown`` so they cannot be approved without a human reading them.
+        """
+        collections = set(collections) if isinstance(collections, (list, tuple)) else set()
+        return bool(collections) and collections <= cls.COMMUNITY_COLLECTIONS
 
     def _extract_license_type(self, license_url: str) -> str:
         if not license_url:
