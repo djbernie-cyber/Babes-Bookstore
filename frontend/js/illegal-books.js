@@ -295,6 +295,14 @@
       ? '<a class="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-full bg-stone-900 text-white text-xs font-semibold hover:bg-stone-700" href="/books/' + b.id + '">Read / Download</a>'
       : '<span class="inline-flex items-center min-h-[44px] px-4 py-2 rounded-full border border-stone-300 text-stone-600 text-xs font-medium">Not in catalogue</span>';
     var years = year ? ' · ' + esc(year) : '';
+    /* Provenance is shown on the card, not just the page notice. A harvested
+       entry and a hand-written one are not the same kind of claim, and a reader
+       looking at a specific book should not have to go hunting for which it is. */
+    var prov = it.provenance === 'harvested'
+      ? '<a class="text-[10px] uppercase tracking-widest font-semibold text-stone-500 border border-stone-300 rounded px-1.5 py-0.5 hover:text-stone-900 hover:border-stone-500" href="' + esc(it.source_url || '#') + '" target="_blank" rel="noopener noreferrer" title="Machine-read from a cited public source. Not editorially verified.">harvested · check source</a>'
+      : (it.provenance === 'curated'
+        ? '<span class="text-[10px] uppercase tracking-widest font-semibold text-stone-500 border border-stone-300 rounded px-1.5 py-0.5" title="Written and checked by an editor.">curated</span>'
+        : '');
     return '' +
       '<article class="rounded-2xl border border-stone-200 border-l-4 ' + badge.edge + ' bg-white p-5 flex gap-5" data-book-id="' + (b.id || '') + '">' +
       '  <div class="shrink-0">' + cover + '</div>' +
@@ -302,7 +310,7 @@
       '    <div class="flex flex-wrap items-center gap-2">' +
       '      <span class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold border ' + badge.chip + '">' + badge.label + '</span>' +
       (it.banned_since ? '<span class="text-[11px] text-stone-500">since ' + esc(it.banned_since) + '</span>' : '') +
-      '    </div>' +
+      prov +
       '    <h3 class="font-serif text-lg font-semibold text-stone-900 mt-1.5 leading-snug">' + esc(title) +
       (author ? ' <span class="font-normal text-stone-600 text-base">— ' + esc(author) + years + '</span>' : '') + '</h3>' +
       '    <p class="text-[11px] uppercase tracking-widest text-stone-500 mt-1">Banned in ' + esc(it.country_name || '?') + '</p>' +

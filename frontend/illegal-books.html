@@ -102,6 +102,19 @@
     <button id="f-apply" class="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-700">Filter</button>
   </div>
 
+  <!--
+    Provenance, stated up front rather than in a footer. The map is built by
+    machine-harvesting Wikipedia's curated ban tables, which is what makes it a
+    map instead of 23 hand-typed rows, and also why it needs saying plainly:
+    a harvested entry is a citation, not an editorial judgement. Each record
+    links to the exact revision it was read from so any row can be checked.
+  -->
+  <aside id="map-notice" class="mt-6 rounded-2xl border border-stone-300 bg-stone-50 p-4 text-[13px] leading-relaxed text-stone-700">
+    <p class="font-semibold text-stone-900 mb-1">About this list</p>
+    <p class="mb-2">Suppression records here are machine-harvested from Wikipedia&rsquo;s curated ban tables and linked to the exact revision each entry was read from. They describe the <em>fact</em> of a ban, not the content of the work, and are not a legal determination. A ban in one jurisdiction says nothing about another.</p>
+    <p class="text-stone-600">Entries marked <span class="inline-block px-1.5 py-0.5 rounded border border-stone-300 bg-white text-[11px] font-medium">harvested</span> were machine-read from a cited public source. Entries marked <span class="inline-block px-1.5 py-0.5 rounded border border-stone-300 bg-white text-[11px] font-medium">curated</span> were written and checked by an editor. If a record looks wrong, <a href="/banned-works" class="underline hover:text-stone-900">check the source link</a> or flag it.</p>
+  </aside>
+
   <div class="mt-6" id="results-meta" role="status" aria-live="polite"></div>
   <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4" aria-busy="false"></div>
   <div id="more-wrap" class="hidden mt-8 text-center"></div>

@@ -36,6 +36,8 @@ def _record_dict(r: CensorshipRecord) -> dict:
         "banned_since": r.banned_since,
         "source_url": r.source_url,
         "verified": r.verified,
+        "provenance": _provenance(r.verified_by),
+        "source_note": r.verified_by,
     }
 
 
@@ -55,6 +57,49 @@ class FlagRequest(BaseModel):
     reason: str = Field(min_length=4, max_length=1000)
     country_code: str = Field(min_length=2, max_length=2)
     status: str = CensorshipStatus.BANNED
+
+
+#: Shown alongside the records, and surfaced in the UI. The map is built by
+#: machine-harvesting Wikimedia's curated ban tables, which is why every row
+#: carries the exact revision it was read from. It is a research aid built on
+#: a citable public source -- it is not a legal determination, and "banned" in
+#: one jurisdiction says nothing about another.
+CENSORSHIP_NOTICE = (
+    "Suppression records are machine-harvested from Wikipedia's curated ban "
+    "tables and linked to the exact revision each entry was read from. They "
+    "describe the fact of a ban, not the content of the work, and are not a "
+    "legal determination. A ban in one jurisdiction does not imply one "
+    "elsewhere. Follow a record's source link to check it."
+)
+
+#: ``verified_by`` is the provenance field, and it distinguishes an editorial
+#: record from a harvested one. Both are listed, because a map that only shows
+#: hand-typed entries is not a map; the UI shows which is which.
+def _provenance(verified_by):
+    vb = (verified_by or "").strip()
+    if vb.startswith("harvest:"):
+        return "harvested"
+    if vb.startswith("verified:") or vb in ("seed", ""):
+        return "curated"
+    return "harvested"
+
+
+@router.get("/notice")
+async def censorship_notice():
+    """Provenance and caveats for the map, in one place.
+
+    Separate from /records so the UI can render the caveat above the list
+    rather than burying it underneath, and so it stays true when the data
+    source or the harvesting method changes.
+    """
+    return {
+        "notice": CENSORSHIP_NOTICE,
+        "provenance_kinds": {
+            "curated": "Written and checked by an editor.",
+            "harvested": "Machine-read from a cited public source; linked to "
+                         "the exact revision. Not editorially verified.",
+        },
+    }
 
 
 @router.get("/records")
