@@ -8,6 +8,17 @@
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  /* This page loads only its own script -- not /js/api.js -- so it cannot fall
+     back on window.authHeaders the way the public pages do, and every sibling
+     admin page defines its own. Without it the very first fetch threw
+     "Can't find variable: authHeaders" and the review queue never rendered at
+     all. Read the token lazily so a login performed in another tab is picked
+     up, and return {} when absent so the 401 path does the redirect. */
+  function authHeaders() {
+    var t = localStorage.getItem('token');
+    return t ? { 'Authorization': 'Bearer ' + t } : {};
+  }
+
   var loading = document.getElementById('records-loading');
   var empty = document.getElementById('records-empty');
   var tableWrap = document.getElementById('records-table-wrap');
