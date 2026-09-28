@@ -113,3 +113,86 @@ def test_fold_count_matches_the_search_filters_table():
     for a, b in pairs:
         assert any(a in chars and target == b for chars, target in groups), \
             f"migration folds {a!r}->{b!r} but search_filters does not"
+
+
+class _Recorder:
+    """Stands in for alembic's op so upgrade() can actually be executed."""
+
+    def __init__(self):
+        self.statements = []
+        self.columns = []
+        self.indexes = []
+
+    def add_column(self, *a, **k):
+        self.columns.append((a, k))
+
+    def create_index(self, *a, **k):
+        self.indexes.append((a, k))
+
+    def drop_index(self, *a, **k):
+        pass
+
+    def drop_column(self, *a, **k):
+        pass
+
+    def alter_column(self, *a, **k):
+        pass
+
+    def execute(self, stmt):
+        self.statements.append(stmt)
+
+
+def _run_upgrade(monkeypatch):
+    """Execute the migration's own upgrade() and return the recorder.
+
+    The bug this exists for: the migration called SQLAlchemy's replace()
+    without importing it, so it died with NameError on the first line of the
+    chain. No test caught it because the suite builds its schema with
+    metadata.create_all rather than by running migrations, and the SQLite
+    migration walk fails on an unrelated earlier migration. Verifying the
+    generated SQL by reimplementing the chain in a test -- as was done here
+    first -- proves nothing about the file that actually ships.
+    """
+    import importlib.util
+
+    from alembic import op as real_op
+
+    rec = _Recorder()
+    monkeypatch.setattr(real_op, "add_column", rec.add_column)
+    monkeypatch.setattr(real_op, "create_index", rec.create_index)
+    monkeypatch.setattr(real_op, "drop_index", rec.drop_index)
+    monkeypatch.setattr(real_op, "drop_column", rec.drop_column)
+    monkeypatch.setattr(real_op, "alter_column", rec.alter_column)
+    monkeypatch.setattr(real_op, "execute", rec.execute)
+
+    spec = importlib.util.spec_from_file_location("mig_search_text", MIGRATION)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.upgrade()
+    return rec
+
+
+def test_upgrade_actually_runs_and_emits_one_update(monkeypatch):
+    """The migration's own code path, not a reconstruction of it."""
+    rec = _run_upgrade(monkeypatch)
+    assert len(rec.statements) == 1, \
+        f"expected a single UPDATE, got {len(rec.statements)}"
+    sql = str(rec.statements[0])
+    assert "UPDATE books SET search_text" in sql
+    assert sql.count("replace(") == 88, \
+        f"expected 88 folds in the emitted SQL, found {sql.count('replace(')}"
+    assert any(c[0][1].name == "search_text" and c[0][1].nullable
+               for c in rec.columns), \
+        "search_text must be added nullable so existing rows are not rewritten"
+
+
+def test_emitted_sql_compiles_for_postgres(monkeypatch):
+    """A statement that only renders for SQLite is not deployable."""
+    from sqlalchemy.dialects import postgresql
+
+    rec = _run_upgrade(monkeypatch)
+    compiled = rec.statements[0].compile(dialect=postgresql.dialect())
+    assert "replace" in str(compiled)
+    # A NameError or stray python repr would surface as literal braces or
+    # a missing function rather than valid SQL text.
+    assert "{" not in str(compiled) and "}" not in str(compiled)

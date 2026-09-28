@@ -34,6 +34,12 @@ column.
 from alembic import op
 import sqlalchemy as sa
 
+# sa.func.replace is SQLAlchemy 2.x's generic-function handle for the SQL
+# REPLACE() built-in. It is not importable by name from
+# sqlalchemy.sql.functions in 2.0, which is what made the original version of
+# this file die with NameError on the first fold.
+replace = sa.func.replace
+
 revision = "9c4d5e6f7a8"
 down_revision = "d4e5f6a7b8c9"
 branch_labels = None
@@ -44,7 +50,30 @@ def upgrade():
     op.add_column("books", sa.Column("search_text", sa.Text(), nullable=True))
 
     # Generated from search_filters._FOLD_PAIRS -- keep in step with it.
-    expr = "lower(coalesce(title,'') || ' ' || coalesce(author,'') || ' ' || coalesce(description,'') || ' ' || coalesce(cast(tags as varchar),'') || ' ' || coalesce(isbn,''))"
+    #
+    # Built as a SQLAlchemy expression tree, not as a string. A raw Python
+    # string handed to func.replace() becomes a single *literal bind
+    # parameter*, so the whole UPDATE would have collapsed to
+    # replace(:param, 'z', 'z') -- folding the text "lower(coalesce(title..."
+    # and writing that back into every row. Naming the columns keeps the
+    # base a real expression the database evaluates per row.
+    t = sa.table(
+        "books",
+        sa.column("title"),
+        sa.column("author"),
+        sa.column("description"),
+        sa.column("tags"),
+        sa.column("isbn"),
+        sa.column("search_text"),
+    )
+    parts = [
+        sa.func.coalesce(t.c.title, ""),
+        sa.func.coalesce(t.c.author, ""),
+        sa.func.coalesce(t.c.description, ""),
+        sa.func.coalesce(sa.cast(t.c.tags, sa.String), ""),
+        sa.func.coalesce(t.c.isbn, ""),
+    ]
+    expr = sa.func.lower(sa.func.concat(*parts, " "))
     expr = replace(expr, 'ž', 'z')
     expr = replace(expr, 'ż', 'z')
     expr = replace(expr, 'ź', 'z')
@@ -134,7 +163,12 @@ def upgrade():
     expr = replace(expr, 'á', 'a')
     expr = replace(expr, 'à', 'a')
 
-    op.execute("UPDATE books SET search_text = " + expr)
+    # A real UPDATE construct, not string concatenation. With expr as a
+    # ClauseElement, "UPDATE books SET search_text = " + expr silently
+    # becomes SQL '||' concatenation -- the literal on the left, the fold
+    # chain on the right -- and op.execute then runs that bare expression
+    # instead of an UPDATE. Nothing about it looks wrong in a diff.
+    op.execute(t.update().values(search_text=expr))
 
 
 def downgrade():
