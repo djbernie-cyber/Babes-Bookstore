@@ -9,6 +9,19 @@ primary_region = 'lhr'
 [build]
   dockerfile = 'backend/Dockerfile'
 
+# Process groups are declared explicitly rather than left to the Dockerfile's
+# FLY_PROCESS_GROUP branch. Without this, Fly has no managed `worker` group:
+# the [[vm]] block below is only a config template, applied when a machine is
+# asked for, so `fly deploy` never created or updated one. That is how
+# `babes-worker` ended up as an unmanaged machine running an old
+# `babes-bookstore:carousel` image with an empty process group -- invisible to
+# every subsequent deploy, and months behind the schema it was working
+# against. Declaring the groups here means the worker is managed, and gets
+# updated with the app from now on.
+[processes]
+  app = "python -m alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*'"
+  worker = "exec celery -A app.celery_app:celery_app worker --beat --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2} --prefetch-multiplier=1"
+
 [env]
   PORT = '8000'
   WEB_CONCURRENCY = '2'
