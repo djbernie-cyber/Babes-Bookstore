@@ -417,3 +417,9 @@ footer.text-stone-400, nav.text-stone-400{ color:#a8a29e }
 
 /* Anchor used where a link must not pick up an underline. */
 .no-underline{ text-decoration:none }
+
+/* Rejected-books banner. The copy wraps to a readable column instead of
+   being squeezed flat by the buttons beside it, and only when there is room
+   for the two-column layout to hold. */
+.banner-text-col{ flex:1 1 100% }
+@media (min-width:768px){ .banner-text-col{ min-width:260px } }

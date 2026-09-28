@@ -6,7 +6,30 @@ Ebooks does not publish — *Things Fall Apart*, *Nervous Conditions*, *Crispin*
 let modern, still-in-copyright novels be marked ``license_verified``. That is a
 direct legal exposure. Any approved book whose declared source URL does not
 resolve is a red flag: it either isn't the book it claims to be, or isn't a
-real edition of it. Failures are rejected/hard-unapproved.
+real edition of it.
+
+What that red flag is *worth* is the point this module was wrong about. It used
+to treat an unresolved URL as sufficient to reject, and rejected 2,209 books
+that way. But a 404, a timeout and a DNS failure look identical to a source
+that moved, rate-limited or is briefly down, and none of them is evidence that a
+book is in copyright. Withdrawing a genuine public-domain edition because
+Standard Ebooks was briefly unreachable is a self-inflicted loss of stock.
+
+So the outcomes are now split by what the evidence actually supports:
+
+* **REJECTED** — a positively identified non-public-domain work, i.e. one of
+  ``KNOWN_NOT_PUBLIC_DOMAIN_IDS``. Curated evidence, not a failed request. The
+  fabricated-modern-novel case, which is what this audit exists to catch, still
+  lands here.
+* **PENDING** — the source could not be confirmed. Hidden from the catalogue
+  until a human checks, but kept, and surfaced in the review queue rather than
+  written off. A 5xx or timeout that clears later can be re-approved without
+  re-scraping.
+* **unchanged** — the source resolved.
+
+Every outcome records ``rejected_reason`` so the review page can say why, which
+it could not before: the 2,209 earlier rejections were explained only in a log
+line, leaving the queue unreviewable.
 
 Checks every approved ``standard_ebooks`` / ``internet_archive`` book plus any
 approved book carrying the African / Revolutionary tags — the modern-canon seam
@@ -36,6 +59,11 @@ KNOWN_NOT_PUBLIC_DOMAIN_IDS: set = {
     "avi/crispin",
 }
 
+#: Outcomes, so the caller does not infer intent from a status string.
+REJECTED = "rejected"
+PENDING = "pending"
+OK = "ok"
+
 
 async def _source_resolves(source_url: str) -> Tuple[bool, str]:
     url = (source_url or "").strip()
@@ -54,6 +82,15 @@ async def _source_resolves(source_url: str) -> Tuple[bool, str]:
         return False, f"unreachable ({type(exc).__name__})"
 
 
+def _classify(book: Book, resolves: bool, reason: str) -> str:
+    """Decide what a failed check means for this particular book."""
+    if book.source_id in KNOWN_NOT_PUBLIC_DOMAIN_IDS:
+        return REJECTED
+    if resolves:
+        return OK
+    return PENDING
+
+
 async def audit_approved_books(
     session,
     source: Optional[str] = None,
@@ -61,9 +98,10 @@ async def audit_approved_books(
 ) -> dict:
     """Re-check approved books against their declared source URL.
 
-    Returns a report with ``checked``/``rejected``/``skipped``/``errors``.
-    Rejects are committed to the database (status ``REJECTED``,
-    ``license_verified=False``).
+    Returns a report with ``checked``/``rejected``/``pending``/``ok``. Changes
+    are committed: a book that cannot be confirmed moves to PENDING with
+    ``license_verified=False``, and only a known non-public-domain work is
+    rejected. Both record ``rejected_reason``.
     """
     stmt = (
         select(Book)
@@ -88,23 +126,25 @@ async def audit_approved_books(
         "checked": 0,
         "ok": 0,
         "rejected": 0,
+        "pending": 0,
         "skipped": 0,
         "errors": [],
         "rejected_titles": [],
+        "pending_titles": [],
     }
     if not rows:
         return report
 
     sem = asyncio.Semaphore(8)
 
-    async def _check(book: Book) -> Optional[Tuple[Book, str]]:
+    async def _check(book: Book) -> Optional[Tuple[Book, str, bool]]:
         if book.source_id in KNOWN_NOT_PUBLIC_DOMAIN_IDS:
-            return book, "known non-public-domain modern work"
+            return book, "known non-public-domain modern work", True
         async with sem:
             ok, reason = await _source_resolves(book.source_url)
         if ok:
             return None
-        return book, reason
+        return book, reason, ok
 
     outcomes = await asyncio.gather(*(_check(b) for b in rows))
     for outcome in outcomes:
@@ -112,17 +152,34 @@ async def audit_approved_books(
             report["checked"] += 1
             report["ok"] += 1
             continue
-        book, reason = outcome
-        book.status = BookStatus.REJECTED
-        book.license_verified = False
+        book, reason, resolves = outcome
+        verdict = _classify(book, resolves, reason)
         report["checked"] += 1
-        report["rejected"] += 1
-        report["rejected_titles"].append(
-            {"id": book.id, "title": book.title, "author": book.author, "reason": reason}
-        )
-        logger.warning(
-            "License audit rejected book %s (%s) — %s", book.id, book.title, reason
-        )
+        if verdict == REJECTED:
+            book.status = BookStatus.REJECTED
+            book.license_verified = False
+            book.rejected_reason = reason
+            report["rejected"] += 1
+            report["rejected_titles"].append(
+                {"id": book.id, "title": book.title, "author": book.author, "reason": reason}
+            )
+            logger.warning(
+                "License audit rejected book %s (%s) — %s", book.id, book.title, reason
+            )
+        else:
+            # Unconfirmed, not discredited. Keep the record, lose the sale, and
+            # put it in front of a person with the reason attached.
+            book.status = BookStatus.PENDING
+            book.license_verified = False
+            book.rejected_reason = f"source unconfirmed: {reason}"
+            report["pending"] += 1
+            report["pending_titles"].append(
+                {"id": book.id, "title": book.title, "author": book.author, "reason": reason}
+            )
+            logger.info(
+                "License audit moved book %s (%s) to pending — %s",
+                book.id, book.title, reason,
+            )
 
     await session.commit()
     report["errors"] = report["rejected_titles"]

@@ -100,6 +100,12 @@
                 books.forEach(book => {
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-stone-50 transition';
+                    // A rejected book that never got a recorded reason would
+                    // otherwise read as a mystery; say so rather than implying
+                    // the queue is complete.
+                    if (book.rejected_reason) {
+                        tr.title = book.rejected_reason;
+                    }
                     const statusColor = book.status === 'approved' ? 'bg-green-100 text-green-800' :
                                         book.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                         'bg-amber-100 text-amber-800';
@@ -114,7 +120,11 @@
                         <td class="px-4 py-3 font-medium text-stone-900 max-w-[200px] truncate">${escapeHtml(book.title || '')}</td>
                         <td class="px-4 py-3 text-stone-600 max-w-[150px] truncate">${escapeHtml(book.author || '')}</td>
                         <td class="px-4 py-3 text-stone-600 text-xs">${sourceLink}</td>
-                        <td class="px-4 py-3 text-stone-600 text-xs max-w-[140px] truncate">${licenceLink}</td>
+                        <td class="px-4 py-3 text-stone-600 text-xs max-w-[140px] truncate">${licenceLink}${
+                            book.rejected_reason
+                                ? `<div class="mt-1 text-[11px] text-stone-500 truncate" title="${escapeHtml(book.rejected_reason)}">${escapeHtml(book.rejected_reason)}</div>`
+                                : ''
+                        }</td>
                         <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">${escapeHtml(book.status || '')}</span></td>
                         <td class="px-4 py-3">
                             <div class="flex gap-2">
@@ -157,6 +167,42 @@
                 next.className = 'px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-100 transition';
                 next.onclick = () => loadBooks(currentPage + 1);
                 container.appendChild(next);
+            }
+        }
+
+        async function restoreRejected() {
+            const count = parseInt(document.getElementById('rejected-count').textContent, 10) || 0;
+            if (count === 0) return;
+            if (!confirm(
+                `Restore ${count} rejected book(s) to the review queue?\n\n` +
+                'They go to PENDING, not Approved — each still needs its source ' +
+                'checked before it can be sold. Known in-copyright works stay rejected.\n\n' +
+                'This is a review task, not a licence decision.'
+            )) return;
+            const btn = document.getElementById('restore-rejected-btn');
+            btn.disabled = true;
+            btn.textContent = 'Restoring…';
+            try {
+                const res = await fetch('/api/v1/admin/books/restore-rejected', { method: 'POST', headers: authHeaders() });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                showPending();
+                loadPendingCount();
+                loadRejectedCount();
+                const notice = document.createElement('div');
+                notice.className = 'mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-4';
+                const kept = data.kept_rejected || 0;
+                notice.textContent = kept
+                    ? `Restored ${data.restored} book(s) to review. ${kept} known in-copyright work(s) left rejected.`
+                    : `Restored ${data.restored} book(s) to review.`;
+                const banner = document.getElementById('review-banner');
+                banner.parentNode.insertBefore(notice, banner.nextSibling);
+                setTimeout(() => notice.remove(), 8000);
+            } catch (e) {
+                alert('Failed to restore rejected books');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Restore all to review';
             }
         }
 

@@ -84,8 +84,14 @@
             </div>
 
             <div id="rejected-banner" class="hidden mb-6 bg-stone-100 border border-stone-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
-                <p class="text-stone-700"><span id="rejected-count" class="font-bold">0</span> book(s) previously rejected. These are withdrawn from the catalogue but kept on record — switch to <strong>Rejected</strong> below to review them, and <strong>Approve</strong> to put one back.</p>
-                <button data-action="showRejected" class="bg-stone-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-800 transition">Show rejected</button>
+                <div class="flex-1 banner-text-col">
+                    <p class="text-stone-700"><span id="rejected-count" class="font-bold">0</span> book(s) previously rejected. These are withdrawn from the catalogue but kept on record — switch to <strong>Rejected</strong> below to review them, and <strong>Approve</strong> to put one back.</p>
+                    <p class="text-stone-500 text-xs mt-1">Bulk restore sends them to <strong>Pending</strong>, not Approved: these were withdrawn without a licence check, so each one still needs its source verified. A handful of known in-copyright works stay rejected.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button data-action="showRejected" class="bg-stone-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-800 transition">Show rejected</button>
+                    <button data-action="restoreRejected" id="restore-rejected-btn" class="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 transition">Restore all to review</button>
+                </div>
             </div>
 
             <div class="flex flex-wrap gap-4 mb-6">

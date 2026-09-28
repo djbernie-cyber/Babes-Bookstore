@@ -522,6 +522,61 @@ async def bulk_book_action(
     return {"affected": count, "action": req.action, "skipped_unverified": skipped}
 
 
+@router.post("/books/restore-rejected")
+async def restore_rejected_books(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Return every rejected book to PENDING, in one pass.
+
+    Deliberately PENDING and not APPROVED. These 2,099 rows were withdrawn
+    without a recorded reason, and the one that predates this endpoint's
+    existence was withdrawn wrongly: an unreachable source URL is not evidence
+    of infringement. Restoring them to the shelf would assert a licence
+    verification nobody performed.
+
+    The known non-public-domain works are never restored. They are on
+    KNOWN_NOT_PUBLIC_DOMAIN_IDS precisely because they are modern novels
+    presented as public domain, and returning those to a reviewable state
+    would put them one click from the catalogue.
+
+    Every book keeps its rejected_reason, so the review queue says what it was
+    withdrawn for and the row is not a mystery.
+    """
+    from ...services.license_audit import KNOWN_NOT_PUBLIC_DOMAIN_IDS
+
+    rows = (
+        await db.execute(select(Book).where(Book.status == BookStatus.REJECTED))
+    ).scalars().all()
+
+    known_bad = {b for b in KNOWN_NOT_PUBLIC_DOMAIN_IDS}
+    restored, kept = 0, []
+    for book in rows:
+        if book.source_id in known_bad:
+            kept.append({"id": book.id, "title": book.title,
+                         "source_id": book.source_id})
+            continue
+        book.status = BookStatus.PENDING
+        book.license_verified = False
+        restored += 1
+
+    await db.commit()
+    await log_action(
+        db,
+        action="book.restore_rejected",
+        entity_type="book",
+        user_id=admin.id,
+        details={"restored": restored, "kept_rejected": len(kept)},
+    )
+    await db.commit()
+    return {
+        "restored": restored,
+        "kept_rejected": len(kept),
+        "kept": kept,
+        "status": "pending",
+    }
+
+
 @router.post("/books/approve-all")
 async def approve_all_pending_books(
     db: AsyncSession = Depends(get_db),

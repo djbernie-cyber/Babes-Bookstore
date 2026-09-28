@@ -216,6 +216,9 @@ async def approve_book(
         raise HTTPException(status_code=404, detail="Book not found")
     book.status = BookStatus.APPROVED
     book.license_verified = True
+    # Clear the withdrawal note: a book put back into the catalogue must not
+    # keep advertising why it used to be off it.
+    book.rejected_reason = None
     await db.commit()
     await db.refresh(book)
     return BookResponse.model_validate(book)
@@ -231,6 +234,10 @@ async def reject_book(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     book.status = BookStatus.REJECTED
+    book.license_verified = False
+    # An explicit withdrawal with no recorded reason is exactly the state that
+    # left 2,099 rows unreviewable, so give it a default that can be edited.
+    book.rejected_reason = book.rejected_reason or "rejected by an administrator"
     await db.commit()
     await db.refresh(book)
     return BookResponse.model_validate(book)

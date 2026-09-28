@@ -42,6 +42,7 @@ class BookUpdate(BaseModel):
     tags: Optional[List[str]] = None
     status: Optional[BookStatusEnum] = None
     license_verified: Optional[bool] = None
+    rejected_reason: Optional[str] = None
     source_url: Optional[str] = None
     epub_path: Optional[str] = None
     pdf_path: Optional[str] = None
@@ -54,6 +55,7 @@ class BookResponse(BookBase):
     pdf_path: Optional[str] = None
     epub_path: Optional[str] = None
     status: BookStatusEnum
+    rejected_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

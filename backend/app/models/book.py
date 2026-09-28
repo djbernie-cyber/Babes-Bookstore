@@ -46,6 +46,11 @@ class Book(Base):
     license_type = Column(String(50), nullable=False, index=True)
     license_url = Column(Text, nullable=True)
     license_verified = Column(Boolean, default=False)
+
+    #: Why this book was withdrawn from the catalogue, if it was. Set by the
+    #: licence audit and by manual rejection. Nullable: a book that has never
+    #: been rejected has no reason, which is the normal case.
+    rejected_reason = Column(Text, nullable=True)
     verified_by = Column(String(50), default=VerificationMethod.AUTO.value)
     verified_at = Column(DateTime, nullable=True)
 
