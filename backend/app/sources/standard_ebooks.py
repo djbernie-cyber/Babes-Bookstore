@@ -124,3 +124,40 @@ class StandardEbooksSource(BaseSource):
             epub_url=f"{self.EBOOKS_URL}/{slug}/downloads/{flat}.epub",
             cover_url=f"{self.EBOOKS_URL}/{slug}/downloads/cover.jpg",
         )
+
+
+#: Standard Ebooks states on the book page that a work is not yet public
+#: domain, in one of two phrasings:
+#:   "This book was published in 1966, and will therefore enter the U.S.
+#:    public domain in 36 years on January 1, 2062."      (published date)
+#:   "This book was published in 1991, and will therefore enter the U.S.
+#:    public domain 70 years after the author's death."  (death date)
+#: Genuinely public-domain editions carry neither sentence. This is the
+#: publisher's own statement, which makes it far stronger evidence than a URL
+#: that merely resolves: the audit used to treat HTTP 200 as proof of public
+#: domain, and that is how Death of a Salesman (1949) and The Bell Jar (1966)
+#: reached the catalogue labelled `public_domain`.
+#:
+#: Both alternatives must be matched. Keying only on the "in N years on
+#: January 1" form silently missed Neil Simon's Lost in Yonkers (1991), which
+#: uses the death-date form.
+NOT_YET_PUBLIC_DOMAIN = re.compile(
+    r'This book was published in (\d{4}),?\s*and will therefore enter the U\.S\. public domain'
+    r'(?:\s+in\s+(\d+)\s+years on January 1,\s*(\d{4})'
+    r'|\s+(\d+)\s+years after the author)'
+)
+
+
+def parse_standard_ebooks_copyright(html: str) -> dict:
+    """Extract the publisher's public-domain statement from a book page.
+
+    Returns ``{"in_copyright": bool, "publication_year": int | None}``.
+    An unparseable page yields ``in_copyright=False`` with no year, so callers
+    must not treat absence of the sentence as proof of public domain.
+    """
+    text = re.sub(r"<script.*?</script>|<style.*?</style>", "", html, flags=re.S)
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", text))
+    match = NOT_YET_PUBLIC_DOMAIN.search(text)
+    if match:
+        return {"in_copyright": True, "publication_year": int(match.group(1))}
+    return {"in_copyright": False, "publication_year": None}

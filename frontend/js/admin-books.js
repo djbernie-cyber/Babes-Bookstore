@@ -232,7 +232,7 @@
         async function approveAllPending() {
             const pending = parseInt(document.getElementById('pending-count').textContent, 10) || 0;
             if (pending === 0) return;
-            if (!confirm(`Approve all ${pending} pending book(s)? Each will be marked approved and licence-verified.`)) return;
+            if (!confirm(`Approve all ${pending} pending book(s)? Each will be marked approved and licence-verified (only rows already flagged as such are touched).`)) return;
             const btn = document.getElementById('approve-all-btn');
             btn.disabled = true;
             btn.textContent = 'Approving…';
@@ -243,11 +243,23 @@
                 loadBooks(currentPage);
                 loadPendingCount();
                 const notice = document.createElement('div');
-                notice.className = 'mb-6 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-4';
-                notice.textContent = `Approved ${data.affected} book(s).`;
                 const banner = document.getElementById('review-banner');
+                const unverified = data.still_pending_unverified || 0;
+                if (data.affected > 0) {
+                    notice.className = 'mb-6 bg-green-50 border border-green-200 text-green-800 rounded-xl px-5 py-4';
+                    notice.textContent = `Approved ${data.affected} book(s).`;
+                } else {
+                    // The bulk endpoint only approves books whose licence has
+                    // already been verified. Reporting "Approved 0 book(s)." in
+                    // a green success banner made a deliberate refusal look
+                    // like a broken button, which is what it was read as.
+                    notice.className = 'mb-6 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-5 py-4';
+                    notice.textContent = unverified > 0
+                        ? `Nothing was approved. ${unverified} book(s) are still pending because their licence has not been verified. Verify the source and publication year for each one, then approve individually.`
+                        : 'Nothing was approved.';
+                }
                 banner.parentNode.insertBefore(notice, banner.nextSibling);
-                setTimeout(() => notice.remove(), 5000);
+                setTimeout(() => notice.remove(), 12000);
             } catch (e) {
                 alert('Failed to approve all pending books');
             } finally {

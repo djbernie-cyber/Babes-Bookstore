@@ -19,7 +19,7 @@
    * the reader still gets somewhere to go, and can see the explanation. */
   window.downloadCta = function (b, dark) {
     if (b && b.license_verified === false) {
-      return '<a href="/books/' + b.id + '" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-amber-50 text-amber-800 border border-amber-200">Licence pending</a>';
+      return '<a href="/books/' + b.id + '" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-amber-50 text-amber-800 border border-amber-200">Asset check pending</a>';
     }
     if (dark) {
       return '<a href="/api/v1/books/' + b.id + '/download" class="flex-1 text-center text-xs font-semibold px-3 py-2 rounded-full bg-stone-100 text-stone-900 hover:bg-white">Free download</a>';

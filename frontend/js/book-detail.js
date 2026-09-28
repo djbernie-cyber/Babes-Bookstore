@@ -42,7 +42,7 @@ async function load() {
     if (b.cover_path && /^https?:\/\//.test(b.cover_path)) cover.innerHTML = `<img src="${b.cover_path}" alt="${b.title || 'Book cover'}" class="w-full h-full object-cover">`;
     else cover.innerHTML = `<div class="w-full min-h-[380px] bg-gradient-to-br ${g(b.id)} flex items-center justify-center"><span class="text-white text-7xl font-serif font-bold opacity-80">${(b.title || '?').charAt(0)}</span></div>`;
     document.getElementById('title').textContent = b.title; document.getElementById('author').textContent = b.author ? `by ${b.author}` : '';
-    let m = ""; if (b.license_type) m += b.license_verified ? badge(b.license_type, 'bg-emerald-50 text-emerald-800 border-emerald-200') : badge(b.license_type + ' · unconfirmed', 'bg-amber-50 text-amber-800 border-amber-200'); if (b.category) m += badge(b.category, 'bg-white text-stone-700 border-stone-200'); if (b.publication_year) m += `<span class="text-sm text-stone-500">${b.publication_year}</span>`; if (b.language) m += `<span class="text-sm text-stone-400">${b.language}</span>`;
+    let m = ""; if (b.license_type) m += badge(b.license_type, 'bg-emerald-50 text-emerald-800 border-emerald-200'); m += b.license_verified ? badge('asset-verified', 'bg-emerald-50 text-emerald-800 border-emerald-200') : badge('asset check pending', 'bg-amber-50 text-amber-800 border-amber-200'); if (b.category) m += badge(b.category, 'bg-white text-stone-700 border-stone-200'); if (b.publication_year) m += `<span class="text-sm text-stone-500">${b.publication_year}</span>`; if (b.language) m += `<span class="text-sm text-stone-400">${b.language}</span>`;
     document.getElementById('meta').innerHTML = m;
     document.getElementById('desc').innerHTML = b.description ? `<p class="whitespace-pre-wrap">${esc(b.description)}</p>` : '<p class="italic text-stone-400">No description.</p>';
     const suppressed = (b.tags || []).some(t => /suppress|banned/i.test(t));
@@ -63,9 +63,9 @@ async function load() {
        instead of a button that would fail. The title stays on the page and
        in every listing — only the file is withheld. */
     if (b.license_verified === false) {
-      const note = document.getElementById('licence-note');
+      const note = document.getElementById('asset-note');
       if (note) {
-        note.textContent = 'Listed for reference only. We are still confirming the licence for this edition, so the file is not available to download or read yet. Nothing is wrong with the book — it just has not cleared our checks.';
+        note.textContent = 'Listed for reference only. We are still verifying this edition, so the file is not available to download or read yet. Nothing is wrong with the book — it just has not cleared our checks.';
         note.classList.remove('hidden');
       }
       [download, readBtn, readCard].forEach(el => {
