@@ -39,6 +39,8 @@ class User(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     purchases = relationship("Purchase", back_populates="user")
+    owned_bundles = relationship("Bundle", back_populates="owner",
+                              cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.id}: {self.email}>"

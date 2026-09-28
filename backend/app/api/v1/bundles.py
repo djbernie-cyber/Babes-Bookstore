@@ -7,7 +7,7 @@ from typing import Optional, List
 from fastapi import status
 import re
 
-from .deps import get_db, get_optional_user, require_admin
+from .deps import get_db, get_current_user, get_optional_user, require_admin
 from ...models.bundle import Bundle, BundleBook
 from ...models.book import Book, BookStatus
 from ...models.user import User
@@ -33,7 +33,50 @@ def _serialize_books(bundle: Bundle) -> list[BundleBookResponse]:
         if bb.book is not None
     ]
 
+def _serialize(bundle: Bundle) -> BundleResponse:
+    """Map a loaded bundle to its response, including the personal flag."""
+    data = BundleResponse.model_validate(bundle)
+    data.books = _serialize_books(bundle)
+    data.is_personal = bundle.owner_id is not None
+    return data
+
+
 router = APIRouter(prefix="/bundles", tags=["bundles"])
+
+
+@router.get("/mine", response_model=BundleListResponse)
+async def list_my_bundles(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """The signed-in reader's own collections.
+
+    Declared above /{bundle_id_or_slug} on purpose: FastAPI matches routes in
+    declaration order, so a route added below it would be swallowed as a slug
+    lookup for "mine" and 404.
+    """
+    count_stmt = select(func.count(Bundle.id)).where(Bundle.owner_id == current_user.id)
+    total = (await db.execute(count_stmt)).scalar() or 0
+
+    stmt = (
+        select(Bundle)
+        .options(selectinload(Bundle.bundle_books).selectinload(BundleBook.book))
+        .where(Bundle.owner_id == current_user.id)
+        .order_by(Bundle.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    bundles = (await db.execute(stmt)).scalars().unique().all()
+
+    return BundleListResponse(
+        items=[_serialize(b) for b in bundles],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
 
 
 @router.get("", response_model=BundleListResponse)
@@ -45,7 +88,10 @@ async def list_bundles(
     featured: Optional[bool] = None,
     active_only: bool = True,
 ):
-    filters = []
+    # owner_id IS NULL is the whole product/personal split. Without it every
+    # reader's collection appears in the storefront listing, in search, and in
+    # the sitemap, priced and purchasable like a curated bundle.
+    filters = [Bundle.owner_id.is_(None)]
     if active_only:
         filters.append(Bundle.active == True)
     if category:
@@ -68,14 +114,8 @@ async def list_bundles(
     result = await db.execute(stmt)
     bundles = result.scalars().unique().all()
 
-    items = []
-    for b in bundles:
-        b_data = BundleResponse.model_validate(b)
-        b_data.books = _serialize_books(b)
-        items.append(b_data)
-
     return BundleListResponse(
-        items=items,
+        items=[_serialize(b) for b in bundles],
         total=total,
         page=page,
         page_size=page_size,
@@ -83,7 +123,11 @@ async def list_bundles(
 
 
 @router.get("/{bundle_id_or_slug}", response_model=BundleResponse)
-async def get_bundle(bundle_id_or_slug: str, db: AsyncSession = Depends(get_db)):
+async def get_bundle(
+    bundle_id_or_slug: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+):
     ref = bundle_id_or_slug.strip()
     if ref.isdigit():
         # Guard against values outside a signed 64-bit integer, which would
@@ -99,12 +143,12 @@ async def get_bundle(bundle_id_or_slug: str, db: AsyncSession = Depends(get_db))
         selectinload(Bundle.bundle_books).selectinload(BundleBook.book)
     ).where(criterion)
     bundle = (await db.execute(stmt)).unique().scalar_one_or_none()
-    if not bundle:
+    # 404, not 403: "forbidden" would confirm the bundle exists and invite
+    # enumeration of someone else's reading list.
+    if not bundle or not bundle.visible_to(current_user):
         raise HTTPException(status_code=404, detail="Bundle not found")
 
-    b_data = BundleResponse.model_validate(bundle)
-    b_data.books = _serialize_books(bundle)
-    return b_data
+    return _serialize(bundle)
 
 
 def _slugify(value: str) -> str:
@@ -118,12 +162,19 @@ async def create_custom_bundle(
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
-    """Create a user-curated custom bundle (no admin required).
+    """Group books you already have into a collection.
 
-    Authenticated users get a persistent bundle; anonymous users may still
-    create a one-off custom bundle that is immediately purchasable.
-    Custom bundles are always priced at the standard price and marked
-    bundle_type='custom'.
+    Signed in, the result is *yours*: owner_id set, bundle_type='personal',
+    absent from the storefront listing, unpurchasable, and editable and
+    deletable by you alone. It is not stock and never becomes stock.
+
+    Anonymous, there is nobody to own it, so this stays the one-off basket
+    checkout needs -- still priced, still purchasable, owner_id NULL, which is
+    what marks a row as a product.
+
+    Before b7c8d9e0f1a2 both cases wrote into the same table with no owner, so
+    every reader's grouping became a globally listed, standard-priced product
+    that only an admin could rename or delete.
     """
     from ...config import settings as _settings
 
@@ -150,7 +201,10 @@ async def create_custom_bundle(
         cover_image_path=bundle_in.cover_image_path,
         category=bundle_in.category or "Custom",
         tags=bundle_in.tags,
-        bundle_type="custom",
+        bundle_type="personal" if current_user else "custom",
+        # The single field that decides whether this is a reader's collection
+        # or a product. Everything else in this function is shared.
+        owner_id=current_user.id if current_user else None,
         meta_title=bundle_in.meta_title,
         meta_description=bundle_in.meta_description,
         active=True,
@@ -177,9 +231,7 @@ async def create_custom_bundle(
         )
     ).unique().scalar_one()
 
-    b_data = BundleResponse.model_validate(reloaded)
-    b_data.books = _serialize_books(reloaded)
-    return b_data
+    return _serialize(reloaded)
 
 
 @router.post("", response_model=BundleResponse)
@@ -225,9 +277,7 @@ async def create_bundle(
         ).where(Bundle.id == bundle.id).execution_options(populate_existing=True)
     )).unique().scalar_one()
 
-    b_data = BundleResponse.model_validate(reloaded)
-    b_data.books = _serialize_books(reloaded)
-    return b_data
+    return _serialize(reloaded)
 
 
 @router.patch("/{bundle_id}", response_model=BundleResponse)
@@ -235,13 +285,32 @@ async def update_bundle(
     bundle_id: int,
     update: BundleUpdate,
     db: AsyncSession = Depends(get_db),
-    _admin=Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
+    """Rename or re-shuffle a bundle.
+
+    The owner of a personal bundle may edit their own. An admin may edit any
+    *product*. An admin may not edit someone else's personal bundle: these are
+    readers' reading lists, and the failure mode of "admin can reach it" is a
+    storefront that starts editing -- and eventually selling -- the
+    collections that brought people in.
+    """
     bundle = (await db.execute(
         select(Bundle).options(selectinload(Bundle.bundle_books)).where(Bundle.id == bundle_id)
     )).unique().scalar_one_or_none()
-    if not bundle:
+    if not bundle or not bundle.visible_to(current_user):
         raise HTTPException(status_code=404, detail="Bundle not found")
+    if not (current_user.is_admin or bundle.owner_id == current_user.id):
+        raise HTTPException(status_code=403, detail="Not your bundle")
+    if bundle.owner_id is not None and not current_user.is_admin:
+        # A personal bundle is not stock, so the fields that make a product
+        # sellable are not the owner's to set.
+        data_leak = {"price_cents", "currency", "active", "featured", "category"}
+        if data_leak & set(update.model_dump(exclude_unset=True)):
+            raise HTTPException(
+                status_code=400,
+                detail="Price and visibility are not editable on a personal bundle",
+            )
 
     data = update.model_dump(exclude_unset=True)
     book_ids = data.pop("book_ids", None)
@@ -268,20 +337,21 @@ async def update_bundle(
         ).where(Bundle.id == bundle_id).execution_options(populate_existing=True)
     )).unique().scalar_one()
 
-    b_data = BundleResponse.model_validate(reloaded)
-    b_data.books = _serialize_books(reloaded)
-    return b_data
+    return _serialize(reloaded)
 
 
 @router.delete("/{bundle_id}")
 async def delete_bundle(
     bundle_id: int,
     db: AsyncSession = Depends(get_db),
-    _admin=Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
+    """Delete a bundle, with the same owner/admin split as PATCH."""
     bundle = await db.get(Bundle, bundle_id)
-    if not bundle:
+    if not bundle or not bundle.visible_to(current_user):
         raise HTTPException(status_code=404, detail="Bundle not found")
+    if not (current_user.is_admin or bundle.owner_id == current_user.id):
+        raise HTTPException(status_code=403, detail="Not your bundle")
     await db.delete(bundle)
     await db.commit()
     return {"deleted": True}

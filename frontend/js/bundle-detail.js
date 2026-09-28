@@ -12,7 +12,16 @@ function render(b) {
   document.getElementById('name').textContent = b.name; document.title = b.name + " — Babe's Bookstore";
   document.getElementById('orb').textContent = orb(b.slug || b.name);
   document.getElementById('cat').textContent = b.category || ""; document.getElementById('desc').textContent = b.description || "";
-  document.getElementById('price').textContent = formatPrice(b.price_cents, b.currency);
+  // A personal bundle is the reader's own reading list. Only the owner can
+  // fetch one at all (the API 404s it for everyone else), so is_personal on
+  // this page means "you are the owner" -- there is no separate check to do,
+  // and no price or checkout to show.
+  if (b.is_personal) {
+    document.getElementById('sell-panel').classList.add('hidden');
+    document.getElementById('own-panel').classList.remove('hidden');
+  } else {
+    document.getElementById('price').textContent = formatPrice(b.price_cents, b.currency);
+  }
   const books = b.books || []; document.getElementById('count').textContent = books.length + " books"; document.getElementById('book-count').textContent = `(${books.length})`;
   const el = document.getElementById('books');
   if (!books.length) el.innerHTML = '<div class="bg-white rounded-2xl border p-6 text-center text-stone-500">Book list coming soon.</div>';
@@ -48,6 +57,30 @@ async function pay(provider) {
     }
     if (d.checkout_url || d.url) location.href = d.checkout_url || d.url; else { alert('Checkout created — check email/phone'); btn.innerHTML = orig; btn.disabled = false }
   } catch (e) { alert(e.message); btn.innerHTML = orig; btn.disabled = false }
+}
+async function renameBundle() {
+  const name = prompt('New name for this collection:', bundle.name);
+  if (!name || !name.trim() || name.trim() === bundle.name) return;
+  const token = localStorage.getItem('token');
+  if (!token) return alert('Please login');
+  const r = await fetch(`/api/v1/bundles/${bundle.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ name: name.trim() })
+  });
+  const d = await r.json();
+  if (!r.ok) return alert(d.detail || 'Could not rename');
+  bundle.name = d.name; render(d);
+}
+async function deleteBundle() {
+  if (!confirm(`Delete "${bundle.name}"? This cannot be undone.`)) return;
+  const token = localStorage.getItem('token');
+  if (!token) return alert('Please login');
+  const r = await fetch(`/api/v1/bundles/${bundle.id}`, {
+    method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+  });
+  if (!r.ok) { const d = await r.json(); return alert(d.detail || 'Could not delete'); }
+  location.href = '/bundles';
 }
 async function loadMpesaConfig() {
   // M-Pesa is the store's only payment method — the button is always shown.

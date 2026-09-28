@@ -81,6 +81,11 @@ async def _resolve_bundle(req: CheckoutRequest, db: AsyncSession) -> Bundle:
     bundle = (await db.execute(stmt)).unique().scalar_one_or_none()
     if not bundle or not bundle.active:
         raise HTTPException(status_code=404, detail="Bundle not found or inactive")
+    # A reader's own collection is not for sale. This is the single choke point
+    # for all seven checkout call sites (Stripe, PayPal, Square, free, M-Pesa
+    # and the two shared helpers), so a new provider cannot forget the check.
+    if bundle.owner_id is not None:
+        raise HTTPException(status_code=404, detail="Bundle not found or inactive")
     return bundle
 
 

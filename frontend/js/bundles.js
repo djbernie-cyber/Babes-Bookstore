@@ -27,8 +27,35 @@ async function load() {
   } catch (e) { grid.innerHTML = '<div class="col-span-full text-center py-12 bg-white rounded-2xl border"><p class="text-stone-600">Could not load bundles.</p><button data-action="load" class="mt-3 px-5 py-2 rounded-full bg-stone-900 text-white text-sm">Retry</button></div>' }
 }
 function go(p) { if (p < 1) return; page = p; load(); scrollTo({ top: 0, behavior: 'smooth' }) }
+
+// The reader's own collections. These are deliberately NOT part of the grid
+// above: that grid is the shop, and the API already keeps personal bundles out
+// of it. A reader needs their own shelf to be findable, just not shoppable.
+async function loadMine() {
+  const host = document.getElementById('mine');
+  if (!host) return;
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  let d;
+  try {
+    const r = await fetch('/api/v1/bundles/mine?page_size=50', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!r.ok) return;
+    d = await r.json();
+  } catch (e) { return }
+  const items = d.items || [];
+  if (!items.length) return;
+  host.classList.remove('hidden');
+  document.getElementById('mine-list').innerHTML = items.map(b => {
+    const n = Array.isArray(b.books) ? b.books.length : '?';
+    return `<a href="/bundles/${b.slug}" class="flex items-center justify-between gap-3 bg-white rounded-2xl border px-4 py-3 hover:border-stone-300 transition">
+      <span class="flex items-center gap-3 min-w-0"><span class="text-xl">${orb(b.slug || b.name)}</span>
+      <span class="min-w-0"><span class="block font-semibold truncate">${b.name}</span>
+      <span class="block text-xs text-stone-500">${n} books · private</span></span></span>
+      <span class="text-stone-400 shrink-0">→</span></a>`;
+  }).join('');
+}
 document.querySelectorAll('#cat-filters button').forEach(b => b.addEventListener('click', e => {
   document.querySelectorAll('#cat-filters button').forEach(x => x.classList.remove('active')); e.target.classList.add('active');
   cat = e.target.dataset.cat; page = 1; load();
 }));
-document.addEventListener('DOMContentLoaded', load);
+document.addEventListener('DOMContentLoaded', () => { load(); loadMine(); });

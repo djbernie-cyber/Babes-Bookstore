@@ -64,6 +64,11 @@ class BundleResponse(BundleBase):
     featured: bool
     created_at: datetime
     updated_at: datetime
+    # True for a reader's own collection. Deliberately a boolean rather than
+    # the raw owner_id: the response is public, and leaking "user 4127 made
+    # this" tells a stranger more than the frontend needs in order to hide the
+    # buy button.
+    is_personal: bool = False
     books: List[BundleBookResponse] = []
 
     class Config:

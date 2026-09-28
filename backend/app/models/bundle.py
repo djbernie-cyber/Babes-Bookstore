@@ -36,6 +36,13 @@ class Bundle(Base):
     featured = Column(Boolean, default=False, index=True)
     bundle_type = Column(String(50), default="curated")
 
+    # NULL means this bundle is a product: curated, admin-made, or the
+    # anonymous one-off checkout needs. Set means it is a reader's own
+    # collection -- excluded from the public listing, invisible to anyone but
+    # the owner, and not purchasable. See b7c8d9e0f1a2 for why the distinction
+    # has to live in the catalogue table rather than only in the API.
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -46,6 +53,24 @@ class Bundle(Base):
         order_by="BundleBook.sort_order",
     )
     purchases = relationship("Purchase", back_populates="bundle")
+    owner = relationship("User", back_populates="owned_bundles")
+
+    @property
+    def is_personal(self) -> bool:
+        """True for a reader's own collection rather than a product."""
+        return self.owner_id is not None
+
+    def visible_to(self, user) -> bool:
+        """Whether `user` may see this bundle at all.
+
+        Products are public. A personal bundle is only ever visible to the
+        reader who made it -- not to other signed-in readers, and not to
+        admins. Admins get at them through the database and the admin tooling,
+        which is the point: these are someone else's reading lists, and
+        "admin can see it" is how a shared catalogue starts selling books back
+        to the people who brought them in.
+        """
+        return self.owner_id is None or (user is not None and user.id == self.owner_id)
 
     def __repr__(self):
         return f"<Bundle {self.id}: {self.name}>"
