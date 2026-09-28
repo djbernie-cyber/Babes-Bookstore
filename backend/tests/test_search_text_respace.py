@@ -80,6 +80,22 @@ def _pg_translate(s, chars, targets):
     return "".join(targets[chars.index(c)] if c in chars else c for c in s)
 
 
+def _raise_expr_depth(con, depth=100000):
+    """Best-effort raise of SQLite's expression-depth limit.
+
+    Guarded because the knob is a SQLite-version detail: where it is missing
+    or read-only the limit is simply left at its default.
+    """
+    attr = getattr(sqlite3, "SQLITE_LIMIT_EXPR_DEPTH", None)
+    if attr is None or not hasattr(con, "setlimit"):
+        return False
+    try:
+        con.setlimit(attr, depth)
+    except (sqlite3.Error, ValueError):
+        return False
+    return True
+
+
 @pytest.fixture(scope="module")
 def emitted_sql():
     from sqlalchemy.dialects import postgresql
@@ -104,6 +120,13 @@ def emitted_sql():
 def backfilled(sql):
     """Run the migration's SQL and return the resulting search_text per row."""
     con = sqlite3.connect(":memory:")
+    # The backfill nests 26 translate() calls inside one another, so the
+    # expression tree is 32 levels deep. SQLite ships SQLITE_MAX_EXPR_DEPTH at
+    # 1000, but older builds on CI runners reject the parse with "parser stack
+    # overflow" long before that, and a version-dependent parser limit must not
+    # decide whether a correctness test runs. Raise the limit so the test
+    # exercises the real SQL on every SQLite rather than skipping it.
+    _raise_expr_depth(con)
     con.create_function("concat_ws", -1, _pg_concat_ws)
     con.create_function("translate", 3, _pg_translate)
     # SQLite's built-in lower() is ASCII-only and leaves C-cedilla alone, so a

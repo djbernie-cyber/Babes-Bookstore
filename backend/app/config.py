@@ -117,9 +117,18 @@ class Settings(BaseSettings):
 
     BLOCKED_LICENSES: list[str] = [
         "cc_by_nc",
+        # The _4.0-suffixed spellings are what the OAPEN adapter emits. The
+        # unsuffixed forms above were never produced by any adapter, so they
+        # matched nothing: a CC BY-NC 4.0 book was not being blocked, it was
+        # falling through to a licence the verifier did not recognise. Kept
+        # both spellings so either is refused.
+        "cc_by_nc_4.0",
         "cc_by_nc_sa",
+        "cc_by_nc_sa_4.0",
         "cc_by_nc_nd",
+        "cc_by_nc_nd_4.0",
         "cc_by_nd",
+        "cc_by_nd_4.0",
         "proprietary",
         "all_rights_reserved",
     ]

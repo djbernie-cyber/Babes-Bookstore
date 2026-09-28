@@ -42,20 +42,44 @@ auto_stop_machines = 'off'
   force_https = true
   # Keep machines warm: an 'off' (always-on) policy avoids cold starts that
   # otherwise make the storefront look broken through the Netlify /api proxy.
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
-  checks = [{ grace_period = '3m0s', interval = '30s', method = 'GET', path = '/health', timeout = '5s' }]
-  concurrency = { hard_limit = 250, soft_limit = 200, type = 'requests' }
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 250
+    soft_limit = 200
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    # The app group boots `alembic upgrade head && exec uvicorn`, so nothing
+    # is listening while migrations run. Measured on the live table: the
+    # search_text backfill alone is ~26s for 84,605 rows, which is why the
+    # old 20s grace period was shorter than the startup it was guarding --
+    # the check would fail against a process that was still migrating, and
+    # Fly would restart a machine that was doing exactly what it was asked.
+    # Sized for the slowest migration in the chain, not the common case.
+    grace_period = '180s'
+    method = 'GET'
+    path = '/health'
 
 [[vm]]
-  size = 'shared-cpu-8x'
-  memory = '16gb'
-  cpus = 8
+  # App process: serving the API + storefront.
+  #
+  # PR #3 rewrote this to shared-cpu-8x / 16gb. That was not a deliberate
+  # sizing decision: it was `fly scale count` applied while recovering the
+  # outage, and the dashboard then offered to commit the resulting size back
+  # into this file. The app serves JSON from Postgres behind a CDN-fronted
+  # proxy; the earlier 2x / 1gb sizing was measured, not guessed, and 8x here
+  # is an 8x cost increase for no measured reason.
+  size = 'shared-cpu-2x'
+  memory = '1gb'
+  cpus = 2
   cpu_kind = 'shared'
   processes = ['app']
-  memory_mb = 16384
 
 [[vm]]
   size = 'shared-cpu-2x'
