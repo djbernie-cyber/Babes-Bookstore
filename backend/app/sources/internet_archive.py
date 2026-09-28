@@ -1,5 +1,6 @@
 from typing import List, Optional
 import asyncio
+from urllib.parse import quote
 
 from .base import BaseSource, BookMetadata, LICENSE_VERIFY_PER_ITEM
 
@@ -62,6 +63,11 @@ class InternetArchiveSource(BaseSource):
             license_url = metadata.get("licenseurl", "")
             license_type = self._extract_license_type(license_url)
 
+            # ``files`` is a sibling of ``metadata`` in the /metadata/ response,
+            # not a key inside it. Reading it off the inner dict -- as this did
+            # -- always yielded [], so the adapter returned a null pdf_url for
+            # every item it had ever seen.
+            files = data.get("files", [])
             return BookMetadata(
                 title=metadata.get("title", "Unknown"),
                 author=metadata.get("creator"),
@@ -72,21 +78,33 @@ class InternetArchiveSource(BaseSource):
                 license_type=license_type,
                 license_url=license_url,
                 publication_year=self._extract_year(metadata.get("date")),
-                pdf_url=self._find_pdf_url(metadata.get("files", [])),
+                pdf_url=self._find_pdf_url(files, source_id),
+                # Internet Archive is one of the few sources here that can offer
+                # both formats for the same item: many scans have both a
+                # derived EPUB and a page-image PDF, so a reader can choose
+                # either without us pairing two different editions.
+                epub_url=self._find_epub_url(files, source_id),
+                source_metadata={"mediatype": metadata.get("mediatype", "")},
             )
         except Exception:
             return None
 
     async def download(self, metadata: BookMetadata) -> Optional[bytes]:
-        if not metadata.pdf_url:
-            return None
-        try:
-            await asyncio.sleep(self.rate_limit)
-            response = await self.client.get(metadata.pdf_url, follow_redirects=True)
-            if response.status_code == 200:
-                return response.content
-        except Exception:
-            pass
+        """Fetch the best available file, preferring EPUB then PDF.
+
+        Matches the preference the other both-format sources use, so an item
+        that *has* an EPUB stops shipping as a scan-derived PDF.
+        """
+        for url in (metadata.epub_url, metadata.pdf_url):
+            if not url:
+                continue
+            try:
+                await asyncio.sleep(self.rate_limit)
+                response = await self.client.get(url, follow_redirects=True)
+                if response.status_code == 200 and response.content:
+                    return response.content
+            except Exception:
+                pass
         return None
 
     async def list_popular(self, limit: int = 50, start_page: int = 1) -> List[BookMetadata]:
@@ -147,13 +165,58 @@ class InternetArchiveSource(BaseSource):
             return self._extract_year(date[0])
         return None
 
-    def _find_pdf_url(self, files: list) -> Optional[str]:
+    def _find_file_url(self, files: list, source_id: str, extension: str,
+                       formats: tuple) -> Optional[str]:
+        """Best {extension} derivative for an item, as a real download URL.
+
+        The URL used to be built from ``f.get("source", "_ia")``, which is the
+        only key the method could ever get wrong: entries in ``files`` carry
+        ``name``/``format``/``size`` and no ``source``, so every item produced
+        https://archive.org/download/_ia/<name> -- a 404 for every book the
+        adapter had ever returned. The identifier has to come from the caller,
+        which is what DOWNLOAD_URL has always been for.
+
+        Derived files (the EPUB or PDF generated *from* a scanned original) win
+        over uploads, because IA marks those with ``source: <identifier>`` while
+        originals set ``original: true``. For a scan, the derived EPUB is the
+        reflowable text and the original PDF is the page images.
+        """
         if not isinstance(files, list):
             return None
+        candidates = []
         for f in files:
-            if isinstance(f, dict) and f.get("name", "").endswith(".pdf"):
-                fmt = f.get("format", "").lower()
-                if "pdf" in fmt or "text" in fmt:
-                    name = f["name"]
-                    return f"https://archive.org/download/{f.get('source','_ia')}/{name}"
-        return None
+            if not isinstance(f, dict):
+                continue
+            name = f.get("name", "")
+            if not name.lower().endswith(extension):
+                continue
+            fmt = (f.get("format") or "").lower()
+            if formats and not any(k in fmt for k in formats):
+                continue
+            is_original = bool(f.get("original"))
+            derived = f.get("source") == source_id
+            try:
+                size = int(f.get("size") or 0)
+            except (TypeError, ValueError):
+                size = 0
+            # Sort key: derived first, then smallest, since a 40 MB scan-derived
+            # PDF is a worse EPUB than a 400 KB one.
+            candidates.append((0 if derived and not is_original else 1, size, name))
+
+        if not candidates:
+            return None
+        name = min(candidates)[2]
+        # Archive filenames routinely contain spaces ("Sumerian Cuneiform
+        # English Dictionary 12013CT 28xii.epub"). These URLs are stored on the
+        # book row and handed to browsers, not just to httpx, which would
+        # normalise the spaces for us. Percent-encode here so the stored value
+        # is a URL rather than something that merely works when we fetch it.
+        return self.DOWNLOAD_URL.format(
+            identifier=quote(source_id, safe=""), filename=quote(name, safe="")
+        )
+
+    def _find_pdf_url(self, files: list, source_id: str) -> Optional[str]:
+        return self._find_file_url(files, source_id, ".pdf", ("pdf", "text"))
+
+    def _find_epub_url(self, files: list, source_id: str) -> Optional[str]:
+        return self._find_file_url(files, source_id, ".epub", ("epub", "electronic"))
