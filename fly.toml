@@ -1,6 +1,6 @@
-# fly.toml app configuration file generated for babes-bookstore on 2026-08-23T15:01:01Z
+# fly.toml app configuration file generated for babes-bookstore on 2026-09-28T13:54:27Z
 #
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
 #
 
 app = 'babes-bookstore'
@@ -42,41 +42,22 @@ auto_stop_machines = 'off'
   force_https = true
   # Keep machines warm: an 'off' (always-on) policy avoids cold starts that
   # otherwise make the storefront look broken through the Netlify /api proxy.
-  auto_stop_machines = 'off'
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
-
-  [http_service.concurrency]
-    type = 'requests'
-    hard_limit = 250
-    soft_limit = 200
-
-  [[http_service.checks]]
-    interval = '30s'
-    timeout = '5s'
-    # The app group boots `alembic upgrade head && exec uvicorn`, so nothing
-    # is listening while migrations run. Measured on the live table: the
-    # search_text backfill alone is ~26s for 84,605 rows, which is why the
-    # old 20s grace period was shorter than the startup it was guarding --
-    # the check would fail against a process that was still migrating, and
-    # Fly would restart a machine that was doing exactly what it was asked.
-    # Sized for the slowest migration in the chain, not the common case.
-    grace_period = '180s'
-    method = 'GET'
-    path = '/health'
+  checks = [{ grace_period = '3m0s', interval = '30s', method = 'GET', path = '/health', timeout = '5s' }]
+  concurrency = { hard_limit = 250, soft_limit = 200, type = 'requests' }
 
 [[vm]]
-  # App process: serving the API + storefront.
-  size = 'shared-cpu-2x'
-  memory = '1gb'
-  cpus = 2
+  size = 'shared-cpu-8x'
+  memory = '16gb'
+  cpus = 8
   cpu_kind = 'shared'
   processes = ['app']
+  memory_mb = 16384
 
 [[vm]]
-  # Worker process: Celery (scrapes, licence verification, periodic cleanup).
-  # Scaled up to comfortably run the ~74k-book Gutenberg full-catalogue harvest.
   size = 'shared-cpu-2x'
   memory = '1gb'
   cpus = 2
