@@ -6,6 +6,13 @@
 app = 'babes-bookstore'
 primary_region = 'lhr'
 
+# Applies to every process group, including `worker`.
+# The [http_service] block below sets this too, but only for the `app` group.
+# A worker has no service behind it, so it fell back to Fly's default of
+# 'stop': the machine was created, then Fly stopped it after ~5s, before
+# celery had even started. Its last log line was "Configuring firecracker".
+auto_stop_machines = 'off'
+
 [build]
   dockerfile = 'backend/Dockerfile'
 
