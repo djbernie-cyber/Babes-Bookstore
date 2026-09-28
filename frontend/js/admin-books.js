@@ -9,6 +9,7 @@
             document.getElementById('admin-content').classList.remove('hidden');
             loadBooks(1);
             loadPendingCount();
+            loadRejectedCount();
         }
 
         function authHeaders() {
@@ -29,8 +30,27 @@
             } catch (e) { /* banner is non-essential */ }
         }
 
+        async function loadRejectedCount() {
+            // Rejected books are not pending and have no banner of their own,
+            // so without this the 2,099-withdrawn rows were only reachable by
+            // knowing to open the Status dropdown. The admin never saw them.
+            try {
+                const res = await fetch('/api/v1/admin/stats', { headers: authHeaders() });
+                if (!res.ok) return;
+                const stats = await res.json();
+                const rejected = stats.books?.rejected || 0;
+                document.getElementById('rejected-count').textContent = rejected;
+                document.getElementById('rejected-banner').classList.toggle('hidden', rejected === 0);
+            } catch (e) { /* banner is non-essential */ }
+        }
+
         function showPending() {
             document.getElementById('status-filter').value = 'pending';
+            loadBooks(1);
+        }
+
+        function showRejected() {
+            document.getElementById('status-filter').value = 'rejected';
             loadBooks(1);
         }
 
@@ -69,7 +89,9 @@
                     tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-10 text-center text-stone-500">
                         ${status === 'pending'
                             ? '🎉 Nothing waiting for review. Run a scrape from the Dashboard to bring in more books.'
-                            : 'No books match these filters.'}
+                            : status === 'rejected'
+                                ? 'No rejected books match these filters.'
+                                : 'No books match these filters.'}
                     </td></tr>`;
                     document.getElementById('pagination').innerHTML = '';
                     return;
