@@ -19,8 +19,8 @@ primary_region = 'lhr'
 # against. Declaring the groups here means the worker is managed, and gets
 # updated with the app from now on.
 [processes]
-  app = "python -m alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*'"
-  worker = "exec celery -A app.celery_app:celery_app worker --beat --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2} --prefetch-multiplier=1"
+  app = "sh -c 'python -m alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips=*'"
+  worker = "sh -c 'exec celery -A app.celery_app:celery_app worker --beat --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2} --prefetch-multiplier=1'"
 
 [env]
   PORT = '8000'
