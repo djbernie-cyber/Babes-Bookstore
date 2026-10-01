@@ -5,7 +5,7 @@ Revises: b2c3d4e5f6a7
 Create Date: 2026-09-27
 
 Why: the archive used to require a carried book (book_id NOT NULL, and the
-list query inner-joined approved + licence-verified stock). That made it
+list query inner-joined approved + asset-verified stock). That made it
 structurally impossible to document a ban on any work still in copyright —
 i.e. almost the entire postcolonial and African literary canon. The 23-record
 result was Western-only by construction, not by editorial choice.

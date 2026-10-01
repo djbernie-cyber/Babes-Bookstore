@@ -10,9 +10,9 @@ hand-curated canon entries, had 23 books in the catalogue and not one of them
 carried an African tag.
 
 This script re-applies the existing author classifiers to every approved,
-licence-verified book and writes the missing tags. It adds tags only; it
+asset-verified book and writes the missing tags. It adds tags only; it
 never invents a book, never touches ``category``, and never marks anything
-licence-verified. Idempotent — safe to re-run.
+asset-verified. Idempotent — safe to re-run.
 
     cd /app && PYTHONPATH=/app python /tmp/backfill_african_tags.py
     # add --dry-run to report without writing

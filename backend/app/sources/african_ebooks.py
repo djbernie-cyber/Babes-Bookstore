@@ -2,7 +2,7 @@
 
 A dedicated, curated catalogue of African-authored and African-diaspora
 literary works. Each entry is a canonical Project Gutenberg book (public
-domain, English, licence-verified and downloadable), resolved through the
+domain, English, asset-verified and downloadable), resolved through the
 Gutenberg API so metadata, covers and EPUB/PDF files stay live.
 
 The canon spans the continent and its diaspora: Olive Schreiner and Sol T.

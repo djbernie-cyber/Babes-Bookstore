@@ -11,7 +11,7 @@ An honesty note, learned the hard way from the Foie Gras bundle: these are
 evergreen sets that grow as the catalogue improves, so the copy must NOT claim
 a fixed count it does not honour. Every selection below is derived from the
 author classifiers and the licence audit — nothing is hard-coded, and no work
-is included that is not approved and licence-verified. In particular the
+is included that is not approved and asset-verified. In particular the
 modern canon that is still in copyright (Achebe, Soyinka, Ngugi) is
 deliberately absent; see seed_censorship_africa.py for the archive that
 documents their suppression without hosting them.
@@ -72,7 +72,7 @@ BUNDLES = [
         description=(
             "The whole African and African-diaspora shelf in one ever-growing set: "
             "the pioneering narratives, the novelists, the poets and the historians. "
-            "Every title licence-verified and free to download."
+            "Every title asset-verified and free to download."
         ),
         long_description=(
             "A curated shelf spanning the continent and the diaspora — Olaudah "
@@ -143,7 +143,7 @@ BUNDLES = [
             "dialect novellas, Ida B. Wells, Zora Neale Hurston, Langston Hughes, "
             "and the enslaved narratives — Equiano, Northup, Jacobs, Bibb, "
             "Box Brown and the rest.\n\n"
-            "All public domain, all licence-verified, all free."
+            "All public domain, all asset-verified, all free."
         ),
         meta_title="The African-American Diaspora Canon | Babes Bookstore",
         meta_description=(
@@ -166,7 +166,7 @@ async def main():
                 Book.asset_verified.is_(True),
             )
         )).scalars().all()
-        print(f"scanned {len(books)} approved, licence-verified books\n")
+        print(f"scanned {len(books)} approved, asset-verified books\n")
 
         for spec in BUNDLES:
             members = [b for b in books if spec["select_books"](b)]

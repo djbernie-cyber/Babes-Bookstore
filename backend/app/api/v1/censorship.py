@@ -5,7 +5,7 @@ candidates; super-admins verify flags into records. Books themselves are
 never withheld — censorship records exist to inform the reader's decision.
 
 Search matches the public books API so records only surface for approved,
-licence-verified books that are actually on the shelves.
+asset-verified books that are actually on the shelves.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field

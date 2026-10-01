@@ -14,7 +14,7 @@ hardcoded prose rather than verified records.
 
 ### Data model — `censorship_records`
 
-A `CensorshipRecord` is attached to a **catalogued, approved, licence-verified**
+A `CensorshipRecord` is attached to a **catalogued, approved, asset-verified**
 book (the `banned-works` reference page can keep documenting in-print titles;
 the *catalog* only links to books readers can actually read here).
 

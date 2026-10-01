@@ -11,7 +11,7 @@ class OpenLibrarySource(BaseSource):
     """Open Library — verify license per-item before adding."""
 
     name = "open_library"
-    description = "Open Library (license-verified items only)"
+    description = "Open Library (asset-verified items only)"
     license_type = LICENSE_VERIFY_PER_ITEM
     rate_limit = 0.5
 

@@ -3,7 +3,7 @@
 Called by the admin ``POST /admin/bundles/randomise`` endpoint. For each
 active curated bundle it:
 
-1.  Builds a **themed pool** of approved, licence-verified books that match
+1.  Builds a **themed pool** of approved, asset-verified books that match
     the bundle's ``tags`` (any overlap) or ``category`` when no tags exist.
 2.  Replaces the ``BundleBook`` rows with a fresh random subset of the same
     size (capped by pool size, floored at 1 when a pool exists).
@@ -49,7 +49,7 @@ async def randomise_curated_bundles(db: AsyncSession) -> Dict:
     if not bundles:
         return {"updated": [], "skipped": ["no active curated bundles"]}
 
-    # Pre-load approved, licence-verified books once (pool used everywhere).
+    # Pre-load approved, asset-verified books once (pool used everywhere).
     approved_books: List[Dict] = [
         {
             "id": r[0],

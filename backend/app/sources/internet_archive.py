@@ -13,7 +13,7 @@ class InternetArchiveSource(BaseSource):
     """Internet Archive — license metadata available per-item."""
 
     name = "internet_archive"
-    description = "Internet Archive (license-verified public domain only)"
+    description = "Internet Archive (asset-verified public domain only)"
     license_type = LICENSE_VERIFY_PER_ITEM
     rate_limit = 1.0
 

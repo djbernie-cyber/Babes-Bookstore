@@ -77,7 +77,7 @@ NEW_BUNDLES = [
             "the old forms.",
         long_description="The interior monologue, the unreliable narrator, the shattered "
             "sonnet: the first decades of the twentieth century redrew literature. This bundle "
-            "collects its truest voices, all licence-verified and print-ready.",
+            "collects its truest voices, all asset-verified and print-ready.",
     ),
     dict(
         name="Mythology & Legends — Gods and Heroes",

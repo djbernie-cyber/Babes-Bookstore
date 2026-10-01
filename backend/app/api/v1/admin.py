@@ -582,7 +582,7 @@ async def approve_all_pending_books(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    """Approve every licence-verified pending book in a single pass.
+    """Approve every asset-verified pending book in a single pass.
 
     Unverified books are left pending — approval without a verified licence
     is exactly the failure mode this library refuses to repeat.
@@ -677,7 +677,7 @@ async def randomise_bundles(
 ):
     """Re-randomise the membership of every active curated (system) bundle.
 
-    Each curated bundle is re-picked from the approved, licence-verified
+    Each curated bundle is re-picked from the approved, asset-verified
     catalogue, preferring books whose tags/category match the bundle's theme,
     then the affected ZIPs are rebuilt in the background. Custom bundles are
     never touched. Single in-flight guard prevents stacking redundant runs.

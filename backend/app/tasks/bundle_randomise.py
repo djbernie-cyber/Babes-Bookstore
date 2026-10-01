@@ -12,7 +12,7 @@ def randomise_system_bundles_task() -> dict:
     """Re-randomise every active curated bundle's membership in the background.
 
     Called by ``POST /admin/bundles/randomise``. Picks a fresh themed set of
-    approved, licence-verified books per curated bundle, replaces the bundle's
+    approved, asset-verified books per curated bundle, replaces the bundle's
     current membership, then queues a ZIP rebuild for each changed bundle so
     the published archives stay in sync. Custom bundles are untouched.
     """

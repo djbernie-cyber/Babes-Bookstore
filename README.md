@@ -22,7 +22,7 @@ subscription wall scaling with income, no algorithm deciding which minds count.
 Censorship, paywalls and pay-per-view are not neutral. This project is a
 standing argument against them.
 
-The work is deliberately unglamorous: texts are licence-verified, cleaned,
+The work is deliberately unglamorous: texts are asset-verified, cleaned,
 typeset and delivered as print-ready PDF and reflowable EPUB. A library that
 cannot be trusted to serve the book is not a library, it is a stall.
 

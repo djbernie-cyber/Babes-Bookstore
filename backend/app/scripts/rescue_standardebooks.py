@@ -12,7 +12,7 @@ For every REJECTED standard_ebooks book, in order:
      the title only if that url serves actual epub bytes (ranged GET + magic).
      This restores the titles an earlier sweep wrongly rejected because it
      probed the HTML funnel instead of the file.
-  2. Gutenberg — match the title against a licence-verified, downloadable
+  2. Gutenberg — match the title against a asset-verified, downloadable
      Gutenberg-sourced book we already hold, re-point the record at that
      edition and record the original Standard Ebooks url as provenance.
   3. Otherwise the book stays REJECTED and is reported with its reason.

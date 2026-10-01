@@ -232,7 +232,7 @@
         async function approveAllPending() {
             const pending = parseInt(document.getElementById('pending-count').textContent, 10) || 0;
             if (pending === 0) return;
-            if (!confirm(`Approve all ${pending} pending book(s)? Each will be marked approved and licence-verified (only rows already flagged as such are touched).`)) return;
+            if (!confirm(`Approve all ${pending} pending book(s)? Each will be marked approved and asset-verified (only rows already flagged as such are touched).`)) return;
             const btn = document.getElementById('approve-all-btn');
             btn.disabled = true;
             btn.textContent = 'Approving…';

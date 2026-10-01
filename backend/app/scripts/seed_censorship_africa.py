@@ -2,7 +2,7 @@
 
 The original seed was Western-only — 23 records, no African author among them.
 That was structural, not editorial: `book_id` was NOT NULL and the list query
-inner-joined approved, licence-verified stock, so a ban could only be recorded
+inner-joined approved, asset-verified stock, so a ban could only be recorded
 for a book we could legally host. Almost the entire modern African canon is in
 copyright, so it was unrepresentable by construction. `d4e5f6a7b8c9` makes
 `book_id` nullable so the archive can document a suppression without claiming
@@ -194,7 +194,7 @@ async def main():
             select(Book).where(Book.status == BookStatus.APPROVED,
                                Book.asset_verified.is_(True))
         )).scalars().all()
-        print(f"{len(books)} approved, licence-verified books in catalogue")
+        print(f"{len(books)} approved, asset-verified books in catalogue")
 
         by_norm = {}
         for b in books:

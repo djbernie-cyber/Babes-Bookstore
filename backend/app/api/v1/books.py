@@ -35,7 +35,7 @@ async def list_books(
 ):
     """List books.
 
-    The public catalogue only ever sees approved, licence-verified books.
+    The public catalogue only ever sees approved, asset-verified books.
     Viewing unapproved material (approved_only=false, or any explicit
     status filter) is an admin-only capability — previously anyone could
     enumerate pending and rejected books.
@@ -93,7 +93,7 @@ async def list_books(
 async def book_text(book_id: int, db: AsyncSession = Depends(get_db)):
     """Plain-text of an approved book for the in-browser reader.
 
-    Only approved, licence-verified public-domain works are exposed as text.
+    Only approved, asset-verified public-domain works are exposed as text.
     Falls back to the book's download URL hint when a plain-text rendering
     isn't available (epub/pdf-only sources).
     """

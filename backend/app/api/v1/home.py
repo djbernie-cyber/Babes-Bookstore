@@ -7,7 +7,7 @@ curated rows, and an optional seasonal band orchestrated by the admin's
 site-config furniture. Anonymous readers get the curated rows.
 
 Nothing here hits the network; every row is a query against the approved,
-licence-verified catalogue, so the feed is honest and fast.
+asset-verified catalogue, so the feed is honest and fast.
 """
 import json
 from collections import Counter

@@ -39,7 +39,7 @@ FOIE_LONG_DESCRIPTION = (
 FOIE_META_TITLE = "The Foie Gras — Evergreen Bestsellers | Babes Bookstore"
 FOIE_META_DESCRIPTION = (
     "The snootiest bundle in publishing: the all-time bestsellers and the "
-    "approved canon, licence-verified, always growing."
+    "approved canon, asset-verified, always growing."
 )
 
 
@@ -274,7 +274,7 @@ async def main():
                     "Plutarch, Machiavelli, Marcus Aurelius, the Federalist Papers "
                     "and the canon of presidential biography, this is the £1,000 "
                     "leadership shelf: the greatest management and statesmanship "
-                    "books of all time, licence-verified and print-ready. For the "
+                    "books of all time, asset-verified and print-ready. For the "
                     "reader who leads — or intends to.",
                 price_cents=PRESIDENTS_PRICE, currency=CURRENCY,
                 category="History", tags=["History", "Biography", "Leadership"],
