@@ -621,6 +621,22 @@ COLONIAL_AUTHORS: List[str] = [
     "H.C. Ogden",
     "Carl G. Seligman",
     "Henri Junod",
+    # 20th-century African canon (pre-1923/PD mix varies by edition)
+    "Chinua Achebe",
+    "Wole Soyinka",
+    "Ngugi wa Thiong’o",
+    "Ngugi, James",
+    "Mphahlele, Ezekiel",
+    "La Guma, Alex",
+    "Plaatje, Sol T.",
+    "Plaatje, Solomon Tshekisho",
+    "Paton, Alan",
+    "Abrahams, Peter",
+    "Abrahams, Peter Henry",
+    "Coetzee, J. M.",
+    "Coetzee, John Maxwell",
+    "Gordimer, Nadine",
+    "Head, Bessie",
 ]
 
 #: African authors who collaborated with the colonial administration are
