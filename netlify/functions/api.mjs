@@ -385,6 +385,51 @@ export default async (req, context) => {
       }
       if (path === "admin/books" || path.startsWith("admin/books")) {
         if (method === "GET") return json(200, { items: books, total: books.length, ...paginate(books, url) });
+        if (method === "POST" && (path === "admin/books" || path === "admin/books/import")) {
+          const body = await parseBody(req);
+          const incoming = Array.isArray(body) ? body : (Array.isArray(body.books) ? body.books : []);
+          if (!incoming.length) return json(400, { detail: "No books provided. Send { books: [...] } or [...]." });
+          const seq = await getJSON(store, "meta:seq", { book: 0, bundle: 0, user: 0 });
+          let nextId = (seq.book || 0) + 1;
+          const existingIds = new Set(books.map((b) => b.id));
+          let added = 0;
+          for (const b of incoming) {
+            const id = b.id != null && !existingIds.has(b.id) ? b.id : nextId++;
+            if (existingIds.has(id)) continue;
+            existingIds.add(id);
+            books.push({
+              id,
+              title: b.title || "Untitled",
+              authors: b.author || b.authors || "",
+              author: b.author || b.authors || "",
+              description: b.description || "",
+              source: b.source || "imported",
+              source_id: b.source_id || "",
+              source_url: b.source_url || "",
+              license_type: b.license_type || b.license || "public_domain",
+              license: b.license_type || b.license || "public_domain",
+              license_url: b.license_url || "",
+              category: b.category || "",
+              tags: b.tags || [],
+              language: b.language || "en",
+              page_count: b.page_count || null,
+              publication_year: b.publication_year || null,
+              cover_url: b.cover_url || "",
+              download_url: b.download_url || "",
+              status: b.status || "approved",
+              asset_verified: !!b.asset_verified,
+              slug: b.slug || String(b.title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+              subjects: b.subjects || b.tags || [],
+              text: b.text || "",
+              created_at: b.created_at || nowIso(),
+            });
+            added++;
+          }
+          seq.book = Math.max(seq.book || 0, nextId - 1);
+          await setJSON(store, "meta:books", books);
+          await setJSON(store, "meta:seq", seq);
+          return json(200, { ok: true, imported: added, total: books.length, message: `Imported ${added} books. Total: ${books.length}.` });
+        }
         return json(200, { ok: true, message: "Book management is limited in Netlify-only mode." });
       }
       if (path === "admin/bundles" || path.startsWith("admin/bundles")) {
