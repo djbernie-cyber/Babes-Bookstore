@@ -47,7 +47,7 @@ class GutenbergSource(BaseSource):
     name = "gutenberg"
     description = "Project Gutenberg — public domain ebooks"
     license_type = "public_domain"
-    rate_limit = 0.1
+    rate_limit = 0.3
 
     API_URL = "https://gutendex.com/books"
     PAGE_SIZE = 32  # Gutendex fixed page size
