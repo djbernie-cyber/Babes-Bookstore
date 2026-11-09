@@ -12,8 +12,9 @@ William Majanja and the Contributors of Mafutani (collectively, the
 "Licensor").
 
 The Software is protected by copyright laws and international treaty
-provisions. Unauthorized use, copying, modification, distribution, disclosure,
-or creation of derivative works is strictly prohibited.
+provisions, including the laws of the Republic of Kenya. Unauthorized use,
+copying, modification, distribution, disclosure, or creation of derivative
+works is strictly prohibited.
 
 1. GRANT OF RIGHTS
 
@@ -33,25 +34,77 @@ by the Licensor. In particular, no rights are granted to:
   (f) remove, alter, or obscure any proprietary notices, labels, or marks on
       or within the Software.
 
-2. AUTHORIZED USE
+2. LIMITED PERMISSION (EVALUATION AND INTERNAL USE)
 
-Any use of the Software requires prior express written authorization from the
-Licensor. Such authorization, if granted, may be subject to additional terms,
-fees, limitations, and conditions specified by the Licensor.
+Subject to the Licensor's prior written authorization and payment of any
+applicable fees, the Licensor may grant a limited, non-exclusive,
+non-transferable, revocable permission to use the Software solely for:
 
-3. OWNERSHIP
+  (a) internal evaluation and assessment of the Software's functionality; and
+  (b) internal, non-production use within the licensee's own organization.
+
+This limited permission does NOT include the right to:
+
+  (i)   use the Software in production or for commercial/monetary purposes,
+        or to derive revenue from it;
+  (ii)  distribute, sublicense, sell, lease, rent, or otherwise transfer the
+        Software to any third party;
+  (iii) modify, adapt, translate, or create derivative works based on the
+        Software;
+  (iv)  reverse engineer, decompile, or disassemble the Software;
+  (v)   use the Software for any purpose other than that expressly authorized.
+
+The limited permission is personal to the licensee, may not be assigned or
+transferred, and terminates automatically upon any breach of this Agreement
+or upon written notice from the Licensor. Upon termination, all copies of the
+Software must be immediately destroyed or returned to the Licensor.
+
+3. LICENSING FEES AND PAYMENTS
+
+Use of the Software (including any limited permission granted under
+Section 2) is subject to the payment of licensing fees as determined by the
+Licensor. Unless otherwise agreed in writing:
+
+  (a) all fees are payable in advance, in the currency and amount specified
+      by the Licensor, before any use of the Software is permitted;
+  (b) fees are non-refundable once access or use is granted;
+  (c) failure to pay any fee when due constitutes a material breach and
+      terminates all rights to use the Software;
+  (d) the Licensor may adjust fees for future license periods upon reasonable
+      notice;
+  (e) taxes, duties, and other charges (including VAT or withholding taxes)
+      are the responsibility of the licensee and are payable in addition to
+      the stated fees.
+
+No use of the Software is permitted unless and until all applicable fees have
+been paid in full.
+
+4. OWNERSHIP
 
 The Software is licensed, not sold. The Licensor retains all right, title, and
 interest in and to the Software, including all intellectual property rights.
 This Agreement does not transfer any ownership rights to you.
 
-4. CONFIDENTIALITY
+5. CONFIDENTIALITY
 
 The Software may contain confidential and proprietary information. You agree to
 maintain the confidentiality of the Software and not disclose it to any third
 party without the Licensor's prior written consent.
 
-5. THIRD-PARTY COMPONENTS
+6. CONTRIBUTIONS AND INTELLECTUAL PROPERTY
+
+Any contributions (including code, patches, documentation, designs, or other
+materials) submitted to the Licensor in connection with the Software are
+hereby irrevocably assigned to the Licensor, with all right, title, and
+interest, including all intellectual property rights, vesting in the Licensor
+upon submission. Contributors represent and warrant that their contributions
+are original, that they have the right to make them, and that the contributions
+do not infringe any third-party rights. Contributors agree that their
+contributions are made under this proprietary regime and that no open-source
+or other license is granted to such contributions except as expressly
+authorized in writing by the Licensor.
+
+7. THIRD-PARTY COMPONENTS
 
 If the Software includes or references third-party components, those components
 may be subject to their own license terms. Nothing in this Agreement grants any
@@ -59,7 +112,7 @@ rights to third-party components beyond what their respective licenses permit.
 The Licensor's proprietary rights apply to the Licensor's original work and
 proprietary portions of the Software.
 
-6. DISCLAIMER OF WARRANTIES
+8. DISCLAIMER OF WARRANTIES
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
 "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, EXPRESS, IMPLIED, OR
@@ -67,7 +120,7 @@ STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
 FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, OR
 UNINTERRUPTED/ERROR-FREE OPERATION.
 
-7. LIMITATION OF LIABILITY
+9. LIMITATION OF LIABILITY
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
 LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
@@ -77,23 +130,30 @@ OR THIS AGREEMENT, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. THE
 LICENSOR'S TOTAL AGGREGATE LIABILITY SHALL NOT EXCEED THE AMOUNT, IF ANY, PAID
 BY YOU SPECIFICALLY FOR A WRITTEN LICENSE TO USE THE SOFTWARE.
 
-8. TERMINATION
+10. GOVERNING LAW AND JURISDICTION
+
+This Agreement and any dispute arising from or related to it (including
+disputes concerning its existence, validity, interpretation, or termination)
+shall be governed by and construed in accordance with the laws of the Republic
+of Kenya. The parties irrevocably submit to the exclusive jurisdiction of the
+courts of Kenya for the resolution of any such dispute.
+
+11. TERMINATION
 
 Any rights granted under a separate written authorization terminate
 automatically upon breach of that authorization or this notice. Upon
 termination, you must immediately cease all use of the Software and destroy or
 return all copies in your possession or control, as directed by the Licensor.
 
-9. GOVERNING TERMS
+12. CONTACT
 
-This proprietary notice and any dispute arising from it shall be governed by
-applicable law, without regard to conflict-of-law principles, unless a
-separate written agreement specifies otherwise.
+For licensing inquiries, permissions, fee/payment arrangements, or other
+requests regarding the Software, contact:
 
-10. CONTACT
-
-For licensing inquiries, permissions, or other requests regarding the Software,
-contact the Licensor: William Majanja and the Contributors of Mafutani.
+  William Majanja
+  Licensor / Authorized Contact
+  Email: [INSERT LICENSING EMAIL]
+  Website: [INSERT LICENSING URL]
 
 ---
 This document is provided as a proprietary license notice for the Software. It
