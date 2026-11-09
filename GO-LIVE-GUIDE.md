@@ -1,155 +1,366 @@
-# Babe's Bookstore — Launch Guide (current state)
+# Babe's Bookstore — Step-by-Step Launch Guide
 
-Everything below takes you from "code finished" to "first real sale" using the
-**M-Pesa (Daraja)** setup that is already configured in the app. Written in plain
-language — no coding knowledge needed.
+Everything below takes you from "code finished" to "first real sale".
+Written in plain language — no coding knowledge needed.
 
-**Where things stand today**
+**Total time:** ~2 hours of your attention + a few days waiting on
+identity/bank checks. **Order matters** — each step uses something from the
+one before it.
+
+---
+
+## Where things stand today
 
 | Part | Status |
 |---|---|
-| Storefront + admin pages (incl. mobile) at `https://babesbooks.store` | ✅ Live |
-| Backend API at `https://babes-bookstore.fly.dev` (app + worker machines) | ✅ Live |
-| Book catalogue (~83k books, incl. full Gutenberg) | ✅ Live |
-| Covers backfilled, bundles priced, 6 featured | ✅ Done |
-| Payments — **M-Pesa STK push** (only payment method) | ⚠️ Sandbox configured; needs production Daraja keys (Step 1) |
-| Refunds — **B2Pochi** payout via admin panel | ⚠️ Needs production B2C initiator (Step 1) |
-| Legal pages (/terms /privacy /refunds /cookies) | ✅ Live (`support@babesbooks.store`) |
-| Automated tests | ✅ 108 passing (CI green) |
-| R2 storage, Google sign-in, SendGrid email | ✅ Secrets set (email needs your SendGrid key) |
+| Storefront + admin pages (incl. mobile) | ✅ Built |
+| Book catalogue — 8 legal sources, ~96,000 books | ✅ Working |
+| Payments — 5 providers, per-bundle prices | ✅ Built, needs your keys |
+| Legal pages (/terms /privacy /refunds) | ✅ Built |
+| Review queue for unclear licences | ✅ Built |
+| Automated tests | ✅ 41/41 passing |
+| Hosting, payments, storage, sign-in | ⬜ Steps 1–6 below — **only you can do these** (they need your ID, bank account and logins) |
 
 Code: https://github.com/djbernie-cyber/Babes-Bookstore
 
+**Before you start, have ready:** photo ID, bank account details (for
+Stripe payouts), and your two admin emails (`dj.bernie@hotmail.co.uk`,
+`williammajanja@gmail.com`).
+
 ---
 
-## THE REMAINING TASKS
+## THE PLAN
 
-| # | Task | Time | Blocker if you skip it |
+| # | Step | Time | Can't continue without it because… |
 |---|---|---|---|
-| 1 | M-Pesa production go-live (Daraja) | ~1–2 hrs + Safaricom checks | no real payments happen |
-| 2 | SendGrid API key (receipt email) | 10 min | customers get no email receipt |
-| 3 | Final live test purchase + refund | 15 min | unproven money flow |
-| 4 | Rotate any shared test credentials | 5 min | security hygiene |
+| 1 | Backend host — the engine (Docker / open-source) | 30–60 min | everything else needs its web address |
+| 2 | Netlify — the shop front | 15 min | customers need a page to visit |
+| 3 | Cloudflare R2 — book storage | 10 min | without it, buyers get no download |
+| 4 | Google sign-in | 10 min | you need it to log in as admin |
+| 5 | Stripe — getting paid | 30 min + checks | this is how money reaches your bank |
+| 6 | Fill the shop (books + bundles) | 30 min | you can't sell an empty shop |
+| 7 | Test purchase | 15 min | proves the whole chain works |
+| 8 | Go live | 15 min | switches test payments to real |
+
+Optional extras (PayPal, Square, email receipts) are at the end — do them
+**after** Stripe works.
 
 ---
 
-## Step 1 — M-Pesa production go-live (the money step)
+## Step 1 — Backend host (the engine)
 
-The app already talks to Safaricom Daraja in **sandbox** using the test
-shortcode `174379`, test passkey, `testapi` initiator and `254708374149` phone.
-To take real money you need a **production** set of the same things. Two parts:
+**What it is:** the server that stores books, accounts and orders, and
+talks to the payment providers.
 
-### 1a. STK push (customer payments)
+**Recommended (free/open-source):**
+- **Docker Compose on a VPS** you control (any Linux server), or
+- **[Coolify](https://coolify.io/)** — an open-source, self-hosted PaaS that
+  can deploy Docker Compose stacks.
 
-1. Safaricom must issue you a real **M-Pesa Paybill (or Buy-Goods) shortcode** — a
-   shortcode is only issued to a registered business account, never on a sandbox app.
-2. In the Daraja portal (https://developer.safaricom.co.ke) apply to **Go Live** on the
-   app and add the **Lipa Na M-Pesa Online** product.
-3. Register your callback URL with Safaricom: `https://babes-bookstore.fly.dev/api/v1/checkout/webhook/mpesa`
-   (it must be public HTTPS — ours already is).
-4. Load the production values:
+This project includes a `docker-compose.yml` that runs the API, a Celery
+worker, PostgreSQL, and Redis. **You must run both the API and the worker**
+(or a single container with `PROCESS_TYPE=worker`) — without the worker,
+paid customers will never receive their downloads.
 
-```bash
-fly secrets set \
-  MPESA_ENVIRONMENT=production \
-  MPESA_CONSUMER_KEY=<production consumer key> \
-  MPESA_CONSUMER_SECRET=<production consumer secret> \
-  MPESA_SHORTCODE=<your real shortcode> \
-  MPESA_PASSKEY=<your production passkey> \
-  -a babes-bookstore
-```
+### 1A. Deploy with Docker Compose (VPS)
 
-### 1b. B2Pochi (admin refunds to customer Pochi wallets)
+1. Get a Linux VPS (Ubuntu/Debian recommended) and install Docker + the
+   Compose plugin.
+2. Clone the repo on the server:
+   ```bash
+   git clone https://github.com/djbernie-cyber/Babes-Bookstore.git
+   cd Babes-Bookstore
+   cp .env.example backend/.env
+   ```
+3. Edit `backend/.env` and set real values (at minimum for startup):
+   - `SECRET_KEY` — generate with `openssl rand -hex 32`
+   - `DEBUG=false`
+   - `PRODUCTION_URL=https://api.your-domain.example` (your public API URL)
+   - `FRONTEND_URL=https://your-netlify-site.netlify.app` (or your domain)
+   - `DATABASE_URL` / `SYNC_DATABASE_URL` / `REDIS_URL` — use the compose
+     service names if running the included compose stack (see
+     `docker-compose.yml`), or managed DB/Redis URLs if you host them
+     separately.
+4. Start the stack:
+   ```bash
+   docker compose up -d --build
+   ```
+5. Put the API behind HTTPS (required for production). Use a reverse proxy
+   such as **Caddy** (simple, automatic TLS) or **Nginx + Certbot** and point
+   `api.your-domain.example` to the backend container/port.
 
-1. In the portal create the **B2C / Pochi** API + initiator with the **B2C role**
-   (not "my account"). You'll get a **B2C shortcode** and an **initiator password**.
-2. Encrypt the initiator password with the **production** certificate and Base64 it:
+### 1B. Deploy with Coolify (open-source PaaS)
 
-```bash
-openssl x509 -in ProductionCertificate.cer -pubkey -noout > pub.pem
-printf '%s' "<initiator password>" | \
-  openssl rsautl -encrypt -pubin -inkey pub.pem -pkcs | base64 -w0
-```
+1. Install [Coolify](https://coolify.io/) on a server you control.
+2. Create a new resource from this Git repository and deploy using Docker
+   Compose (or the backend Dockerfile). Configure environment variables in
+   Coolify's UI (secrets), including `SECRET_KEY`, `PRODUCTION_URL`,
+   `FRONTEND_URL`, database/Redis URLs, and payment/storage keys.
+3. Ensure you deploy/start **both** the API and the **worker** service.
+   The backend image supports `PROCESS_TYPE=worker` for the worker process.
+4. Assign a public domain with HTTPS to the API service.
 
-3. Load them:
+### Checkpoint
 
-```bash
-fly secrets set \
-  MPESA_B2C_SHORTCODE=<your B2C shortcode> \
-  MPESA_B2C_INITIATOR_NAME=<your initiator username> \
-  MPESA_B2C_SECURITY_CREDENTIAL=<the long base64 string from above> \
-  -a babes-bookstore
-```
+1. Open `https://YOUR-BACKEND-URL/health` — you should see
+   `{"status":"ok",...}`.
+2. Confirm the **worker** is running (check your platform/container status or
+   logs). The worker builds customer downloads; if it's missing, sales will
+   silently never deliver.
+3. **Write down your backend URL** (e.g. `https://api.your-domain.example`).
+   Every later step needs it.
 
-> Refunds are initiated from the admin panel (admin → Purchases → Refund) and
-> the money returns to the customer's **Pochi wallet** (their M-Pesa account).
-> Production B2Pochi often needs a **Result URL + QueueTimeOut URL** approved by
-> Safaricom — they are already defaulted to `https://babes-bookstore.fly.dev/api/v1/checkout/webhook/b2pochi`.
-
-### Sandbox note (current state)
-
-STK push and B2Pochi are wired and tested to the point of hitting the sandbox
-API, but the sandbox **consumer key/secret** currently in Fly are being rejected
-(HTTP 400) — the credentials in the portal have changed since they were set.
-Before any further testing, copy the current sandbox **Consumer Key + Consumer
-Secret** from the portal app and:
-
-```bash
-fly secrets set MPESA_CONSUMER_KEY=<current> MPESA_CONSUMER_SECRET=<current> -a babes-bookstore
-```
-
----
-
-## Step 2 — SendGrid email receipts (recommended before launch)
-
-Customers are used to a confirmation email. Without it the download link lives
-only on the checkout screen/account page.
-
-1. Sign up at https://signup.sendgrid.com → create an **API key**.
-2. Add the sender address under Settings → Sender Authentication.
-3. Load the key:
-
-```bash
-fly secrets set SENDGRID_API_KEY=<key> FROM_EMAIL=noreply@babesbooks.store -a babes-bookstore
-```
-
-> Without a key the app still works — it just logs "Would send: …" instead of emailing.
+> **Won't boot?** In production (`DEBUG=false`) the app refuses to start
+> without a real `SECRET_KEY`. Check your container/app logs — the error
+> message tells you what to fix.
 
 ---
 
-## Step 3 — Final live test purchase
+## Step 2 — Netlify (the shop front)
 
-1. Open any bundle at `https://babesbooks.store/bundles` (suggest the cheapest).
-2. **Pay with M-Pesa** — enter your email and a real Kenyan phone number
-   (format `2547XXXXXXXX`).
-3. Complete the STK push on your phone. Within a minute the purchase should show
-   **PAID** on your account page with a working download (PDF + EPUB).
-4. Now test the **refund**: admin → Purchases → find the purchase → **Refund**.
-   Money returns to your Pochi wallet. Confirm the Refund row shows succeeded.
-5. Anything off? `fly logs -a babes-bookstore` and read the last 20 lines — a
-   message like `M-Pesa OAuth token failed` or `M-Pesa STK push failed (HTTP n)`
-   points straight at the secret to fix.
+**What it is:** the pages customers actually see.
+**Cost:** free at your traffic level.
+
+1. Go to https://app.netlify.com and **log in with GitHub**.
+2. **Add new site → Import an existing project → GitHub → Babes-Bookstore.**
+3. Leave every build setting as-is (the repo's `netlify.toml` is already
+   correct) → **Deploy**.
+4. **One manual edit.** Open `frontend/_redirects` in GitHub (click the
+   pencil icon to edit) and update the first API line to use **your backend
+   URL** from Step 1:
+
+   ```
+   /api/*  https://api.your-domain.example/api/:splat  200
+   ```
+
+   (It's the shop's forwarding address for payments and searches.) After
+   editing, trigger a redeploy: Netlify → **Deploys → Trigger deploy**.
+5. **Checkpoint:** open your Netlify site (something like
+   `https://<your-site>.netlify.app`). You should see the Babe's Bookstore
+   homepage. **Write down this address** — Step 4 and 5 need it.
+6. **Custom domain (optional).** If you use a custom domain (e.g.
+   `https://babesbooks.store`), add it in Netlify: **Site configuration →
+   Domain management → Add a domain**, enable HTTPS, then set the backend
+   env var `FRONTEND_URL=https://your-domain`.
 
 ---
 
-## Step 4 — Rotate shared credentials
+## Step 3 — Cloudflare R2 (the book files)
 
-Several M-Pesa test credentials appeared in chat while setting up. They are
-sandbox-only, but rotate any **consumer key/secret** you're not using once
-testing moves to production.
+**What it is:** storage for the ZIP files customers download.
+**Cost:** free up to 10GB.
+
+1. Sign up: https://dash.cloudflare.com/sign-up
+2. Left menu → **R2 Object Storage** → **Create bucket** → name it
+   exactly `babes-bookstore`.
+3. R2 menu → **Manage R2 API Tokens** → **Create API token** →
+   permission **Object Read & Write** → copy the **Access Key ID**,
+   **Secret Access Key** and your **Account ID** (shown on the right side
+   of the R2 page).
+4. Add these to your backend environment/secrets:
+   - `R2_ACCOUNT_ID`
+   - `R2_ACCESS_KEY_ID`
+   - `R2_SECRET_ACCESS_KEY`
+   - `R2_BUCKET_NAME=babes-bookstore`
+
+   (How you set secrets depends on your platform: Docker Compose `.env` /
+   `backend/.env`, Coolify environment variables, etc. Restart/redeploy
+   after changing secrets.)
+5. **Checkpoint:** confirm the variables are present in your deployment
+   configuration.
 
 ---
 
-## Day-to-day runbook
+## Step 4 — Google sign-in (and your admin logins)
 
-- **New books arrive pending?** `/admin/books` → check the licence link → Approve
-  (public domain / CC BY / CC BY-SA) or Reject (CC-NC, CC-ND, proprietary, unclear).
-- **Customer wants a refund?** `/admin/purchases` → **Refund** (pays back via B2Pochi),
-  then email them — see `/refunds` for the promise.
-- **Something broken?** `fly logs -a babes-bookstore` first; `fly status` to confirm both
-  `app` and `worker` machines are up.
-- **Weekly:** review queue empty, worker machine running, refunds/purchases reconcile
-  in the Daraja portal transaction list.
+You need this to sign into the admin panel. (Password login also exists,
+but Google is the quickest route for your Gmail admin account.)
+
+1. Go to https://console.cloud.google.com/apis/credentials
+2. Create a project (any name, e.g. "Babes Bookstore").
+3. **Create credentials → OAuth client ID → Web application.**
+4. **Authorised redirect URIs** — paste exactly (use **your backend URL**):
+
+   ```
+   https://api.your-domain.example/api/v1/auth/google/callback
+   ```
+5. Copy the **Client ID** and **Client Secret**, then set backend
+   environment variables:
+   - `GOOGLE_CLIENT_ID=...`
+   - `GOOGLE_CLIENT_SECRET=...`
+   - `GOOGLE_REDIRECT_URI=https://api.your-domain.example/api/v1/auth/google/callback`
+   - `FRONTEND_URL=https://YOUR-NETLIFY-ADDRESS.netlify.app` (no trailing slash)
+   - `PRODUCTION_URL=https://api.your-domain.example`
+
+> `FRONTEND_URL` is where customers land after paying — use your Netlify
+> address from Step 2, **no trailing slash**.
+
+6. The consent screen will say "Testing" — fine for now. Under
+   **Audience → Test users**, add both admin emails so they can sign in.
+7. **Checkpoint:** on your Netlify site, open **Login → Continue with
+   Google** and sign in as `williammajanja@gmail.com`. You should land on
+   your account page. Go to `/admin` — the dashboard should show stats,
+   not "Access denied".
+
+> **Hotmail admin account:** `dj.bernie@hotmail.co.uk` may not have a
+> password if it was created automatically. Either link that Hotmail to a
+> Google account and use Google sign-in, or set a password once by running
+> a one-off command in your backend container/environment (using the same
+> database) — for example via `docker compose exec backend python -c "..."`,
+> adapting the script to your setup.
+
+---
+
+## Step 5 — Stripe (getting paid)
+
+**What it is:** takes card, Apple Pay and Google Pay payments and pays
+out to your bank. **This is the money step — don't rush it.**
+
+1. Register: https://dashboard.stripe.com/register
+2. Complete **identity verification** (photo ID, address, bank details;
+   company number if registering as a company). Payouts can only start
+   once Stripe has finished these checks.
+3. **Where the money goes:** Dashboard → **Settings → Bank accounts and
+   payouts** → add your **bank account** (a current account, not a card).
+   Payouts arrive automatically every 2–7 days.
+4. **Start in test mode** (the toggle top-right says "Test mode"). Copy
+   the **Secret key** and **Publishable key** (both start `sk_test_` /
+   `pk_test_`) from https://dashboard.stripe.com/apikeys
+5. Add the confirmation link ("webhook"):
+   https://dashboard.stripe.com/test/webhooks → **Add endpoint**
+   - URL: `https://api.your-domain.example/api/v1/checkout/webhook/stripe`
+     (your backend URL)
+   - Select events: `checkout.session.completed` **and**
+     `payment_intent.succeeded`
+   - After creating, click it → **Signing secret → Reveal** → copy
+     (`whsec_…`).
+6. Set backend environment variables (test keys):
+   - `STRIPE_SECRET_KEY=sk_test_...`
+   - `STRIPE_PUBLISHABLE_KEY=pk_test_...`
+   - `STRIPE_WEBHOOK_SECRET=whsec_...`
+
+> **Live keys come in Step 8** — not yet. Real money only after the test
+> purchase in Step 7 passes.
+
+---
+
+## Step 6 — Fill the shop (books + bundles)
+
+Sign in as admin on your Netlify site. Do this in order:
+
+1. **Admin Dashboard → "Scrape Popular Books"** — pulls books in from all
+   8 sources. Wait a few minutes (the worker is fetching them).
+2. **Admin → Manage Books** — this is your review queue. Books from
+   trusted sources (Gutenberg, Standard Ebooks, Wikisource, OpenStax)
+   auto-approve. Books from academic sources (DOAB, OAPEN) arrive as
+   **pending** — the page shows each book's licence with a link.
+   For each pending book, **click the licence link** and:
+   - Licence says **CC BY**, **CC BY-SA** or **public domain** →
+     **Approve** (safe to sell; attribution travels with the file).
+   - Licence says **CC NC** (non-commercial) → **Reject** — selling these
+     is not permitted.
+   - Licence says **CC ND** (no derivatives) → **Reject** — our formatting
+     counts as a derivative.
+   - Unsure? **Reject** and move on. There are 96,000 books; err on the
+     side of caution.
+3. **Admin → Manage Bundles → New Bundle** — pick 10–20 approved books
+   around a theme, give it a name, set its price. It appears on the
+   storefront immediately.
+
+**Good first bundles:** Classic Fiction, Sherlock Holmes Complete,
+Philosophy Essentials, Victorian Gothic, Science Textbooks.
+
+> **One legal task:** the three policy pages contain the placeholder email
+> `support@babes-bookstore.example`. Search for it in
+> `frontend/legal/*.html` and replace it with an email you actually
+> monitor (refunds and legal notices go there).
+
+---
+
+## Step 7 — Test purchase (do not skip)
+
+1. On your Netlify site (still in Stripe **test mode**), open any bundle.
+2. Click **Pay with Stripe** and check out with:
+   - Card: `4242 4242 4242 4242`
+   - Any future expiry, any CVC, any postcode
+3. **What must happen, in order:**
+   - Stripe's test checkout page appears and shows the bundle's **real
+     price** (not a random number);
+   - paying returns you to your site;
+   - within a minute or so, your account page shows the purchase and a
+     working download (a ZIP that opens, with books inside).
+4. If anything in that chain fails, check your backend and **worker** logs
+   — it's nearly always a mistyped key/URL from Steps 1–5, or the worker
+   not running. Fix, redeploy/restart, re-run Step 7.
+
+---
+
+## Step 8 — Go live 🚀
+
+1. Stripe Dashboard → switch **Test mode → Live**.
+2. Copy the live keys (`sk_live_…`, `pk_live_…`) from
+   https://dashboard.stripe.com/apikeys.
+3. **Create the webhook again in live mode:**
+   https://dashboard.stripe.com/webhooks (no `/test` in the URL) — same
+   URL and events as before — and copy its new signing secret.
+4. Replace backend environment variables with live keys:
+   - `STRIPE_SECRET_KEY=sk_live_...`
+   - `STRIPE_PUBLISHABLE_KEY=pk_live_...`
+   - `STRIPE_WEBHOOK_SECRET=whsec_live_...`
+5. **Final checkpoint:** buy your cheapest bundle with a real card.
+   Confirm the money shows in Stripe and the download arrives, then refund
+   yourself from the Stripe dashboard (a real refund is also a test of the
+   refund path).
+6. You are live. Tell people.
+
+---
+
+## Optional extras (after launch, in this order)
+
+Each needs its own account + identity check + payout bank account.
+
+**Email receipts (do this first — customers expect receipts):**
+https://signup.sendgrid.com → create an API key → set backend env vars:
+
+```
+SENDGRID_API_KEY=...
+FROM_EMAIL=noreply@your-domain.com
+```
+
+**PayPal:** https://developer.paypal.com/dashboard →
+```
+PAYPAL_CLIENT_ID=...
+PAYPAL_CLIENT_SECRET=...
+PAYPAL_MODE=live
+PAYPAL_WEBHOOK_ID=...
+```
+
+**Square:** https://developer.squareup.com/apps →
+```
+SQUARE_ACCESS_TOKEN=...
+SQUARE_LOCATION_ID=...
+SQUARE_ENVIRONMENT=production
+```
+
+Apple Pay and Google Pay need **no separate setup** — they ride on Stripe
+and appear automatically.
+
+**Custom domain:** if you change domains later, update `FRONTEND_URL`,
+`PRODUCTION_URL`, `GOOGLE_REDIRECT_URI`, the Google OAuth redirect URI,
+Stripe webhook URLs, and `frontend/_redirects` to match.
+
+---
+
+## Running the shop day-to-day
+
+- **New books arrive pending?** `/admin/books` → review the licence →
+  approve/reject (rules in Step 6).
+- **A customer wants a refund?** Find the payment in Stripe → Refund. Also
+  email them — see `/refunds` for what you promised.
+- **Something looks broken?** check backend + worker logs first; confirm
+  the API, worker, Postgres, and Redis are all running.
+- **Checklist each week:** pending review queue empty, worker running,
+  Stripe payouts landing.
 
 ---
 
@@ -157,14 +368,11 @@ testing moves to production.
 
 | What | Where |
 |---|---|
-| Storefront | `https://babesbooks.store` |
-| Engine health | `https://babes-bookstore.fly.dev/health` |
-| API docs | `https://babes-bookstore.fly.dev/docs` |
-| Admin panel | `https://babesbooks.store/admin` |
+| Code | https://github.com/djbernie-cyber/Babes-Bookstore |
+| Engine health | `https://YOUR-BACKEND-URL/health` |
+| API docs | `https://YOUR-BACKEND-URL/docs` |
+| Admin panel | `/admin` on your Netlify address |
 | Review queue | `/admin/books` |
-| Refund purchases | `/admin/purchases` |
-| Policies | `/terms` · `/privacy` · `/refunds` · `/cookies` |
-| Logs | `fly logs -a babes-bookstore` |
-| Keys | `fly secrets list -a babes-bookstore` |
-| Machines | `fly status -a babes-bookstore` (app **and** worker) |
-| M-Pesa setup detail | see `docs/MPESA.md` in the repo |
+| Policies | `/terms` · `/privacy` · `/refunds` |
+| Logs | your deployment platform / container logs |
+| Worker | must run as `PROCESS_TYPE=worker` (downloads/bundles) |

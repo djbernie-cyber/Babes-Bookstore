@@ -21,7 +21,7 @@ Amount is derived from the bundle price: GBP pence → KES at **1 GBP ≈ 170 KE
 | `MPESA_ENVIRONMENT` | `sandbox` / `production` | `sandbox` | `production` |
 | `MPESA_SHORTCODE` | STK BusinessShortCode | `174379` | your real Paybill/Buy-Goods |
 | `MPESA_PASSKEY` | STK LNM passkey | from portal | production passkey |
-| `MPESA_CALLBACK_URL` | STK result webhook | optional — defaults to `https://babes-bookstore.fly.dev/api/v1/checkout/webhook/mpesa` | set publicly-reachable HTTPS |
+| `MPESA_CALLBACK_URL` | STK result webhook | optional — defaults to `https://api.your-domain.example/api/v1/checkout/webhook/mpesa` | set publicly-reachable HTTPS |
 | `MPESA_B2C_SHORTCODE` | refund PartyA | `600986` | your B2C/disbursement shortcode |
 | `MPESA_B2C_INITIATOR_NAME` | refund initiator | `testapi` | your initiator (B2C role) |
 | `MPESA_B2C_SECURITY_CREDENTIAL` | encrypted initiator password | RSA(PKCS#1)+Base64 of password | encrypted with production cert |
@@ -30,7 +30,7 @@ Amount is derived from the bundle price: GBP pence → KES at **1 GBP ≈ 170 KE
 Set them with:
 
 ```
-fly secrets set MPESA_CONSUMER_KEY=… MPESA_CONSUMER_SECRET=… MPESA_SHORTCODE=174379 \
+# Set in your deployment environment/secrets: MPESA_CONSUMER_KEY=… MPESA_CONSUMER_SECRET=… MPESA_SHORTCODE=174379 \
   MPESA_PASSKEY=… MPESA_B2C_SHORTCODE=600986 MPESA_B2C_INITIATOR_NAME=testapi \
   MPESA_B2C_SECURITY_CREDENTIAL=… -a babes-bookstore
 ```
@@ -41,7 +41,7 @@ fly secrets set MPESA_CONSUMER_KEY=… MPESA_CONSUMER_SECRET=… MPESA_SHORTCODE
 2. **STK push E2E** (test phone `254708374149`):
 
    ```
-   curl -X POST https://babes-bookstore.fly.dev/api/v1/checkout/mpesa \
+   curl -X POST https://api.your-domain.example/api/v1/checkout/mpesa \
      -H "Content-Type: application/json" \
      -d '{"bundle_slug":"<a bundle slug>","email":"you@example.com","phone":"254708374149"}'
    ```
@@ -75,7 +75,7 @@ printf '%s' "Safaricom123!!" | openssl rsautl -encrypt -pubin -inkey pub.pem -pk
 2. In the Daraja portal, apply to **Go Live**; create the **Production app** and add
    products: *Lipa Na M-Pesa Online* (STK) and *B2C / Pochi* (refunds).
 3. Production STK usually requires **registering callback URLs** with Safaricom (any
-   public HTTPS URL works — ours is `https://babes-bookstore.fly.dev/api/v1/checkout/webhook/mpesa`).
+   public HTTPS URL works — ours is `https://api.your-domain.example/api/v1/checkout/webhook/mpesa`).
 4. Set up the **B2C initiator** (B2C API role, not "my account") and generate its
    SecurityCredential with the production certificate.
 5. Flip `MPESA_ENVIRONMENT=production` and update every M-Pesa secret — never reuse

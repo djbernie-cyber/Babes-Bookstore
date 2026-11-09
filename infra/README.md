@@ -1,11 +1,16 @@
-# infra/
+# Infrastructure notes
 
-`redis.fly.toml` configures the separate Redis app used as the Celery broker:
+This project uses PostgreSQL and Redis. For local development, use
+`docker-compose.yml` at the repo root, which runs Postgres, Redis, the API,
+and Celery workers.
 
-    flyctl deploy -a babes-bookstore-redis --config infra/redis.fly.toml
+For production, deploy the same services using an open-source/free approach
+such as:
 
-The password lives in that app's secrets (`REDIS_PASSWORD`). The main app's
-`REDIS_URL` secret points at `babes-bookstore-redis.internal:6379`.
+- **Docker Compose** on a VPS you control
+- **[Coolify](https://coolify.io/)** (open-source, self-hosted PaaS) to
+  deploy the compose stack
 
-Note: keep exactly ONE machine in this app. Extra standby machines join the
-`.internal` DNS rotation while stopped and cause random connection refusals.
+**Security:** keep Redis and Postgres on a private network. Do not expose the
+broker/database publicly. Use strong passwords and set secrets via your
+platform's secret management or environment configuration.

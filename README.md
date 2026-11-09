@@ -73,13 +73,26 @@ curl -X POST http://localhost:8000/api/v1/admin/scrape/popular \
 
 ## Deployment
 
-### Backend (Fly.io / Railway)
+### Backend (Docker Compose / open-source PaaS)
+
+The backend requires the API service, a Celery worker, PostgreSQL, and Redis.
+A ready-to-use `docker-compose.yml` is included.
+
+**Docker Compose (VPS or local server):**
 
 ```bash
-# Build and deploy
-fly launch
-fly deploy
+cp .env.example backend/.env
+# Edit backend/.env with production values (set SECRET_KEY, database/redis URLs,
+# R2 credentials, payment keys, PRODUCTION_URL, FRONTEND_URL, etc.)
+docker compose up -d --build
 ```
+
+**Open-source PaaS option:** [Coolify](https://coolify.io/) is a free,
+open-source, self-hosted platform that can deploy Docker Compose stacks.
+
+> Keep Postgres/Redis private (not publicly exposed). Run migrations on deploy
+> (the container runs `alembic upgrade head` by default) and ensure the worker
+> process is running (`PROCESS_TYPE=worker`) so purchases/bundles are processed.
 
 ### Backend (Kubernetes — production rolling updates)
 

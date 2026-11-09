@@ -22,16 +22,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _guard_secret_key(self):
-        # The default is a placeholder. Prod must supply a real secret via
-        # the SECRET_KEY environment variable (set with `fly secrets set`).
+        # The default is a placeholder. Production must supply a real secret
+        # via the SECRET_KEY environment variable.
         if (
             not self.DEBUG
             and "SECRET_KEY" not in self.model_fields_set
         ):
             raise ValueError(
                 "SECRET_KEY must be set to a real value in production "
-                "(generate one with `openssl rand -hex 32` and deploy it "
-                "via `fly secrets set SECRET_KEY=...`)"
+                "(generate one with `openssl rand -hex 32` and set it as "
+                "an environment variable / secret in your deployment platform)."
             )
         return self
 
@@ -47,7 +47,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
-    PRODUCTION_URL: str = "https://babes-bookstore.fly.dev"
+    # Public API base URL (e.g. https://api.example.com). Used to derive
+    # OAuth/webhook URLs in production when localhost defaults are present.
+    PRODUCTION_URL: str = ""
     FRONTEND_URL: str = "https://babesbooks.store"
     CORS_ORIGINS: list[str] = [
         "https://babesbooks.store",

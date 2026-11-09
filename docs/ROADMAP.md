@@ -6,7 +6,7 @@ Ordered roughly by next-action value, not written order.
 ## Deploy / ops
 
 - [x] Worker rolled to the current image so `covers.backfill` and new Celery
-      task registrations are live (`flyctl machines update 2873535a967e08 …`).
+      task registrations are live (configured in the deployment environment).
 - [x] Seeders run on prod and verified: foie gras (~2700), Presidents (~5600),
       Richest Man id 87437, censorship 23 records (author-aware matcher,
       English-edition preference; all canonical picks verified on prod).
@@ -17,7 +17,7 @@ Ordered roughly by next-action value, not written order.
       reference PD titles (Ghosts, Jude the Obscure, Utopia, Devil's
       Dictionary, The Prophet, Justine, …) tagged/ingested via
       `POST /api/v1/admin/scrape/suppressed-full`.
-- [x] SECRET_KEY set via `fly secrets set` (base secret moved off the
+- [x] SECRET_KEY configured via deployment environment secrets (kept out of
       placeholder; config refuses the placeholder in non-DEBUG).
 - [x] `get_current_user` now raises 401 (added `get_optional_user` for the
       anonymous-tolerant readers); bulk approve / approve-all gated on
@@ -57,8 +57,8 @@ Ordered roughly by next-action value, not written order.
 
 ## Audit (security P1s)
 
-- [x] JWT: base secret moved off the default (`config.py`) to the `fly
-      secrets`-provided `SECRET_KEY`.
+- [x] JWT: base secret moved off the default (`config.py`) to a deployment
+      environment secret (`SECRET_KEY`).
 - [x] `get_current_user` now 401s; `get_optional_user` used where anonymous
       access is intentional.
 - [x] Mass-approve endpoints gate on `license_verified` before approval.
