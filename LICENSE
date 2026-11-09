@@ -1,0 +1,101 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 William Majanja and the Contributors of Mafutani.
+All rights reserved.
+
+NOTICE
+
+This software, including all source code, object code, scripts, configuration,
+documentation, data structures, designs, assets, and associated materials
+(collectively, the "Software"), is the proprietary and confidential property of
+William Majanja and the Contributors of Mafutani (collectively, the
+"Licensor").
+
+The Software is protected by copyright laws and international treaty
+provisions. Unauthorized use, copying, modification, distribution, disclosure,
+or creation of derivative works is strictly prohibited.
+
+1. GRANT OF RIGHTS
+
+No license or other rights, express or implied, are granted under this
+Agreement except as expressly set forth in a separate written agreement signed
+by the Licensor. In particular, no rights are granted to:
+
+  (a) use, run, host, deploy, or access the Software;
+  (b) copy, reproduce, or duplicate the Software, in whole or in part;
+  (c) modify, adapt, translate, or create derivative works based on the
+      Software;
+  (d) distribute, publish, sublicense, sell, lease, rent, lend, or otherwise
+      transfer the Software to any third party;
+  (e) reverse engineer, decompile, disassemble, or attempt to derive source
+      code, underlying ideas, algorithms, or structure from the Software,
+      except to the extent such restriction is prohibited by applicable law;
+  (f) remove, alter, or obscure any proprietary notices, labels, or marks on
+      or within the Software.
+
+2. AUTHORIZED USE
+
+Any use of the Software requires prior express written authorization from the
+Licensor. Such authorization, if granted, may be subject to additional terms,
+fees, limitations, and conditions specified by the Licensor.
+
+3. OWNERSHIP
+
+The Software is licensed, not sold. The Licensor retains all right, title, and
+interest in and to the Software, including all intellectual property rights.
+This Agreement does not transfer any ownership rights to you.
+
+4. CONFIDENTIALITY
+
+The Software may contain confidential and proprietary information. You agree to
+maintain the confidentiality of the Software and not disclose it to any third
+party without the Licensor's prior written consent.
+
+5. THIRD-PARTY COMPONENTS
+
+If the Software includes or references third-party components, those components
+may be subject to their own license terms. Nothing in this Agreement grants any
+rights to third-party components beyond what their respective licenses permit.
+The Licensor's proprietary rights apply to the Licensor's original work and
+proprietary portions of the Software.
+
+6. DISCLAIMER OF WARRANTIES
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
+"AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, EXPRESS, IMPLIED, OR
+STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, OR
+UNINTERRUPTED/ERROR-FREE OPERATION.
+
+7. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
+EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, DATA,
+GOODWILL, OR BUSINESS INTERRUPTION, ARISING OUT OF OR RELATED TO THE SOFTWARE
+OR THIS AGREEMENT, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. THE
+LICENSOR'S TOTAL AGGREGATE LIABILITY SHALL NOT EXCEED THE AMOUNT, IF ANY, PAID
+BY YOU SPECIFICALLY FOR A WRITTEN LICENSE TO USE THE SOFTWARE.
+
+8. TERMINATION
+
+Any rights granted under a separate written authorization terminate
+automatically upon breach of that authorization or this notice. Upon
+termination, you must immediately cease all use of the Software and destroy or
+return all copies in your possession or control, as directed by the Licensor.
+
+9. GOVERNING TERMS
+
+This proprietary notice and any dispute arising from it shall be governed by
+applicable law, without regard to conflict-of-law principles, unless a
+separate written agreement specifies otherwise.
+
+10. CONTACT
+
+For licensing inquiries, permissions, or other requests regarding the Software,
+contact the Licensor: William Majanja and the Contributors of Mafutani.
+
+---
+This document is provided as a proprietary license notice for the Software. It
+does not constitute legal advice. The Licensor may require a separate executed
+agreement for specific grants of rights.

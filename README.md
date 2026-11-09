@@ -54,4 +54,6 @@ kept for reference during migration. The active deployment path is Netlify-only.
 
 ## License
 
-MIT
+Proprietary — Copyright (c) 2026 William Majanja and the Contributors of Mafutani.
+All rights reserved. See [`LICENSE`](./LICENSE). No use, copying, modification,
+or distribution is permitted without prior written authorization.
