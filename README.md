@@ -1,155 +1,56 @@
 # Babe's Bookstore
 
-**Built for a neutral internet — by William Majanja.**
+A curated catalog/storefront for public-domain and openly-licensed books.
 
-A curated marketplace for public domain and openly-licensed books.
+> **Current architecture (zero external service dependencies):** deployed on
+> **Netlify only** using static frontend files, **Netlify Functions** for the
+> API, and **Netlify Blobs** (NoSQL key-value/object store) for data/book
+> metadata. No Fly.io, no external Postgres/Redis/Celery services, no
+> third-party payment/email/storage/OAuth integrations are required for core
+> operation.
 
-## Mission
-
-Illiteracy is the enemy. Not a metaphor, not a talking point — the single
-thing that keeps a person poor, voiceless and easy to govern is the inability
-to read.
-
-This library exists to end it. Every text here is free to read online and free
-to download, in the reader's own language, on whatever device they already own.
-No subscription, no DRM, no expiring licence, no paywall between a person and
-a book. Take the whole shelf if you want it; it stays yours.
-
-**We are building for a neutral internet.** The internet is at its best when it
-simply carries knowledge from the people who wrote it to the people who want it,
-with nothing in between: no gatekeeper deciding who is worth educating, no
-subscription wall scaling with income, no algorithm deciding which minds count.
-Censorship, paywalls and pay-per-view are not neutral. This project is a
-standing argument against them.
-
-The work is deliberately unglamorous: texts are asset-verified, cleaned,
-typeset and delivered as print-ready PDF and reflowable EPUB. A library that
-cannot be trusted to serve the book is not a library, it is a stall.
-
-## What we will not do
-
-- We will not serve an in-copyright text as though it were free.
-- We will not hide a broken link behind a "coming soon".
-- We will not charge twice for the same public-domain work.
-
-## Quick Start
+## Quick start (local)
 
 ```bash
-# 1. Clone and setup
-cd babes-bookstore
-cp .env.example backend/.env
-# Edit backend/.env with your credentials
-
-# 2. Start with Docker
-docker-compose up -d
-
-# 3. Run migrations
-cd backend
-alembic upgrade head
-
-# 4. Create admin user
-python -c "
-import asyncio
-from app.database import AsyncSessionLocal
-from app.models.user import User
-from passlib.context import CryptContext
-
-pwd = CryptContext(schemes=['bcrypt'], deprecated='auto')
-
-async def create():
-    async with AsyncSessionLocal() as db:
-        user = User(email='admin@example.com', name='Admin', hashed_password=pwd.hash('admin123'), is_admin=True)
-        db.add(user)
-        await db.commit()
-        print('Admin user created: admin@example.com / admin123')
-
-asyncio.run(create())
-"
-
-# 5. Scrape initial books
-curl -X POST http://localhost:8000/api/v1/admin/scrape/popular \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+npm install
+# Requires Netlify CLI for local Functions + Blobs emulation:
+npx netlify dev
 ```
+
+Then open the local URL shown by Netlify CLI.
 
 ## Deployment
 
-### Backend (Docker Compose / open-source PaaS)
+1. Push this repo to GitHub.
+2. In Netlify: **Add new site → Import from Git** → select the repo.
+3. Build settings come from `netlify.toml`:
+   - Base: `.`
+   - Publish: `frontend`
+   - Functions: `netlify/functions`
+   - Build command: `npm install`
+4. (Recommended) Set `TOKEN_SECRET` in Netlify environment variables.
+5. (Optional) Set `ADMIN_EMAILS` (comma-separated) to grant admin access.
 
-The backend requires the API service, a Celery worker, PostgreSQL, and Redis.
-A ready-to-use `docker-compose.yml` is included.
+The API is served at `/api/v1/*` via Netlify Functions (`netlify/functions/api.mjs`),
+and data is stored in Netlify Blobs.
 
-**Docker Compose (VPS or local server):**
+## Notes / limitations of this rewrite
 
-```bash
-cp .env.example backend/.env
-# Edit backend/.env with production values (set SECRET_KEY, database/redis URLs,
-# R2 credentials, payment keys, PRODUCTION_URL, FRONTEND_URL, etc.)
-docker compose up -d --build
-```
+This is an aggressive Netlify-only refactor. Some features from the previous
+Python/FastAPI architecture are simplified or stubbed:
+- Payments (Stripe/PayPal/Square/M-Pesa), SendGrid email, Cloudflare R2, and
+  Google OAuth are removed/disabled.
+- Background scraping/packaging workers (Celery/Redis) are not used; admin/job
+  endpoints return limited responses.
+- The catalog is stored in Netlify Blobs and seeded with sample data on first
+  run; import your full book dataset into Blobs for production-scale content.
+- Book file storage/serving should be implemented via Netlify Blobs (or your
+  chosen Netlify-native approach) based on your content size needs.
 
-**Open-source PaaS option:** [Coolify](https://coolify.io/) is a free,
-open-source, self-hosted platform that can deploy Docker Compose stacks.
+## Legacy code
 
-> Keep Postgres/Redis private (not publicly exposed). Run migrations on deploy
-> (the container runs `alembic upgrade head` by default) and ensure the worker
-> process is running (`PROCESS_TYPE=worker`) so purchases/bundles are processed.
-
-### Backend (Kubernetes — production rolling updates)
-
-The `infra/kubernetes/` bundle deploys the API + Celery worker + Postgres +
-Redis with zero-downtime rolling updates (health-gated, PDB-protected,
-autoscaled). Pushing to `main` runs the GitHub Actions pipeline
-(`.github/workflows/deploy-kubernetes.yml`) that builds a new image and rolls
-it through the cluster. See `infra/kubernetes/README.md`.
-
-```bash
-kubectl apply -k infra/kubernetes   # build image & push ghcr first
-```
-
-### Frontend (Netlify)
-
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Deploy
-cd frontend
-netlify deploy --prod
-```
-
-### Environment Variables
-
-Set these in your hosting platform:
-
-- `DATABASE_URL` — PostgreSQL connection string
-- `REDIS_URL` — Redis connection string
-- `SECRET_KEY` — Random hex string for JWT
-- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — Cloudflare R2
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Stripe
-- `SENDGRID_API_KEY` — SendGrid (optional)
-
-## Architecture
-
-```
-Netlify (Frontend)  →  FastAPI Backend  →  PostgreSQL
-                        ↓
-                     Celery Worker  →  Redis (broker)
-                        ↓
-                     Source Adapters (Gutenberg, DOAB, etc.)
-                        ↓
-                     Cloudflare R2 (PDF storage)
-```
-
-## Sources
-
-| Source | License | Content |
-|--------|---------|---------|
-| Project Gutenberg | Public Domain | 70,000+ ebooks |
-| Standard Ebooks | Public Domain | 1,000+ enhanced ebooks |
-| DOAB | CC-BY / CC-BY-SA | 25,000+ academic books |
-| OAPEN | CC licenses | Open access academic |
-| Open Library | Per-item verified | Large catalog |
-| Internet Archive | Per-item verified | Millions of items |
+The `backend/` directory contains the previous FastAPI implementation and is
+kept for reference during migration. The active deployment path is Netlify-only.
 
 ## License
 

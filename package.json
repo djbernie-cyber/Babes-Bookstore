@@ -1,0 +1,13 @@
+{
+  "name": "babes-bookstore",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Babe's Bookstore - Netlify-only deployment (Functions + Blobs)",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "@netlify/functions": "^2.8.2"
+  }
+}

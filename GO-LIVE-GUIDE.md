@@ -1,378 +1,52 @@
-# Babe's Bookstore — Step-by-Step Launch Guide
+# Babe's Bookstore — Netlify-Only Launch Guide (Zero External Service Dependencies)
 
-Everything below takes you from "code finished" to "first real sale".
-Written in plain language — no coding knowledge needed.
+This project is refactored to run **entirely on Netlify**:
+- **Frontend**: static files in `frontend/` (published by Netlify)
+- **API**: Netlify Functions (`netlify/functions/api.mjs`) served at `/api/v1/*`
+- **Data/NoSQL**: Netlify Blobs (key-value/object store)
+- **No Fly.io, no external Postgres/Redis/Celery, no third-party payment/email/storage/OAuth services** required for core operation
 
-**Total time:** ~2 hours of your attention + a few days waiting on
-identity/bank checks. **Order matters** — each step uses something from the
-one before it.
+## 1) Deploy to Netlify
 
----
+1. Push this repo to GitHub (if not already).
+2. Netlify → **Add new site** → **Import an existing project** → select the repo.
+3. Netlify reads `netlify.toml`:
+   - `publish = "frontend"`
+   - `functions = "netlify/functions"`
+   - build command `npm install`
+4. Deploy the site.
 
-## Where things stand today
+## 2) Configure environment variables (Netlify UI)
 
-| Part | Status |
-|---|---|
-| Storefront + admin pages (incl. mobile) | ✅ Built |
-| Book catalogue — 8 legal sources, ~96,000 books | ✅ Working |
-| Payments — 5 providers, per-bundle prices | ✅ Built, needs your keys |
-| Legal pages (/terms /privacy /refunds) | ✅ Built |
-| Review queue for unclear licences | ✅ Built |
-| Automated tests | ✅ 41/41 passing |
-| Hosting, payments, storage, sign-in | ⬜ Steps 1–6 below — **only you can do these** (they need your ID, bank account and logins) |
+Set in **Site configuration → Environment variables**:
+- `TOKEN_SECRET` (recommended): a long random string for auth token signing
+- `ADMIN_EMAILS` (optional): comma-separated emails to grant admin access
 
-Code: https://github.com/djbernie-cyber/Babes-Bookstore
+Notes:
+- **Admin access bootstrap**: the first registered user becomes admin automatically (and `ADMIN_EMAILS` can grant admin). This replaces Fly/Grafana-era ops workflows with Netlify function logs/analytics.
+- Data is stored in **Netlify Blobs**; the API seeds a small sample catalog on first use. Import/extend book data in Blobs for real catalog scale.
 
-**Before you start, have ready:** photo ID, bank account details (for
-Stripe payouts), and your two admin emails (`dj.bernie@hotmail.co.uk`,
-`williammajanja@gmail.com`).
+## 3) Verify
 
----
+- Open `https://<your-site>.netlify.app/api/v1/health` → should return `{"status":"ok"...}`
+- Open the site → browse, search, and register/login.
+- Sign in as the first user (or an `ADMIN_EMAILS` user) → `/admin` dashboard should load stats.
 
-## THE PLAN
+## 4) Store books (Netlify-only / NoSQL)
 
-| # | Step | Time | Can't continue without it because… |
-|---|---|---|---|
-| 1 | Backend host — the engine (Docker / open-source) | 30–60 min | everything else needs its web address |
-| 2 | Netlify — the shop front | 15 min | customers need a page to visit |
-| 3 | Cloudflare R2 — book storage | 10 min | without it, buyers get no download |
-| 4 | Google sign-in | 10 min | you need it to log in as admin |
-| 5 | Stripe — getting paid | 30 min + checks | this is how money reaches your bank |
-| 6 | Fill the shop (books + bundles) | 30 min | you can't sell an empty shop |
-| 7 | Test purchase | 15 min | proves the whole chain works |
-| 8 | Go live | 15 min | switches test payments to real |
+Books/catalog metadata are stored in Netlify Blobs (`meta:books`, etc.). For production:
+- Load/import your catalog into the Blobs store used by the API (`babes` store).
+- Book files/content can be stored and served via Netlify Blobs (extend `netlify/functions/api.mjs` download handlers) or included as static assets where appropriate.
+- Optimize for your size/bandwidth needs (chunked datasets, indexed keys per book, or split metadata blobs) — Netlify Blobs is the NoSQL layer in this architecture.
 
-Optional extras (PayPal, Square, email receipts) are at the end — do them
-**after** Stripe works.
+## 5) What changed vs. the old architecture
 
----
+- **Removed**: Fly.io, Docker/Celery/Redis/Postgres deployment path, Google OAuth, SendGrid, Cloudflare R2, Stripe/PayPal/Square/M-Pesa integrations, and scraping/worker pipelines.
+- **Replaced**: backend API with Netlify Functions; relational/external storage with Netlify Blobs (NoSQL); Grafana/host metrics with Netlify logs/analytics + in-app `/health` and admin stats.
+- **Kept for reference**: `backend/` (legacy FastAPI code) is not used by the Netlify deployment.
 
-## Step 1 — Backend host (the engine)
+## Troubleshooting
 
-**What it is:** the server that stores books, accounts and orders, and
-talks to the payment providers.
-
-**Recommended (free/open-source):**
-- **Docker Compose on a VPS** you control (any Linux server), or
-- **[Coolify](https://coolify.io/)** — an open-source, self-hosted PaaS that
-  can deploy Docker Compose stacks.
-
-This project includes a `docker-compose.yml` that runs the API, a Celery
-worker, PostgreSQL, and Redis. **You must run both the API and the worker**
-(or a single container with `PROCESS_TYPE=worker`) — without the worker,
-paid customers will never receive their downloads.
-
-### 1A. Deploy with Docker Compose (VPS)
-
-1. Get a Linux VPS (Ubuntu/Debian recommended) and install Docker + the
-   Compose plugin.
-2. Clone the repo on the server:
-   ```bash
-   git clone https://github.com/djbernie-cyber/Babes-Bookstore.git
-   cd Babes-Bookstore
-   cp .env.example backend/.env
-   ```
-3. Edit `backend/.env` and set real values (at minimum for startup):
-   - `SECRET_KEY` — generate with `openssl rand -hex 32`
-   - `DEBUG=false`
-   - `PRODUCTION_URL=https://api.your-domain.example` (your public API URL)
-   - `FRONTEND_URL=https://your-netlify-site.netlify.app` (or your domain)
-   - `DATABASE_URL` / `SYNC_DATABASE_URL` / `REDIS_URL` — use the compose
-     service names if running the included compose stack (see
-     `docker-compose.yml`), or managed DB/Redis URLs if you host them
-     separately.
-4. Start the stack:
-   ```bash
-   docker compose up -d --build
-   ```
-5. Put the API behind HTTPS (required for production). Use a reverse proxy
-   such as **Caddy** (simple, automatic TLS) or **Nginx + Certbot** and point
-   `api.your-domain.example` to the backend container/port.
-
-### 1B. Deploy with Coolify (open-source PaaS)
-
-1. Install [Coolify](https://coolify.io/) on a server you control.
-2. Create a new resource from this Git repository and deploy using Docker
-   Compose (or the backend Dockerfile). Configure environment variables in
-   Coolify's UI (secrets), including `SECRET_KEY`, `PRODUCTION_URL`,
-   `FRONTEND_URL`, database/Redis URLs, and payment/storage keys.
-3. Ensure you deploy/start **both** the API and the **worker** service.
-   The backend image supports `PROCESS_TYPE=worker` for the worker process.
-4. Assign a public domain with HTTPS to the API service.
-
-### Checkpoint
-
-1. Open `https://YOUR-BACKEND-URL/health` — you should see
-   `{"status":"ok",...}`.
-2. Confirm the **worker** is running (check your platform/container status or
-   logs). The worker builds customer downloads; if it's missing, sales will
-   silently never deliver.
-3. **Write down your backend URL** (e.g. `https://api.your-domain.example`).
-   Every later step needs it.
-
-> **Won't boot?** In production (`DEBUG=false`) the app refuses to start
-> without a real `SECRET_KEY`. Check your container/app logs — the error
-> message tells you what to fix.
-
----
-
-## Step 2 — Netlify (the shop front)
-
-**What it is:** the pages customers actually see.
-**Cost:** free at your traffic level.
-
-1. Go to https://app.netlify.com and **log in with GitHub**.
-2. **Add new site → Import an existing project → GitHub → Babes-Bookstore.**
-3. Leave every build setting as-is (the repo's `netlify.toml` is already
-   correct) → **Deploy**.
-4. **One manual edit.** Open `frontend/_redirects` in GitHub (click the
-   pencil icon to edit) and update the first API line to use **your backend
-   URL** from Step 1:
-
-   ```
-   /api/*  https://api.your-domain.example/api/:splat  200
-   ```
-
-   (It's the shop's forwarding address for payments and searches.) After
-   editing, trigger a redeploy: Netlify → **Deploys → Trigger deploy**.
-5. **Checkpoint:** open your Netlify site (something like
-   `https://<your-site>.netlify.app`). You should see the Babe's Bookstore
-   homepage. **Write down this address** — Step 4 and 5 need it.
-6. **Custom domain (optional).** If you use a custom domain (e.g.
-   `https://babesbooks.store`), add it in Netlify: **Site configuration →
-   Domain management → Add a domain**, enable HTTPS, then set the backend
-   env var `FRONTEND_URL=https://your-domain`.
-
----
-
-## Step 3 — Cloudflare R2 (the book files)
-
-**What it is:** storage for the ZIP files customers download.
-**Cost:** free up to 10GB.
-
-1. Sign up: https://dash.cloudflare.com/sign-up
-2. Left menu → **R2 Object Storage** → **Create bucket** → name it
-   exactly `babes-bookstore`.
-3. R2 menu → **Manage R2 API Tokens** → **Create API token** →
-   permission **Object Read & Write** → copy the **Access Key ID**,
-   **Secret Access Key** and your **Account ID** (shown on the right side
-   of the R2 page).
-4. Add these to your backend environment/secrets:
-   - `R2_ACCOUNT_ID`
-   - `R2_ACCESS_KEY_ID`
-   - `R2_SECRET_ACCESS_KEY`
-   - `R2_BUCKET_NAME=babes-bookstore`
-
-   (How you set secrets depends on your platform: Docker Compose `.env` /
-   `backend/.env`, Coolify environment variables, etc. Restart/redeploy
-   after changing secrets.)
-5. **Checkpoint:** confirm the variables are present in your deployment
-   configuration.
-
----
-
-## Step 4 — Google sign-in (and your admin logins)
-
-You need this to sign into the admin panel. (Password login also exists,
-but Google is the quickest route for your Gmail admin account.)
-
-1. Go to https://console.cloud.google.com/apis/credentials
-2. Create a project (any name, e.g. "Babes Bookstore").
-3. **Create credentials → OAuth client ID → Web application.**
-4. **Authorised redirect URIs** — paste exactly (use **your backend URL**):
-
-   ```
-   https://api.your-domain.example/api/v1/auth/google/callback
-   ```
-5. Copy the **Client ID** and **Client Secret**, then set backend
-   environment variables:
-   - `GOOGLE_CLIENT_ID=...`
-   - `GOOGLE_CLIENT_SECRET=...`
-   - `GOOGLE_REDIRECT_URI=https://api.your-domain.example/api/v1/auth/google/callback`
-   - `FRONTEND_URL=https://YOUR-NETLIFY-ADDRESS.netlify.app` (no trailing slash)
-   - `PRODUCTION_URL=https://api.your-domain.example`
-
-> `FRONTEND_URL` is where customers land after paying — use your Netlify
-> address from Step 2, **no trailing slash**.
-
-6. The consent screen will say "Testing" — fine for now. Under
-   **Audience → Test users**, add both admin emails so they can sign in.
-7. **Checkpoint:** on your Netlify site, open **Login → Continue with
-   Google** and sign in as `williammajanja@gmail.com`. You should land on
-   your account page. Go to `/admin` — the dashboard should show stats,
-   not "Access denied".
-
-> **Hotmail admin account:** `dj.bernie@hotmail.co.uk` may not have a
-> password if it was created automatically. Either link that Hotmail to a
-> Google account and use Google sign-in, or set a password once by running
-> a one-off command in your backend container/environment (using the same
-> database) — for example via `docker compose exec backend python -c "..."`,
-> adapting the script to your setup.
-
----
-
-## Step 5 — Stripe (getting paid)
-
-**What it is:** takes card, Apple Pay and Google Pay payments and pays
-out to your bank. **This is the money step — don't rush it.**
-
-1. Register: https://dashboard.stripe.com/register
-2. Complete **identity verification** (photo ID, address, bank details;
-   company number if registering as a company). Payouts can only start
-   once Stripe has finished these checks.
-3. **Where the money goes:** Dashboard → **Settings → Bank accounts and
-   payouts** → add your **bank account** (a current account, not a card).
-   Payouts arrive automatically every 2–7 days.
-4. **Start in test mode** (the toggle top-right says "Test mode"). Copy
-   the **Secret key** and **Publishable key** (both start `sk_test_` /
-   `pk_test_`) from https://dashboard.stripe.com/apikeys
-5. Add the confirmation link ("webhook"):
-   https://dashboard.stripe.com/test/webhooks → **Add endpoint**
-   - URL: `https://api.your-domain.example/api/v1/checkout/webhook/stripe`
-     (your backend URL)
-   - Select events: `checkout.session.completed` **and**
-     `payment_intent.succeeded`
-   - After creating, click it → **Signing secret → Reveal** → copy
-     (`whsec_…`).
-6. Set backend environment variables (test keys):
-   - `STRIPE_SECRET_KEY=sk_test_...`
-   - `STRIPE_PUBLISHABLE_KEY=pk_test_...`
-   - `STRIPE_WEBHOOK_SECRET=whsec_...`
-
-> **Live keys come in Step 8** — not yet. Real money only after the test
-> purchase in Step 7 passes.
-
----
-
-## Step 6 — Fill the shop (books + bundles)
-
-Sign in as admin on your Netlify site. Do this in order:
-
-1. **Admin Dashboard → "Scrape Popular Books"** — pulls books in from all
-   8 sources. Wait a few minutes (the worker is fetching them).
-2. **Admin → Manage Books** — this is your review queue. Books from
-   trusted sources (Gutenberg, Standard Ebooks, Wikisource, OpenStax)
-   auto-approve. Books from academic sources (DOAB, OAPEN) arrive as
-   **pending** — the page shows each book's licence with a link.
-   For each pending book, **click the licence link** and:
-   - Licence says **CC BY**, **CC BY-SA** or **public domain** →
-     **Approve** (safe to sell; attribution travels with the file).
-   - Licence says **CC NC** (non-commercial) → **Reject** — selling these
-     is not permitted.
-   - Licence says **CC ND** (no derivatives) → **Reject** — our formatting
-     counts as a derivative.
-   - Unsure? **Reject** and move on. There are 96,000 books; err on the
-     side of caution.
-3. **Admin → Manage Bundles → New Bundle** — pick 10–20 approved books
-   around a theme, give it a name, set its price. It appears on the
-   storefront immediately.
-
-**Good first bundles:** Classic Fiction, Sherlock Holmes Complete,
-Philosophy Essentials, Victorian Gothic, Science Textbooks.
-
-> **One legal task:** the three policy pages contain the placeholder email
-> `support@babes-bookstore.example`. Search for it in
-> `frontend/legal/*.html` and replace it with an email you actually
-> monitor (refunds and legal notices go there).
-
----
-
-## Step 7 — Test purchase (do not skip)
-
-1. On your Netlify site (still in Stripe **test mode**), open any bundle.
-2. Click **Pay with Stripe** and check out with:
-   - Card: `4242 4242 4242 4242`
-   - Any future expiry, any CVC, any postcode
-3. **What must happen, in order:**
-   - Stripe's test checkout page appears and shows the bundle's **real
-     price** (not a random number);
-   - paying returns you to your site;
-   - within a minute or so, your account page shows the purchase and a
-     working download (a ZIP that opens, with books inside).
-4. If anything in that chain fails, check your backend and **worker** logs
-   — it's nearly always a mistyped key/URL from Steps 1–5, or the worker
-   not running. Fix, redeploy/restart, re-run Step 7.
-
----
-
-## Step 8 — Go live 🚀
-
-1. Stripe Dashboard → switch **Test mode → Live**.
-2. Copy the live keys (`sk_live_…`, `pk_live_…`) from
-   https://dashboard.stripe.com/apikeys.
-3. **Create the webhook again in live mode:**
-   https://dashboard.stripe.com/webhooks (no `/test` in the URL) — same
-   URL and events as before — and copy its new signing secret.
-4. Replace backend environment variables with live keys:
-   - `STRIPE_SECRET_KEY=sk_live_...`
-   - `STRIPE_PUBLISHABLE_KEY=pk_live_...`
-   - `STRIPE_WEBHOOK_SECRET=whsec_live_...`
-5. **Final checkpoint:** buy your cheapest bundle with a real card.
-   Confirm the money shows in Stripe and the download arrives, then refund
-   yourself from the Stripe dashboard (a real refund is also a test of the
-   refund path).
-6. You are live. Tell people.
-
----
-
-## Optional extras (after launch, in this order)
-
-Each needs its own account + identity check + payout bank account.
-
-**Email receipts (do this first — customers expect receipts):**
-https://signup.sendgrid.com → create an API key → set backend env vars:
-
-```
-SENDGRID_API_KEY=...
-FROM_EMAIL=noreply@your-domain.com
-```
-
-**PayPal:** https://developer.paypal.com/dashboard →
-```
-PAYPAL_CLIENT_ID=...
-PAYPAL_CLIENT_SECRET=...
-PAYPAL_MODE=live
-PAYPAL_WEBHOOK_ID=...
-```
-
-**Square:** https://developer.squareup.com/apps →
-```
-SQUARE_ACCESS_TOKEN=...
-SQUARE_LOCATION_ID=...
-SQUARE_ENVIRONMENT=production
-```
-
-Apple Pay and Google Pay need **no separate setup** — they ride on Stripe
-and appear automatically.
-
-**Custom domain:** if you change domains later, update `FRONTEND_URL`,
-`PRODUCTION_URL`, `GOOGLE_REDIRECT_URI`, the Google OAuth redirect URI,
-Stripe webhook URLs, and `frontend/_redirects` to match.
-
----
-
-## Running the shop day-to-day
-
-- **New books arrive pending?** `/admin/books` → review the licence →
-  approve/reject (rules in Step 6).
-- **A customer wants a refund?** Find the payment in Stripe → Refund. Also
-  email them — see `/refunds` for what you promised.
-- **Something looks broken?** check backend + worker logs first; confirm
-  the API, worker, Postgres, and Redis are all running.
-- **Checklist each week:** pending review queue empty, worker running,
-  Stripe payouts landing.
-
----
-
-## Quick reference
-
-| What | Where |
-|---|---|
-| Code | https://github.com/djbernie-cyber/Babes-Bookstore |
-| Engine health | `https://YOUR-BACKEND-URL/health` |
-| API docs | `https://YOUR-BACKEND-URL/docs` |
-| Admin panel | `/admin` on your Netlify address |
-| Review queue | `/admin/books` |
-| Policies | `/terms` · `/privacy` · `/refunds` |
-| Logs | your deployment platform / container logs |
-| Worker | must run as `PROCESS_TYPE=worker` (downloads/bundles) |
+- **Admin inaccessible**: ensure you're signed in; register the first user (auto-admin) or set `ADMIN_EMAILS` in Netlify env vars, then sign in again.
+- **Nav/API issues**: confirm redirects are active (`/api/v1/*` → `/.netlify/functions/api/:splat` per `netlify.toml`) and functions deployed successfully; check Netlify function logs.
+- **Token/auth issues after deploy**: set a stable `TOKEN_SECRET` env var (changing it invalidates existing tokens).

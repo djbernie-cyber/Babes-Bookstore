@@ -1,26 +1,27 @@
-# Netlify serves the static storefront; /api/* is proxied to Fly.io via
-# frontend/_redirects so browsers only ever talk to one origin (babesbooks.store).
-# There is no JS build step: files ship exactly as committed (skip_processing
-# disables Netlify's HTML/asset rewriting which previously caused stale,
-# unexpected build output).
+# Netlify-only deployment: static frontend + Netlify Functions API + Netlify Blobs (NoSQL).
+# No external backend, no Fly, no third-party SaaS dependencies required for core operation.
 [build]
   base = "."
   publish = "frontend"
-  command = "echo 'Static site - no build needed'"
+  command = "npm install"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
 
-[build.processing]
-  skip_processing = true
+[functions]
+  node_bundler = "esbuild"
 
-# Netlify was serving /static/site.css as `immutable, max-age=31536000` under
-# an unhashed filename. Any browser that had loaded the storefront once kept
-# that stylesheet for a year, so CSS fixes deployed successfully and never
-# arrived -- the home carousel's card sizing was fixed in a stylesheet no
-# returning visitor ever re-fetched. There is no build step here to fingerprint
-# these names, so they must revalidate. If a real bundler is added later,
-# fingerprinted assets can go back to immutable.
+# Route /api/v1/* to the API function (Netlify-only)
+[[redirects]]
+  from = "/api/v1/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# Keep SPA/page redirects behavior compatible; specific redirects in frontend/_redirects
+# still apply, but API is handled above.
+
 [[headers]]
   for = "/static/*"
   [headers.values]

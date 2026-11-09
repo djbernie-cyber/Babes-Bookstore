@@ -1,6 +1,6 @@
 /* Shared API helper for the storefront.
-   Talks to /api/v1/* (proxied to Fly.io by _redirects) with the JWT when
-   signed in. Usage:
+   Talks to /api/v1/* (served by Netlify Functions in Netlify-only mode) with
+   the JWT when signed in. Usage:
      api('/books/1342')                    -> json
      api('/library/create', {method:'POST', body:{name:'...'}})
    Throws an Error whose .status is the HTTP status and .body the parsed

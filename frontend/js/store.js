@@ -50,15 +50,10 @@
 
      fetch('/api/v1/checkout/config?_='+Date.now()).then(function(r){return r.json()}).then(function(c){
       if(!c) return;
-      var on=!!c.google_client_id;
-      document.querySelectorAll('.google-btn').forEach(function(b){ b.style.display=on?'':'none'; });
-      // if google off, show hint
-      document.querySelectorAll('[data-google-hint]').forEach(function(h){ h.style.display=on?'none':''; });
+      document.querySelectorAll('.google-btn').forEach(function(b){ b.style.display='none'; });
+      document.querySelectorAll('[data-google-hint]').forEach(function(h){ h.style.display=''; });
       var el=document.querySelector('[data-live-payments]');
-      if(el){
-        // M-Pesa is the store's only payment method.
-        el.textContent = c.mpesa_enabled ? '1 way to pay — M-Pesa' : 'M-Pesa — launching at checkout';
-      }
+      if(el){ el.textContent = c.payments_enabled ? 'Checkout available' : 'Free access (Netlify-only mode)'; }
     }).catch(function(){});
   }
   live();
