@@ -29,13 +29,17 @@ async def scrape_source(source_name: str, limit: int = 100, start_page: int = 1)
     source = reg.get(source_name)
     items = []
     try:
-        try:
-            if "start_page" in inspect.signature(source.list_popular).parameters:
-                items = await source.list_popular(limit, start_page=start_page)
-            else:
+        # Use harvest_catalogue for Gutenberg (fetches all pages concurrently)
+        if source_name == "gutenberg" and hasattr(source, "harvest_catalogue"):
+            items = await source.harvest_catalogue(limit=limit)
+        else:
+            try:
+                if "start_page" in inspect.signature(source.list_popular).parameters:
+                    items = await source.list_popular(limit, start_page=start_page)
+                else:
+                    items = await source.list_popular(limit)
+            except TypeError:
                 items = await source.list_popular(limit)
-        except TypeError:
-            items = await source.list_popular(limit)
     except Exception as e:
         print(f"  Error fetching {source_name}: {e}")
         items = []
