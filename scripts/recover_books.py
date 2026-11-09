@@ -3,59 +3,74 @@ import into Netlify Blobs (NoSQL store).
 
 Usage:
   cd backend
-  python -m scripts.recover_books --output ../data/books_export.json --limit 500
+  DEBUG=true SECRET_KEY=x DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/babes_bookstore \\
+    python ../scripts/recover_books.py --output ../data/books_export.json --limit 500
 
 Then import via the Netlify Function admin endpoint or manually upload to Blobs.
 
-Note: Full re-scrape of ~96,000 books takes hours. Run in batches.
+Note: Full re-scrape of ~96,000 books takes hours. Run in batches per source.
 """
 import argparse
 import asyncio
+import inspect
 import json
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BACKEND = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend")
+sys.path.insert(0, BACKEND)
 
 from app.sources.registry import SourceRegistry
-from app.database import AsyncSessionLocal
-from app.models.book import Book, BookStatus
-from sqlalchemy import select
 
 
 async def scrape_source(source_name: str, limit: int = 100, start_page: int = 1):
     """Scrape books from a single source and return list of dicts."""
     reg = SourceRegistry()
     source = reg.get(source_name)
-    books = []
+    items = []
     try:
-        async for book_data in source.scrape(limit=limit, start_page=start_page):
-            books.append({
-                "title": book_data.get("title", ""),
-                "author": book_data.get("author", ""),
-                "description": book_data.get("description", ""),
-                "source": source_name,
-                "source_id": book_data.get("source_id", ""),
-                "source_url": book_data.get("source_url", ""),
-                "license_type": book_data.get("license_type", "public_domain"),
-                "license_url": book_data.get("license_url", ""),
-                "category": book_data.get("category", ""),
-                "tags": book_data.get("tags", []),
-                "language": book_data.get("language", "en"),
-                "page_count": book_data.get("page_count"),
-                "publication_year": book_data.get("publication_year"),
-                "cover_url": book_data.get("cover_url", ""),
-                "download_url": book_data.get("download_url", ""),
-                "status": "approved",
-                "asset_verified": book_data.get("asset_verified", False),
-            })
-            if len(books) >= limit:
-                break
+        try:
+            if "start_page" in inspect.signature(source.list_popular).parameters:
+                items = await source.list_popular(limit, start_page=start_page)
+            else:
+                items = await source.list_popular(limit)
+        except TypeError:
+            items = await source.list_popular(limit)
     except Exception as e:
-        print(f"Error scraping {source_name}: {e}")
+        print(f"  Error fetching {source_name}: {e}")
+        items = []
     finally:
         await source.close()
-    return books
+
+    books = []
+    for book_data in items:
+        # book_data may be a dict or an object
+        if hasattr(book_data, "__dict__"):
+            d = book_data.__dict__
+        elif isinstance(book_data, dict):
+            d = book_data
+        else:
+            d = {}
+        books.append({
+            "title": d.get("title", "") if isinstance(d, dict) else getattr(book_data, "title", ""),
+            "author": d.get("author", "") if isinstance(d, dict) else getattr(book_data, "author", ""),
+            "description": d.get("description", "") if isinstance(d, dict) else getattr(book_data, "description", ""),
+            "source": source_name,
+            "source_id": (d.get("source_id", "") if isinstance(d, dict) else getattr(book_data, "source_id", "")),
+            "source_url": (d.get("source_url", "") if isinstance(d, dict) else getattr(book_data, "source_url", "")),
+            "license_type": (d.get("license_type", "public_domain") if isinstance(d, dict) else getattr(book_data, "license_type", "public_domain")),
+            "license_url": (d.get("license_url", "") if isinstance(d, dict) else getattr(book_data, "license_url", "")),
+            "category": (d.get("category", "") if isinstance(d, dict) else getattr(book_data, "category", "")),
+            "tags": (d.get("tags", []) if isinstance(d, dict) else getattr(book_data, "tags", [])),
+            "language": (d.get("language", "en") if isinstance(d, dict) else getattr(book_data, "language", "en")),
+            "page_count": (d.get("page_count") if isinstance(d, dict) else getattr(book_data, "page_count", None)),
+            "publication_year": (d.get("publication_year") if isinstance(d, dict) else getattr(book_data, "publication_year", None)),
+            "cover_url": (d.get("cover_url", "") if isinstance(d, dict) else getattr(book_data, "cover_url", "")),
+            "download_url": (d.get("download_url", "") if isinstance(d, dict) else getattr(book_data, "download_url", "")),
+            "status": "approved",
+            "asset_verified": (d.get("asset_verified", False) if isinstance(d, dict) else getattr(book_data, "asset_verified", False)),
+        })
+    return books[:limit]
 
 
 async def main():
@@ -80,7 +95,8 @@ async def main():
     for i, b in enumerate(all_books, 1):
         b["id"] = i
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
+    out_dir = os.path.dirname(os.path.abspath(args.output))
+    os.makedirs(out_dir, exist_ok=True)
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(all_books, f, ensure_ascii=False, indent=2)
 
@@ -89,4 +105,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-PY

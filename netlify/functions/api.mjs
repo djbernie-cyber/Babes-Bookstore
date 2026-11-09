@@ -80,53 +80,57 @@ async function setJSON(store, key, value) {
 async function ensureSeed(store) {
   const seeded = await store.get("meta:seeded");
   if (seeded) return;
-  const books = [
-    {
-      id: 1,
-      slug: "frankenstein",
-      title: "Frankenstein; Or, The Modern Prometheus",
-      authors: "Mary Wollstonecraft Shelley",
-      description: "A classic of Gothic literature (public domain).",
-      language: "en",
-      subjects: ["Gothic", "Classics", "Science Fiction"],
-      license: "public_domain",
-      cover_url: "",
-      source: "seed",
-      download_url: "",
-      text: "",
-      created_at: nowIso(),
-    },
-    {
-      id: 2,
-      slug: "pride-and-prejudice",
-      title: "Pride and Prejudice",
-      authors: "Jane Austen",
-      description: "A novel of manners (public domain).",
-      language: "en",
-      subjects: ["Classics", "Romance"],
-      license: "public_domain",
-      cover_url: "",
-      source: "seed",
-      download_url: "",
-      text: "",
-      created_at: nowIso(),
-    },
-    {
-      id: 3,
-      slug: "the-republic",
-      title: "The Republic",
-      authors: "Plato",
-      description: "Socratic dialogue on justice (public domain).",
-      language: "en",
-      subjects: ["Philosophy", "Classics"],
-      license: "public_domain",
-      cover_url: "",
-      source: "seed",
-      download_url: "",
-      text: "",
-      created_at: nowIso(),
-    },
-  ];
+
+  // Load scraped books from seed file (recovered from original sources).
+  let books = [];
+  try {
+    // Netlify Functions bundle files relative to the function; try fetch from
+    // the deployed site's static assets first, then fall back to inline seed.
+    const res = await fetch("/data/books_seed.json");
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) books = data;
+    }
+  } catch (e) {
+    // ignore — fall back to minimal seed
+  }
+
+  if (!books.length) {
+    books = [
+      { id: 1, slug: "frankenstein", title: "Frankenstein; Or, The Modern Prometheus", authors: "Mary Wollstonecraft Shelley", author: "Mary Wollstonecraft Shelley", description: "A classic of Gothic literature (public domain).", language: "en", subjects: ["Gothic", "Classics"], license: "public_domain", license_type: "public_domain", cover_url: "", source: "seed", download_url: "", text: "", created_at: nowIso() },
+      { id: 2, slug: "pride-and-prejudice", title: "Pride and Prejudice", authors: "Jane Austen", author: "Jane Austen", description: "A novel of manners (public domain).", language: "en", subjects: ["Classics", "Romance"], license: "public_domain", license_type: "public_domain", cover_url: "", source: "seed", download_url: "", text: "", created_at: nowIso() },
+      { id: 3, slug: "the-republic", title: "The Republic", authors: "Plato", author: "Plato", description: "Socratic dialogue on justice (public domain).", language: "en", subjects: ["Philosophy", "Classics"], license: "public_domain", license_type: "public_domain", cover_url: "", source: "seed", download_url: "", text: "", created_at: nowIso() },
+    ];
+  }
+
+  // Normalize book objects for the API
+  books = books.map((b, i) => ({
+    id: b.id || (i + 1),
+    slug: b.slug || String(b.title || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+    title: b.title || "Untitled",
+    authors: b.author || b.authors || "",
+    author: b.author || b.authors || "",
+    description: b.description || "",
+    language: b.language || "en",
+    subjects: b.subjects || b.tags || [],
+    tags: b.tags || [],
+    license: b.license_type || b.license || "public_domain",
+    license_type: b.license_type || b.license || "public_domain",
+    license_url: b.license_url || "",
+    cover_url: b.cover_url || "",
+    source: b.source || "imported",
+    source_id: b.source_id || "",
+    source_url: b.source_url || "",
+    download_url: b.download_url || "",
+    category: b.category || "",
+    text: b.text || "",
+    page_count: b.page_count || null,
+    publication_year: b.publication_year || null,
+    status: b.status || "approved",
+    asset_verified: !!b.asset_verified,
+    created_at: b.created_at || nowIso(),
+  }));
+
   const bundles = [
     {
       id: 1,
@@ -135,7 +139,7 @@ async function ensureSeed(store) {
       description: "A small starter bundle of public-domain classics.",
       price_cents: 0,
       currency: "USD",
-      book_ids: [1, 2, 3],
+      book_ids: books.slice(0, 3).map((b) => b.id),
       cover_url: "",
       active: true,
       created_at: nowIso(),
@@ -144,8 +148,9 @@ async function ensureSeed(store) {
   await setJSON(store, "meta:books", books);
   await setJSON(store, "meta:bundles", bundles);
   await setJSON(store, "meta:users", []);
-  await setJSON(store, "meta:seq", { book: 3, bundle: 1, user: 0 });
+  await setJSON(store, "meta:seq", { book: books.length, bundle: 1, user: 0 });
   await store.set("meta:seeded", "1");
+  console.log(`Seeded ${books.length} books from recovery data.`);
 }
 
 async function getUserFromReq(req, store) {

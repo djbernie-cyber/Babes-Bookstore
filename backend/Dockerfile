@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip wheel --wheel-dir /wheels -r requirements.txt
 
 # Runtime stage
@@ -25,11 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /wheels /wheels
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-index --find-links=/wheels -r requirements.txt \
     && rm -rf /wheels
 
-COPY backend/ .
+COPY . .
 
 # Run as an unprivileged user
 RUN useradd --create-home --shell /usr/sbin/nologin appuser \
